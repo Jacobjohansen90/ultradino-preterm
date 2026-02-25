@@ -1,0 +1,30 @@
+# @package _global_
+
+defaults:
+  - ../base/base
+  - _self_
+
+model:
+  auxiliary:
+    method: append
+
+    global_encoder_dims:
+      ga: [1, true]
+
+    planes_encoder_dims:
+      ps: [2, true]
+      plane: [3, true]
+
+  vit:
+    type: vitb16
+    weights_path: ${local.weights_path.vitb16_2m}
+  
+  ehr:
+    weights_path: ${local.weights_path.ehr}
+  
+  ehr_transform:
+    embedding_dim: 128
+    layer_dims: [256]
+
+  predictor:
+    layer_dims: [256,64]
