@@ -16,7 +16,7 @@ variables_from_csv = ['GestationsalderUger',
 
 variables_from_db = ['pixel_spacing_1']
 
-working_dir = '/users/data/UCPH/DeepFetal/projects/preterm/'
+working_dir = '/projects/users/data/UCPH/DeepFetal/projects/preterm/'
 
 con = sqlite3.connect(working_dir + 'Registers/ultrasound_metadata_db.sqlite')
 cur = con.cursor()
