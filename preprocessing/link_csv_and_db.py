@@ -34,6 +34,7 @@ i_studydate = 5
 
 variables_i = []
 days = []
+not_found = []
 
 for i in range(len(headers)):
     if headers[i] == text_cpr:
@@ -45,13 +46,15 @@ for i in range(len(headers)):
         
 for row in f_csv:
     cpr_phair = row[i_cpr]
-    birthdate = datetime.strftime(str(row[i_date]), "%Y%m%d").date()
+    birthdate = datetime.strptime(str(row[i_date]).replace("-",""), "%Y%m%d").date()
     
-    query = f"SELECT xxhash FROM cpr_hashes where phair_hash = {cpr_phair}"
+    query = f"SELECT xxhash FROM cpr_hashes WHERE phair_hash = '{cpr_phair}'"
+    cpr_hash = list(cur.execute(query))[0][0]
+    query = f"SELECT * FROM metadata_cache WHERE file_hash = '{cpr_hash}"
     entries = list(cur.execute(query))
     
     for entry in entries:
-        study_date = datetime.strftime(str(entry[i_studydate]), "%Y%m%d").date()
+        study_date = datetime.strptime(str(entry[i_studydate]), "%Y%m%d").date()
         days.append((study_date - birthdate).days)
 
 plt.hist(days, density=True)
