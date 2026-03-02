@@ -60,7 +60,6 @@ for row in f_csv:
     i += 1
     if i % 1000 == 0:
         logger.info(f"Completed {i} files")
-        break
     
     cpr_phair = row[i_cpr]
     birthdate = datetime.strptime(str(row[i_date]).replace("-",""), "%Y%m%d").date()
@@ -79,15 +78,18 @@ for row in f_csv:
         entries = list(cur.execute(query))
         img_paths = []
         for entry in entries:
-            study_date = str(entry[i_studydate])
-            study_date = datetime.strptime(study_date, "%Y%m%d").date()
-            if np.abs((study_date - birthdate).days) < 280:
-                ps1 = entry[6]
-                ps2 = entry[7]
-                img_path = entry[-1]
-                img_paths.append([img_path, ps1, ps2])
-        imgs[cpr_hash] = temp
-        imgs['imgs'] = img_paths
+            study_date = entry[i_studydate]
+            if study_date is None:
+                not_found.append(cpr_hash)
+            else:
+                study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
+                if np.abs((study_date - birthdate).days) < 280:
+                    ps1 = entry[6]
+                    ps2 = entry[7]
+                    img_path = entry[-1]
+                    img_paths.append([img_path, ps1, ps2])
+            imgs[cpr_hash] = temp
+            imgs['imgs'] = img_paths
         
 with open(working_dir + 'preprocessing/missing.csv', 'w', newline='') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
