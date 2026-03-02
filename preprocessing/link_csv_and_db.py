@@ -41,7 +41,7 @@ i_studydate = 5
 
 variables_i = []
 not_found = []
-imgs = []
+imgs = {}
 for i in range(len(headers)):
     if headers[i] == text_cpr:
         i_cpr = i
@@ -87,6 +87,7 @@ for row in f_csv:
                 img_path = entry[-1]
                 img_paths.append([img_path, ps1, ps2])
         imgs[cpr_hash] = temp
+        imgs['imgs'] = img_paths
         
 with open(working_dir + 'preprocessing/missing.csv', 'w', newline='') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
