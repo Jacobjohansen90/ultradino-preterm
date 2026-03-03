@@ -39,7 +39,7 @@ text_date = 'FoedselsDato_Barn'
 #TODO: Auto infer this index
 i_studydate = 5
 
-variables_i = []
+csv_variables_i = []
 not_found = []
 imgs = {}
 for i in range(len(headers)):
@@ -48,17 +48,17 @@ for i in range(len(headers)):
     elif headers[i] == text_date:
         i_date = i
     elif headers[i] in variables_from_csv:
-        variables_i.append(i)
+        csv_variables_i.append(i)
 
-if len(variables_from_csv) != len(variables_i):
-    found = ([headers[i] for i in variables_i])
+if len(variables_from_csv) != len(csv_variables_i):
+    found = ([headers[i] for i in csv_variables_i])
     diff = list(set(found) - set(variables_from_csv))
     raise Exception(f"Did not variables {diff} in CSV")
         
-i = 0
+n = 0
 for row in f_csv:
-    i += 1
-    if i % 1000 == 0:
+    n += 1
+    if n % 1000 == 0:
         logger.info(f"Completed {i} files")
     
     cpr_phair = row[i_cpr]
@@ -68,11 +68,11 @@ for row in f_csv:
     cpr_hash = list(cur.execute(query))
     
     if len(cpr_hash) == 0:
-        not_found.append(cpr_phair)
+        not_found.append([cpr_phair, 'no_cpr_link'])
     else:    
         temp = {'cpr_phair': cpr_phair}
-        for i in range(len(variables_i)):
-            temp[variables_from_csv[i]] = row[variables_i[i]]
+        for i in range(len(csv_variables_i)):
+            temp[variables_from_csv[i]] = row[csv_variables_i[i]]
         cpr_hash = cpr_hash[0][0]
         query = f"SELECT * FROM metadata_cache WHERE file_hash = '{cpr_hash}'"
         entries = list(cur.execute(query))
@@ -80,7 +80,7 @@ for row in f_csv:
         for entry in entries:
             study_date = entry[i_studydate]
             if study_date is None:
-                not_found.append(cpr_hash)
+                not_found.append([cpr_hash, 'no_date'])
             else:
                 study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
                 if np.abs((study_date - birthdate).days) < 280:
