@@ -59,7 +59,7 @@ n = 0
 for row in f_csv:
     n += 1
     if n % 1000 == 0:
-        logger.info(f"Completed {i} files")
+        logger.info(f"Completed {n} files")
     
     cpr_phair = row[i_cpr]
     birthdate = datetime.strptime(str(row[i_date]).replace("-",""), "%Y%m%d").date()
