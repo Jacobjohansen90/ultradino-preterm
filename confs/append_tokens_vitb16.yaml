@@ -8,13 +8,6 @@ model:
   auxiliary:
     method: append
 
-    global_encoder_dims:
-      ga: [1, true]
-
-    planes_encoder_dims:
-      ps: [2, true]
-      plane: [3, true]
-
   vit:
     type: vitb16
     weights_path: ${local.weights_path.vitb16_2m}

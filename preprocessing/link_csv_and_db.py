@@ -79,17 +79,17 @@ for row in f_csv:
         img_paths = []
         for entry in entries:
             study_date = entry[i_studydate]
-            if study_date is None:
-                not_found.append([cpr_hash, 'no_date'])
-            else:
+            try:
                 study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
                 if np.abs((study_date - birthdate).days) < 280:
                     ps1 = entry[6]
                     ps2 = entry[7]
                     img_path = entry[-1]
                     img_paths.append([img_path, ps1, ps2])
-            imgs[cpr_hash] = temp
-            imgs['imgs'] = img_paths
+                imgs[cpr_hash] = temp
+                imgs['imgs'] = img_paths
+            except:
+                not_found.append([cpr_hash, 'no_date'])
         
 with open(working_dir + 'preprocessing/missing.csv', 'w', newline='') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
