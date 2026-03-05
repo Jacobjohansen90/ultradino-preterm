@@ -42,6 +42,7 @@ i_studydate = 5
 
 csv_variables_i = []
 not_found = []
+errors = []
 info = {}
 for i in range(len(headers)):
     if headers[i] == mother_cpr:
@@ -58,7 +59,7 @@ if len(variables_from_csv) != len(csv_variables_i):
     diff = list(set(found) - set(variables_from_csv))
     raise Exception(f"Did not variables {diff} in CSV")
         
-
+invalid_counter = 0
 n = 0
 for row in f_csv:
     n += 1
@@ -73,19 +74,22 @@ for row in f_csv:
     cpr_hashes = list(cur.execute(query))
     
     if len(cpr_hashes) == 0:
-        not_found.append([cpr_phair_mother, 'no_cpr_link_mother'])
+        not_found.append([cpr_phair_mother, cpr_phair_child, 'no_cpr_link_mother'])
     else:    
         temp = {'cpr_phair_mother': cpr_phair_mother}
+        temp['cpr_phair_child'] = cpr_phair_child
+
         for i in range(len(csv_variables_i)):
             temp[variables_from_csv[i]] = row[csv_variables_i[i]]
 
         img_paths = []
+
         for cpr_ in cpr_hashes:
             cpr = cpr_[0]
             query = f"SELECT * FROM metadata_cache WHERE file_hash = '{cpr}'"
             entries = list(cur.execute(query))
             if len(entries) == 0:
-                not_found.append([cpr, 'no_data_for_xxhash'])
+                errors.append([cpr, 'no_data_for_xxhash'])
             else:    
                 for entry in entries:
                     study_date = entry[i_studydate]
@@ -93,19 +97,22 @@ for row in f_csv:
                         study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
                         if np.abs((study_date - birthdate).days) < 280:
                             if entry[-1] is None:
-                                not_found.append(entry[0], 'image_missing_on_NGC')
+                                errors.append(entry[0], 'image_missing_on_NGC')
                             else:
                                 ps1 = entry[6]
                                 ps2 = entry[7]
                                 img_path = entry[-1]
                                 img_paths.append([img_path, ps1, ps2])
                     except:
-                        not_found.append([entry[-1], 'date_not_found_or_wrong_format'])
+                        errors.append([entry[-1], 'date_not_found_or_wrong_format'])
         if len(img_paths) > 0:
             temp['img_paths'] = img_paths
+            if cpr_phair_child == 'INVALID':
+                cpr_phair_child += '_' + str(invalid_counter)     
+                invalid_counter += 1
             info[cpr_phair_child] = temp
         else:
-            not_found.append([cpr_phair_child, 'no_imgs_for_child'])
+            not_found.append([cpr_phair_mother, cpr_phair_child, 'no_imgs_for_child'])
 
         
 with open(working_dir + 'preprocessing/missing.csv', 'w', newline='') as file:
@@ -113,6 +120,10 @@ with open(working_dir + 'preprocessing/missing.csv', 'w', newline='') as file:
     for row in not_found:
         wr.writerow(row)
 
+with open(working_dir + 'preprocessing/errors.csv', 'w', newline='') as file:
+    wr = csv.writer(file, quoting=csv.QUOTE_ALL)
+    for row in errors:
+        wr.writerow(row)
 
 with open(working_dir + 'preprocessing/data.json', 'w') as file:
     json.dump(info, file)
