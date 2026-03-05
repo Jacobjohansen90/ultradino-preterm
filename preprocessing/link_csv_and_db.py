@@ -78,22 +78,26 @@ for row in f_csv:
         temp = {'cpr_phair_mother': cpr_phair_mother}
         for i in range(len(csv_variables_i)):
             temp[variables_from_csv[i]] = row[csv_variables_i[i]]
+
+        img_paths = []
         for cpr_ in cpr_hashes:
             cpr = cpr_[0]
             query = f"SELECT * FROM metadata_cache WHERE file_hash = '{cpr}'"
             entries = list(cur.execute(query))
-            img_paths = []
             for entry in entries:
-                study_date = entry[i_studydate]
-                try:
-                    study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
-                    if np.abs((study_date - birthdate).days) < 280:
-                        ps1 = entry[6]
-                        ps2 = entry[7]
-                        img_path = entry[-1]
-                        img_paths.append([img_path, ps1, ps2])
-                except:
-                    not_found.append([entry[-1], 'no_date'])
+                if len(entry) == 0:
+                    not_found.append(cpr, 'no_data_for_xxhash')
+                else:
+                    study_date = entry[i_studydate]
+                    try:
+                        study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
+                        if np.abs((study_date - birthdate).days) < 280:
+                            ps1 = entry[6]
+                            ps2 = entry[7]
+                            img_path = entry[-1]
+                            img_paths.append([img_path, ps1, ps2])
+                    except:
+                        not_found.append([entry[-1], 'date_not_found_or_wrong_format'])
         if len(img_paths) > 0:
             temp['img_paths'] = img_paths
             info[cpr_phair_child] = temp
