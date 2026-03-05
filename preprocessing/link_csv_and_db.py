@@ -84,10 +84,10 @@ for row in f_csv:
             cpr = cpr_[0]
             query = f"SELECT * FROM metadata_cache WHERE file_hash = '{cpr}'"
             entries = list(cur.execute(query))
-            for entry in entries:
-                if len(entry) == 0:
-                    not_found.append(cpr, 'no_data_for_xxhash')
-                else:
+            if len(entries) == 0:
+                not_found.append(cpr, 'no_data_for_xxhash')
+            else:    
+                for entry in entries:
                     study_date = entry[i_studydate]
                     try:
                         study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
