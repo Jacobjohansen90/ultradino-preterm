@@ -85,17 +85,20 @@ for row in f_csv:
             query = f"SELECT * FROM metadata_cache WHERE file_hash = '{cpr}'"
             entries = list(cur.execute(query))
             if len(entries) == 0:
-                not_found.append(cpr, 'no_data_for_xxhash')
+                not_found.append([cpr, 'no_data_for_xxhash'])
             else:    
                 for entry in entries:
                     study_date = entry[i_studydate]
                     try:
                         study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
                         if np.abs((study_date - birthdate).days) < 280:
-                            ps1 = entry[6]
-                            ps2 = entry[7]
-                            img_path = entry[-1]
-                            img_paths.append([img_path, ps1, ps2])
+                            if entry[-1] is None:
+                                not_found.append(entry[0], 'image_missing_on_NGC')
+                            else:
+                                ps1 = entry[6]
+                                ps2 = entry[7]
+                                img_path = entry[-1]
+                                img_paths.append([img_path, ps1, ps2])
                     except:
                         not_found.append([entry[-1], 'date_not_found_or_wrong_format'])
         if len(img_paths) > 0:
