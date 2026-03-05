@@ -13,7 +13,7 @@ import pandas as pd
 from PIL import Image
 
 class DummySet(Dataset):
-    def __init__(self, size=[224,224], scans=500):
+    def __init__(self, size=[1,224,224], scans=500):
         super().__init__()
         self.size = size
         self.scans = scans
@@ -23,11 +23,11 @@ class DummySet(Dataset):
     
     def __getitem__(self, idx):
         img = torch.randn(self.size)
-        pixel_spacing = torch.randn(2)
+        pixel_spacing = torch.randn(2, dtype=torch.float32)
         
-        ehr_data = torch.randint(14, 60, (1,))
+        ehr_data = torch.randint(14, 60, (1,1), dtype=torch.float32)
         
-        ga = torch.randint(25, 50, (1,))
+        ga = torch.randint(25, 50, (1,), dtype=torch.float32)
         
         return {'img': img, 'pixel_spacing': pixel_spacing, 'ehr_data': ehr_data, 'ga': ga}
         

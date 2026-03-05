@@ -12,7 +12,7 @@ class FCLayer(nn.Module):
     def __init__(self, 
                  num_inputs, 
                  num_outputs, 
-                 activation: Callable[..., nn.Module] = nn.GELU):
+                 activation: Callable[..., nn.Module] = nn.GELU()):
         
         super().__init__()
         

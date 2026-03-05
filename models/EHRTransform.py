@@ -30,4 +30,4 @@ class EHRTransform(nn.Module):
     def forward(self, x):
         features = self.fc(x)
 
-        return features        
+        return features

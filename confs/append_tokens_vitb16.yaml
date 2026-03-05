@@ -4,19 +4,29 @@ defaults:
   - ../base/base
   - _self_
 
-model:
-  auxiliary:
-    method: append
+data:
+  path: path_to_csv.csv
+  batch_size: 16
+  val_frac: 0.05
+  workers: 32
 
+training:
+  epochs: 15
+  vit_frozen_until: 5  #VIT is frozen until this epoch
+  ehr_frozen_until: 10 #EHR is frozen until this epoch
+
+auxiliary:
+  method: append
+
+model:
   vit:
     type: vitb16
-    weights_path: ${local.weights_path.vitb16_2m}
+    weights_path: 
   
   ehr:
-    weights_path: ${local.weights_path.ehr}
+    weights_path: /home/jacob/Desktop/NAS/Work/PreTerm/Weights/ehr.pt
   
   ehr_transform:
-    embedding_dim: 128
     layer_dims: [256]
 
   predictor:

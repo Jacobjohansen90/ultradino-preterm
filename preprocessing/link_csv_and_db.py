@@ -33,7 +33,8 @@ f_csv = csv.reader(f)
 
 headers = next(f_csv)
 
-text_cpr = 'CPRnummer_Mor'
+child_cpr = 'CPRnummer_Barn'
+mother_cpr = 'CPRnummer_Mor'
 text_date = 'FoedselsDato_Barn'
 
 #TODO: Auto infer this index
@@ -41,10 +42,12 @@ i_studydate = 5
 
 csv_variables_i = []
 not_found = []
-imgs = {}
+info = {}
 for i in range(len(headers)):
-    if headers[i] == text_cpr:
-        i_cpr = i
+    if headers[i] == mother_cpr:
+        mother_cpr_i = i
+    elif headers[i] == child_cpr:
+        child_cpr_i = i
     elif headers[i] == text_date:
         i_date = i
     elif headers[i] in variables_from_csv:
@@ -55,22 +58,24 @@ if len(variables_from_csv) != len(csv_variables_i):
     diff = list(set(found) - set(variables_from_csv))
     raise Exception(f"Did not variables {diff} in CSV")
         
+
 n = 0
 for row in f_csv:
     n += 1
     if n % 1000 == 0:
         logger.info(f"Completed {n} files")
     
-    cpr_phair = row[i_cpr]
+    cpr_phair_mother = row[mother_cpr_i]
+    cpr_phair_child = row[child_cpr_i]
     birthdate = datetime.strptime(str(row[i_date]).replace("-",""), "%Y%m%d").date()
     
-    query = f"SELECT xxhash FROM cpr_hashes WHERE phair_hash = '{cpr_phair}'"
+    query = f"SELECT xxhash FROM cpr_hashes WHERE phair_hash = '{cpr_phair_mother}'"
     cpr_hash = list(cur.execute(query))
     
     if len(cpr_hash) == 0:
-        not_found.append([cpr_phair, 'no_cpr_link'])
+        not_found.append([cpr_phair_mother, 'no_cpr_link_mother'])
     else:    
-        temp = {'cpr_phair': cpr_phair}
+        temp = {'cpr_phair_mother': cpr_phair_mother}
         for i in range(len(csv_variables_i)):
             temp[variables_from_csv[i]] = row[csv_variables_i[i]]
         cpr_hash = cpr_hash[0][0]
@@ -86,10 +91,14 @@ for row in f_csv:
                     ps2 = entry[7]
                     img_path = entry[-1]
                     img_paths.append([img_path, ps1, ps2])
-                imgs[cpr_hash] = temp
-                imgs['imgs'] = img_paths
             except:
                 not_found.append([cpr_hash, 'no_date'])
+        if len(img_paths) > 0:
+            temp['img_paths'] = img_paths
+            info[cpr_phair_child] = temp
+        else:
+            not_found.append([cpr_phair_child, 'no_imgs_for_child'])
+
         
 with open(working_dir + 'preprocessing/missing.csv', 'w', newline='') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
@@ -98,7 +107,7 @@ with open(working_dir + 'preprocessing/missing.csv', 'w', newline='') as file:
 
 
 with open(working_dir + 'preprocessing/data.json', 'w') as file:
-    json.dump(imgs, file)
+    json.dump(info, file)
         
         
         
