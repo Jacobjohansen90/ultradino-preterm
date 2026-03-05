@@ -70,29 +70,30 @@ for row in f_csv:
     birthdate = datetime.strptime(str(row[i_date]).replace("-",""), "%Y%m%d").date()
     
     query = f"SELECT xxhash FROM cpr_hashes WHERE phair_hash = '{cpr_phair_mother}'"
-    cpr_hash = list(cur.execute(query))
+    cpr_hashes = list(cur.execute(query))
     
-    if len(cpr_hash) == 0:
+    if len(cpr_hashes) == 0:
         not_found.append([cpr_phair_mother, 'no_cpr_link_mother'])
     else:    
         temp = {'cpr_phair_mother': cpr_phair_mother}
         for i in range(len(csv_variables_i)):
             temp[variables_from_csv[i]] = row[csv_variables_i[i]]
-        cpr_hash = cpr_hash[0][0]
-        query = f"SELECT * FROM metadata_cache WHERE file_hash = '{cpr_hash}'"
-        entries = list(cur.execute(query))
-        img_paths = []
-        for entry in entries:
-            study_date = entry[i_studydate]
-            try:
-                study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
-                if np.abs((study_date - birthdate).days) < 280:
-                    ps1 = entry[6]
-                    ps2 = entry[7]
-                    img_path = entry[-1]
-                    img_paths.append([img_path, ps1, ps2])
-            except:
-                not_found.append([cpr_hash, 'no_date'])
+        for cpr_ in cpr_hashes:
+            cpr = cpr_[0]
+            query = f"SELECT * FROM metadata_cache WHERE file_hash = '{cpr}'"
+            entries = list(cur.execute(query))
+            img_paths = []
+            for entry in entries:
+                study_date = entry[i_studydate]
+                try:
+                    study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
+                    if np.abs((study_date - birthdate).days) < 280:
+                        ps1 = entry[6]
+                        ps2 = entry[7]
+                        img_path = entry[-1]
+                        img_paths.append([img_path, ps1, ps2])
+                except:
+                    not_found.append([entry[-1], 'no_date'])
         if len(img_paths) > 0:
             temp['img_paths'] = img_paths
             info[cpr_phair_child] = temp
