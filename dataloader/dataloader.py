@@ -11,18 +11,48 @@ import torch
 import numpy as np
 import pandas as pd
 from PIL import Image
+import albumentations as A
+
+FUS13M_MEAN = 0.1842924807
+FUS13M_STD = 0.2187705424
 
 class DummySet(Dataset):
-    def __init__(self, size=[1,224,224], scans=500):
+    def __init__(self, train, img_size=[224,224], scans=500):
         super().__init__()
-        self.size = size
+        self.img_size = img_size
         self.scans = scans
+
+        self.norm_mean = 0.1842924807
+        self.norm_std = 0.2187705424
+
+        self.setup_transforms(train)
+        
     
     def __len__(self):
         return self.scans
     
+    def setup_transforms(self, train):
+        if train:
+            self.transforms = A.Compose([A.RandomBrightnessContrast(brightness_limit=(-0.3, 0.3), contrast_limit=(-0.3, 0.3), p=0.5),
+                                         A.RandomGamma(gamma_limit=(80, 120), p=0.5),
+                                         A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
+                                         A.GridDistortion(num_steps=5, distort_limit=(-0.3, 0.3), p=0.5),
+                                         A.HorizontalFlip(p=0.5),                 
+                                         A.Resize(height=self.img_size[0], width=self.img_size[1]),
+                                         A.ToGray(p=1.0, num_output_channels=1),
+                                         A.Normalize(mean=self.norm_mean, std=self.norm_std),
+                                         A.ToTensorV2()])
+        
+        else:
+            self.transforms = A.Compose([A.Resize(height=self.img_size[0], width=self.img_size[1]),
+                                         A.ToGray(p=1.0, num_output_channels=1),
+                                         A.Normalize(mean=self.norm_mean, std=self.norm_std),
+                                         A.ToTensorV2()])
+
+    
     def __getitem__(self, idx):
-        img = torch.randn(self.size)
+        img = np.random.randn(self.size)
+        img = self.transforms(img)
         pixel_spacing = torch.randn(2, dtype=torch.float32)
         
         ehr_data = torch.randint(14, 60, (1,1), dtype=torch.float32)
@@ -34,6 +64,7 @@ class DummySet(Dataset):
 class PreTermDataset(Dataset):
     def __init__(self,
                  csv_path,
+                 train,
                  resize=[224,224],
                  ehr_data=['mothers_age']):
 
@@ -41,17 +72,39 @@ class PreTermDataset(Dataset):
         self.df = pd.read_csv(csv_path)
         self.resize = resize
         self.ehr_data = ehr_data
+
+        self.norm_mean = 0.1842924807
+        self.norm_std = 0.2187705424        
+
+        self.setup_transforms(train)
         
     def __len__(self):
         return len(self.df)
+    
+    def setup_transforms(self, train):
+        if train:
+            self.transforms = A.Compose([A.RandomBrightnessContrast(brightness_limit=(-0.3, 0.3), contrast_limit=(-0.3, 0.3), p=0.5),
+                                         A.RandomGamma(gamma_limit=(80, 120), p=0.5),
+                                         A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
+                                         A.GridDistortion(num_steps=5, distort_limit=(-0.3, 0.3), p=0.5),
+                                         A.HorizontalFlip(p=0.5),                 
+                                         A.Resize(height=self.img_size[0], width=self.img_size[1]),
+                                         A.ToGray(p=1.0, num_output_channels=1),
+                                         A.Normalize(mean=self.norm_mean, std=self.norm_std),
+                                         A.ToTensorV2()])
+        
+        else:
+            self.transforms = A.Compose([A.Resize(height=self.img_size[0], width=self.img_size[1]),
+                                         A.ToGray(p=1.0, num_output_channels=1),
+                                         A.Normalize(mean=self.norm_mean, std=self.norm_std),
+                                         A.ToTensorV2()])        
     
     def __getitem__(self, idx):
         data = self.df.iloc[idx]
         
         img = Image.open(data['img_path'])
-        img = img.resize(self.resize)
         img = np.asarray(img)
-        img = torch.from_numpy(img)
+        img = self.transform(img)  
         
         pixel_spacing = torch.Tensor(data['pixel_spacing'])
         
@@ -65,5 +118,3 @@ class PreTermDataset(Dataset):
         ga = torch.Tensor(data['ga'])        
         
         return {'img': img, 'pixel_spacing': pixel_spacing, 'ehr_data': ehr_data, 'ga': ga}
-    
-    

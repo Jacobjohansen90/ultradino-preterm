@@ -132,13 +132,15 @@ with open(working_dir + 'preprocessing/errors.csv', 'w', newline='') as file:
 
 with open(working_dir + 'preprocessing/data.json', 'w') as file:
     json.dump(info, file)
-        
+    
+img_cpr_link = {}
 
+with open(working_dir + 'preprocessing/cervix_check.csv', 'w') as file:
+    wr = csv.writer(file)
+    wr.writerow(["filename"])
+    for key in info.keys():
+        wr.writerow(info[key]['img_paths'][0][0])
+        img_cpr_link[info[key]['img_paths'][0][0]] = key
         
-        
-        
-    
-    
-    
-    
-    
+with open(working_dir + 'preprocessing/img_cpr_link.json', 'w') as file:
+    json.dump(img_cpr_link, file)

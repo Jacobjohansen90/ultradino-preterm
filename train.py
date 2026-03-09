@@ -6,32 +6,44 @@ Created on Wed Mar  4 09:41:00 2026
 @author: jacob
 """
 
-from omegacli import OmegaConf
-from torch.utils.data import random_split, DataLoader
+from omegaconf import OmegaConf
+from torch.utils.data import Subset, DataLoader
 import torch.optim as optim
+import numpy as np
+from sklearn.model_selection import train_test_split
 
 from dataloader.dataloader import PreTermDataset, DummySet
 from utils.model_loader import model_from_conf
+from utils.optim_loader import get_optimizer
 
 conf = OmegaConf.load("./confs/append_tokens_vitb16.yaml")
 
 #%% Setup dataloaders and models
 
-dataset = DummySet()
+TrainData = DummySet(train=True)
+ValData = DummySet(train=False)
+
+train_split, val_split = train_test_split(np.arange(len(TrainData)), 
+                                          test_size=conf.data.val_frac)
+
+TrainData = Subset(TrainData, train_split)
+ValData = Subset(ValData, val_split)
+
 #dataset = PreTermDataset(conf.data.path)
 
-train_ds, val_ds = random_split(dataset, [1-conf.data.val_frac, conf.data.val_frac])
 
-TrainLoader = DataLoader(train_ds, 
+TrainLoader = DataLoader(TrainData,
                          conf.data.batch_size,
                          shuffle=True,
                          pin_memory=True,
+                         drop_last=True,
                          num_workers=conf.data.workers)
 
-ValLoader = DataLoader(val_ds,
+ValLoader = DataLoader(ValData,
                        conf.data.batch_size,
                        shuffle=False,
                        pin_memory=False,
+                       drop_last=False,
                        num_workers=conf.data.workers)
 
 
@@ -41,7 +53,10 @@ model.freeze_model(model.ehr_model)
 
 #%% Setup finetuning
 
-optimizer = optim.AdamW()
+optimizer = get_optimizer(model, conf)
+loss_fn = get_loss(conf)
+
+
 
 for epoch in range(conf.training.epochs):
     if epoch == conf.training.vit_frozen_until:
