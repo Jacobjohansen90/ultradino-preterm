@@ -21,7 +21,7 @@ logger.setLevel(logging.INFO)
 variables_from_csv = ['GestationsalderUger',
                       'Alder_Mor']
 
-variables_from_db = [6,7,-1]
+variables_from_db = [3,4,6,7,-1]
 
 working_dir = '/projects/users/data/UCPH/DeepFetal/projects/preterm/'
 
@@ -86,8 +86,12 @@ for row in f_csv:
 
         for cpr_ in cpr_hashes:
             cpr = cpr_[0]
-            query = f"SELECT * FROM metadata_cache WHERE file_hash = '{cpr}'"
-            entries = list(cur.execute(query))
+            try:
+                query = f"SELECT * FROM metadata_cache WHERE file_hash = '{cpr}'"
+                entries = list(cur.execute(query))
+            except:
+                errors.append([query, 'UTF-8 encoding error'])
+
             if len(entries) == 0:
                 errors.append([cpr, 'no_data_for_xxhash'])
             else:    
@@ -101,6 +105,7 @@ for row in f_csv:
                             else:
                                 ps1 = entry[6]
                                 ps2 = entry[7]
+                                model = entry[3] + ' - ' + entry[4]
                                 img_path = entry[-1]
                                 img_paths.append([img_path, ps1, ps2])
                     except:
@@ -128,6 +133,7 @@ with open(working_dir + 'preprocessing/errors.csv', 'w', newline='') as file:
 with open(working_dir + 'preprocessing/data.json', 'w') as file:
     json.dump(info, file)
         
+
         
         
         
