@@ -38,7 +38,7 @@ with open(working_path + 'data.csv', 'w') as file:
         for row in csv_:
             info = []
             for idx in idxs:
-                info.append(row[i])
+                info.append(row[idx])
             wr.writerow(info)
     
     csv_file.close()
