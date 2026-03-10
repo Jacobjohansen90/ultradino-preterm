@@ -13,7 +13,7 @@ import numpy as np
 import json 
 import logging
 
-logging.basicConfig(filename="/projects/users/data/UCPH/DeepFetal/projects/preterm/log.log", filemode='w')
+logging.basicConfig(filename="/projects/users/data/UCPH/DeepFetal/projects/preterm/preprocess.log", filemode='w')
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -130,7 +130,7 @@ with open(working_dir + 'preprocessing/missing.csv', 'w', newline='') as file:
 
 with open(working_dir + 'preprocessing/errors.csv', 'w', newline='') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
-    wr.writerow(["cpr_phair_mother", "cpr_phair_child", "error"])
+    wr.writerow(["info", "error"])
     for row in errors:
         wr.writerow(row)
 
@@ -143,7 +143,7 @@ with open(working_dir + 'preprocessing/cervix_check.csv', 'w') as file:
     wr = csv.writer(file)
     wr.writerow(["filename"])
     for key in info.keys():
-        wr.writerow(info[key]['img_paths'][0][0])
+        wr.writerow([info[key]['img_paths'][0][0]])
         img_cpr_link[info[key]['img_paths'][0][0]] = key
         
 with open(working_dir + 'preprocessing/img_cpr_link.json', 'w') as file:
