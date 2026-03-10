@@ -18,8 +18,8 @@ logging.basicConfig(filename="/projects/users/data/UCPH/DeepFetal/projects/prete
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-variables_from_csv = ['GestationsalderUger',
-                      'Alder_Mor']
+variables_from_csv = ['GA_days',
+                      'Age_mother']
 
 variables_from_db = [3,4,6,7,-1]
 
@@ -28,14 +28,14 @@ working_dir = '/projects/users/data/UCPH/DeepFetal/projects/preterm/'
 con = sqlite3.connect(working_dir + 'Registers/ultrasound_metadata_db.sqlite')
 cur = con.cursor()
 
-f = open(working_dir + "Registers/nyfoedte.csv")
+f = open(working_dir + "Registers/data.csv")
 f_csv = csv.reader(f)
 
 headers = next(f_csv)
 
-child_cpr = 'CPRnummer_Barn'
-mother_cpr = 'CPRnummer_Mor'
-text_date = 'FoedselsDato_Barn'
+child_cpr = 'cpr_child'
+mother_cpr = 'cpr_mother'
+text_date = 'Birthdate'
 
 #TODO: Auto infer this index
 i_studydate = 5
