@@ -57,7 +57,7 @@ for i in range(len(headers)):
 if len(variables_from_csv) != len(csv_variables_i):
     found = ([headers[i] for i in csv_variables_i])
     diff = list(set(found) - set(variables_from_csv))
-    raise Exception(f"Did not variables {diff} in CSV")
+    raise Exception(f"Did not find variables {diff} in CSV")
         
 invalid_counter = 0
 n = 0
@@ -90,26 +90,28 @@ for row in f_csv:
                 query = f"SELECT * FROM metadata_cache WHERE file_hash = '{cpr}'"
                 entries = list(cur.execute(query))
             except:
-                errors.append([query, 'UTF-8 encoding error'])
+                errors.append([query, 'Query - UTF-8 encoding error'])
 
             if len(entries) == 0:
-                errors.append([cpr, 'no_data_for_xxhash'])
+                errors.append([cpr, 'CPR - no_data_for_xxhash'])
             else:    
                 for entry in entries:
                     study_date = entry[i_studydate]
                     try:
                         study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
-                        if np.abs((study_date - birthdate).days) < 280:
-                            if entry[-1] is None:
-                                errors.append(entry[0], 'image_missing_on_NGC')
-                            else:
-                                ps1 = entry[6]
-                                ps2 = entry[7]
-                                model = entry[3] + ' - ' + entry[4]
-                                img_path = entry[-1]
-                                img_paths.append([img_path, ps1, ps2])
                     except:
-                        errors.append([entry[-1], 'date_not_found_or_wrong_format'])
+                        errors.append([entry[-1], 'Img_path - date_not_found_or_wrong_format'])
+                        continue
+                    if np.abs((study_date - birthdate).days) < 280:
+                        if entry[-1] is None:
+                            errors.append(entry[0], 'Img_path - image_missing_on_NGC')
+                        else:
+                            ps1 = entry[6]
+                            ps2 = entry[7]
+                            model = entry[3] + ' - ' + entry[4]
+                            img_path = entry[-1]
+                            img_paths.append([img_path, ps1, ps2])
+
         if len(img_paths) > 0:
             temp['img_paths'] = img_paths
             if cpr_phair_child == 'INVALID':
@@ -122,11 +124,13 @@ for row in f_csv:
         
 with open(working_dir + 'preprocessing/missing.csv', 'w', newline='') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
+    wr.writerow(["cpr_phair_mother", "cpr_phair_child", "error"])
     for row in not_found:
         wr.writerow(row)
 
 with open(working_dir + 'preprocessing/errors.csv', 'w', newline='') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
+    wr.writerow(["cpr_phair_mother", "cpr_phair_child", "error"])
     for row in errors:
         wr.writerow(row)
 
@@ -144,3 +148,5 @@ with open(working_dir + 'preprocessing/cervix_check.csv', 'w') as file:
         
 with open(working_dir + 'preprocessing/img_cpr_link.json', 'w') as file:
     json.dump(img_cpr_link, file)
+
+f.close()
