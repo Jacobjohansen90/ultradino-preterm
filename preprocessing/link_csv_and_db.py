@@ -108,7 +108,7 @@ for row in f_csv:
                         else:
                             ps1 = entry[6]
                             ps2 = entry[7]
-                            model = entry[3] + ' - ' + entry[4]
+                            model = str(entry[3]) + ' - ' + str(entry[4])
                             img_path = entry[-1]
                             img_paths.append([img_path, ps1, ps2])
 
