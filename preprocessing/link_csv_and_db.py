@@ -104,7 +104,7 @@ for row in f_csv:
                         continue
                     if np.abs((study_date - birthdate).days) < 280:
                         if entry[-1] is None:
-                            errors.append(entry[0], 'Img_path - image_missing_on_NGC')
+                            errors.append([entry[0], 'Img_path - image_missing_on_NGC'])
                         else:
                             ps1 = entry[6]
                             ps2 = entry[7]
