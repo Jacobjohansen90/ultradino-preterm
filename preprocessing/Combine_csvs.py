@@ -15,7 +15,7 @@ headers = ["cpr_child", "cpr_mother", "GA_days", "Age_mother", "Birthdate"]
 csvs = [["mfr.csv", ["CPR_BARN", "CPR_MODER", "GESTATIONSALDER_DAGE", "ALDER_MODER", "FOEDSELSDATO"]],
         ["nyfoedte.csv", ["CPRnummer_Barn", "CPRnummer_Mor", "Gestationsalder", "Alder_Mor", "FoedselsDato_Barn"]]]
 
-with open(working_path + 'data.csv') as file:
+with open(working_path + 'data.csv', 'w') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
     wr.writerow(headers)
 
