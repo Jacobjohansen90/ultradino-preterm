@@ -35,7 +35,7 @@ class DummySet(Dataset):
         if train:
             self.transforms = A.Compose([A.RandomBrightnessContrast(brightness_limit=(-0.3, 0.3), contrast_limit=(-0.3, 0.3), p=0.5),
                                          A.RandomGamma(gamma_limit=(80, 120), p=0.5),
-                                         A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
+                                         A.GaussNoise(std_range=(0.05, 0.2), p=0.5),
                                          A.GridDistortion(num_steps=5, distort_limit=(-0.3, 0.3), p=0.5),
                                          A.HorizontalFlip(p=0.5),                 
                                          A.Resize(height=self.img_size[0], width=self.img_size[1]),
@@ -85,7 +85,7 @@ class PreTermDataset(Dataset):
         if train:
             self.transforms = A.Compose([A.RandomBrightnessContrast(brightness_limit=(-0.3, 0.3), contrast_limit=(-0.3, 0.3), p=0.5),
                                          A.RandomGamma(gamma_limit=(80, 120), p=0.5),
-                                         A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
+                                         A.GaussNoise(std_range=(0.05, 0.2), p=0.5),
                                          A.GridDistortion(num_steps=5, distort_limit=(-0.3, 0.3), p=0.5),
                                          A.HorizontalFlip(p=0.5),                 
                                          A.Resize(height=self.img_size[0], width=self.img_size[1]),

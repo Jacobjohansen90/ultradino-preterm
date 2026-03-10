@@ -8,13 +8,12 @@ Created on Wed Mar  4 09:41:00 2026
 
 from omegaconf import OmegaConf
 from torch.utils.data import Subset, DataLoader
-import torch.optim as optim
 import numpy as np
 from sklearn.model_selection import train_test_split
 
 from dataloader.dataloader import PreTermDataset, DummySet
 from utils.model_loader import model_from_conf
-from utils.optim_loader import get_optimizer
+from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
 
 conf = OmegaConf.load("./confs/append_tokens_vitb16.yaml")
 
@@ -54,6 +53,9 @@ model.freeze_model(model.ehr_model)
 #%% Setup finetuning
 
 optimizer = get_optimizer(model, conf)
+
+scheduler = get_cosine_schedule_with_warmup(optimizer, conf, len(TrainLoader))
+
 loss_fn = get_loss(conf)
 
 
