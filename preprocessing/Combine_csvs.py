@@ -23,8 +23,8 @@ with open(working_path + 'data.csv', 'w') as file:
         idxs = []
         csv_file = open(working_path + csv_info[0])
         csv_headers = csv_info[1]
-        csv = csv.reader(csv_file)
-        temp_headers = next(csv)
+        csv_ = csv.reader(csv_file)
+        temp_headers = next(csv_)
         
         for head in csv_headers:
             i = 0
@@ -35,7 +35,7 @@ with open(working_path + 'data.csv', 'w') as file:
                 else:
                     i += 1
                 
-        for row in csv:
+        for row in csv_:
             info = []
             for idx in idxs:
                 info.append(row[i])
