@@ -150,8 +150,8 @@ def data_put_worker(working_dir, csv_que, worker_done_que):
     f_csv = csv.reader(f)
     _ = next(f_csv)
     for row in f_csv:
-        data_que.put(row)
-        if data_que.qsize() > 1000:
+        csv_que.put(row)
+        if csv_que.qsize() > 1000:
             time.sleep(10)
     worker_done_que.put(1)
 
