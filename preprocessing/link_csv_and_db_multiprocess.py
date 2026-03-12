@@ -232,9 +232,6 @@ with open(working_dir + 'preprocessing/cervix_check.csv', 'w') as file:
 with open(working_dir + 'preprocessing/img_cpr_link.json', 'w') as file:
     json.dump(img_cpr_link, file)
         
-for p in processes:
-    p.join()
-
 
 
 
