@@ -134,7 +134,7 @@ def worker(mother_cpr_i,
                                 ps2 = entry[7]
                                 model = str(entry[3]) + ' - ' + str(entry[4])
                                 img_path = entry[-1]
-                                img_paths.append([img_path, ps1, ps2])
+                                img_paths.append([img_path, ps1, ps2, model])
     
             if len(img_paths) > 0:
                 temp['img_paths'] = img_paths
