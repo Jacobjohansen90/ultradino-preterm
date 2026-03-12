@@ -151,8 +151,8 @@ def data_put_worker(working_dir, csv_que, worker_done_que):
     _ = next(f_csv)
     for row in f_csv:
         csv_que.put(row)
-        if csv_que.qsize() > 1000:
-            time.sleep(10)
+        if csv_que.qsize() > 5000:
+            time.sleep(1)
     worker_done_que.put(1)
 
 processes = []
@@ -161,7 +161,7 @@ p.start()
 processes.append(p)
 
 for i in range(num_workers):
-    p = mp.process(target=worker, args=(mother_cpr_i, child_cpr_i, i_date, variables_from_csv, i_studydate, variables_from_db, working_dir, csv_que, error_que, not_found_que, data_que, worker_done_que))
+    p = mp.Process(target=worker, args=(mother_cpr_i, child_cpr_i, i_date, variables_from_csv, i_studydate, variables_from_db, working_dir, csv_que, error_que, not_found_que, data_que, worker_done_que))
     p.start()
     processes.append(p)
 
@@ -177,6 +177,11 @@ while True:
     if not_found_que.qsize() > 0:
         not_found_item = not_found_que.get()
         not_found.append(not_found_item)
+
+        n += 1
+        if n % 1000 == 0:
+            logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))
+
     if data_que.qsize() > 0:
         data = data_que.get()  
         cpr_phair_child = data[0]
