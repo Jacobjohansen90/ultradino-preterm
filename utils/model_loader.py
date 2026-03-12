@@ -52,7 +52,7 @@ def model_from_conf(conf, **kwargs):
     vit_kwargs = {}
     ehr_kwargs = {}
 
-    device = kwargs['device'] if 'device' in kwargs else 'cpu'
+    device = conf.device.type
 
     vit_model = vit_from_conf(conf.model.vit, **vit_kwargs)
     ehr_model = ehr_from_conf(conf.model.ehr, **ehr_kwargs)

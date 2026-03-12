@@ -48,7 +48,7 @@ def get_cosine_schedule_with_warmup(optimizer, conf, num_training_steps, last_ep
         LambdaLR function with the appropriate LR schedule.
     """
     num_warmup_steps = conf.scheduler.num_warmup_steps
-    cycles = conf.scheduler.cycles
+    cycles = conf.scheduler.num_cycles
 
     def lr_lambda(current_step):
         if current_step < num_warmup_steps:

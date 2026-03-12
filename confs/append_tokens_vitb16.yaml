@@ -43,5 +43,10 @@ optimizer:
 scheduler:
   type: cosine_warmup
   num_warmup_steps: 5
-  num_cycles: 0.5 #A multiplier for the cosine scheduler. 2 means two cycles per epoch, 0.5 means half an epoch etc
+  num_cycles: 2 #A multiplier for the cosine scheduler. 2 means two cycles per epoch, 0.5 means half an epoch etc
 
+loss:
+  type: bce
+  
+device:
+  type: cuda

@@ -9,13 +9,12 @@ Created on Tue Feb 24 12:40:03 2026
 import sqlite3
 import csv
 from datetime import datetime
-import numpy as np
 import json 
 import logging
 
 logging.basicConfig(filename="/projects/users/data/UCPH/DeepFetal/projects/preterm/preprocess.log", filemode='w')
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('link_csv_and_db')
 logger.setLevel(logging.INFO)
 
 variables_from_csv = ['GA_days',
@@ -64,7 +63,7 @@ n = 0
 for row in f_csv:
     n += 1
     if n % 1000 == 0:
-        logger.info(f"Completed {n} files")
+        logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))
     
     cpr_phair_mother = row[mother_cpr_i]
     cpr_phair_child = row[child_cpr_i]
@@ -93,7 +92,7 @@ for row in f_csv:
                 errors.append([query, 'Query - UTF-8 encoding error'])
 
             if len(entries) == 0:
-                errors.append([cpr, 'CPR - no_data_for_xxhash'])
+                errors.append([str(cpr), 'CPR - no_data_for_xxhash'])
             else:    
                 for entry in entries:
                     study_date = entry[i_studydate]
@@ -101,8 +100,9 @@ for row in f_csv:
                         study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
                     except:
                         errors.append([entry[-1], 'Img_path - date_not_found_or_wrong_format'])
+                        print(entry[-1], study_date)
                         continue
-                    if np.abs((study_date - birthdate).days) < 280:
+                    if abs((study_date - birthdate).days) < 280:
                         if entry[-1] is None:
                             errors.append([entry[0], 'Img_path - image_missing_on_NGC'])
                         else:
@@ -115,7 +115,7 @@ for row in f_csv:
         if len(img_paths) > 0:
             temp['img_paths'] = img_paths
             if cpr_phair_child == 'INVALID':
-                cpr_phair_child += '_' + str(invalid_counter)     
+                cpr_phair_child = 'CHILD_' + str(invalid_counter)     
                 invalid_counter += 1
             info[cpr_phair_child] = temp
         else:
@@ -143,8 +143,10 @@ with open(working_dir + 'preprocessing/cervix_check.csv', 'w') as file:
     wr = csv.writer(file)
     wr.writerow(["filename"])
     for key in info.keys():
-        wr.writerow([info[key]['img_paths'][0][0]])
-        img_cpr_link[info[key]['img_paths'][0][0]] = key
+        for img_path in info[key]['img_paths']:
+            path = img_path[0]
+            wr.writerow(path)
+            img_cpr_link[path] = key
         
 with open(working_dir + 'preprocessing/img_cpr_link.json', 'w') as file:
     json.dump(img_cpr_link, file)

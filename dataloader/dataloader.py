@@ -13,6 +13,7 @@ import pandas as pd
 from PIL import Image
 import albumentations as A
 
+
 FUS13M_MEAN = 0.1842924807
 FUS13M_STD = 0.2187705424
 
@@ -51,8 +52,9 @@ class DummySet(Dataset):
 
     
     def __getitem__(self, idx):
-        img = np.random.randn(self.size)
-        img = self.transforms(img)
+        img = np.abs(np.random.randn(self.img_size[0], self.img_size[1]))
+        img = img.astype(np.float32)
+        img = self.transforms(image=img)['image']
         pixel_spacing = torch.randn(2, dtype=torch.float32)
         
         ehr_data = torch.randint(14, 60, (1,1), dtype=torch.float32)
@@ -104,7 +106,7 @@ class PreTermDataset(Dataset):
         
         img = Image.open(data['img_path'])
         img = np.asarray(img)
-        img = self.transform(img)  
+        img = self.transforms(image=img)['image']
         
         pixel_spacing = torch.Tensor(data['pixel_spacing'])
         
