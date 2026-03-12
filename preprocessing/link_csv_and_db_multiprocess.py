@@ -120,8 +120,12 @@ def worker(mother_cpr_i,
                         try:
                             study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
                         except:
-                            error_que.put([entry[-1], 'Img_path - date_not_found_or_wrong_format'])
-                            continue
+                            if entry[-1] is not None:
+                                error_que.put([entry[-1], 'Img_path - date_not_found_or_wrong_format'])
+                                continue
+                            else:
+                                error_que.put([entry[0], 'Img_path - image_missing_on_NGC'])
+                                continue
                         if abs((study_date - birthdate).days) < 280:
                             if entry[-1] is None:
                                 error_que.put([entry[0], 'Img_path - image_missing_on_NGC'])

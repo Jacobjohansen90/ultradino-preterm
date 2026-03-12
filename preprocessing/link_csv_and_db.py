@@ -99,8 +99,10 @@ for row in f_csv:
                     try:
                         study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
                     except:
-                        errors.append([entry[-1], 'Img_path - date_not_found_or_wrong_format'])
-                        print(entry[-1], study_date)
+                        if entry[-1] is not None:
+                            errors.append([entry[-1], 'Img_path - date_not_found_or_wrong_format'])
+                        else:
+                            errors.append([entry[0], 'Img_path - image_missing_on_NGC'])
                         continue
                     if abs((study_date - birthdate).days) < 280:
                         if entry[-1] is None:
