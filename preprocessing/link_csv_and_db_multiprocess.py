@@ -160,6 +160,10 @@ p = mp.Process(target=data_put_worker, args=(working_dir, csv_que, worker_done_q
 p.start()
 processes.append(p)
 
+num_workers = min(num_workers, mp.cpu_count()-4)
+
+logger.info(f"Starting {num_workers} workers - " + str(datetime.now().strftime('%H:%M:%S')))
+
 for i in range(num_workers):
     p = mp.Process(target=worker, args=(mother_cpr_i, child_cpr_i, i_date, variables_from_csv, i_studydate, variables_from_db, working_dir, csv_que, error_que, not_found_que, data_que, worker_done_que))
     p.start()
