@@ -175,6 +175,7 @@ info = {}
 invalid_counter = 0
 n = 0
 while True:
+    print(data_que.qsize())
     if error_que.qsize() > 0:
         error = error_que.get()
         errors.append(error)
