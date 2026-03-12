@@ -175,7 +175,6 @@ info = {}
 invalid_counter = 0
 n = 0
 while True:
-    print(data_que.qsize())
     if error_que.qsize() > 0:
         error = error_que.get()
         errors.append(error)
@@ -227,13 +226,12 @@ with open(working_dir + 'preprocessing/cervix_check.csv', 'w') as file:
     for key in info.keys():
         for img_path in info[key]['img_paths']:
             path = img_path[0]
-            wr.writerow(path)
+            wr.writerow([path])
             img_cpr_link[path] = key
         
 with open(working_dir + 'preprocessing/img_cpr_link.json', 'w') as file:
     json.dump(img_cpr_link, file)
         
-
 for p in processes:
     p.join()
 
