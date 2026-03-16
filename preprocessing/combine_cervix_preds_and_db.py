@@ -19,7 +19,7 @@ f_img_link  = open(img_link_path)
 img_link = json.load(f_img_link)
 
 f_data = open(data_path)
-data = json.load(f_data)
+db_data = json.load(f_data)
     
 f_preds = open(preds_path)
 preds = csv.reader(f_preds)
@@ -30,7 +30,7 @@ cervix_data = {}
 for pred in preds:
     if pred[1] == '14':
         cpr_idx = img_link[pred[0]]
-        data = img_link[pred[0]]
+        data = db_data[img_link[pred[0]]]
         temp = {'cpr_phair_mother': data['cpr_phair_mother'],
                 'cpr_phair_child': data['cpr_phair_child'],
                 'GA_days': data['GA_days'],
@@ -43,6 +43,7 @@ for pred in preds:
                 temp['ps1'] = path[1]
                 temp['ps2'] = path[2]
                 temp['scanner'] = path[3]
+                break
                 
         
         cervix_data[cpr_idx] = temp
