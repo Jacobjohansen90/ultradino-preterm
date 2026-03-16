@@ -11,7 +11,6 @@ from torch.utils.data import Subset, DataLoader
 import numpy as np
 from sklearn.model_selection import train_test_split
 import torch
-from torchmetrics.classification import AUROC, Recall, Precision, Specificity, Accuracy
 
 from dataloader.dataloader import PreTermDataset, DummySet
 from utils.model_loader import model_from_conf
@@ -81,7 +80,6 @@ for epoch in range(conf.training.epochs):
     train_loss = 0
     for data in iter(TrainLoader):
         optimizer.zero_grad()
-        #TODO: Move to(device) into the dataloaders
         outputs = model(data['img'].to(conf.device.type), data['ehr_data'].to(conf.device.type))
         loss = loss_fn(outputs, data['label'].to(conf.device.type))
         loss.backward()
