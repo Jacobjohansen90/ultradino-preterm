@@ -32,6 +32,8 @@ for pred in preds:
         cpr_idx = img_link[pred[0]]
         data = db_data[img_link[pred[0]]]
         print(data['GA_days'], type(data['GA_days']))
+        print(data['cpr_phair_mother'])
+        print()
         temp = {'cpr_phair_mother': data['cpr_phair_mother'],
                 'cpr_phair_child': data['cpr_phair_child'],
                 'GA_days': int(data['GA_days']),
