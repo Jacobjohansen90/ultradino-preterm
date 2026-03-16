@@ -33,8 +33,8 @@ for pred in preds:
         data = db_data[img_link[pred[0]]]
         temp = {'cpr_phair_mother': data['cpr_phair_mother'],
                 'cpr_phair_child': data['cpr_phair_child'],
-                'GA_days': data['GA_days'],
-                'GA_weeks': data['GA_days']//7,
+                'GA_days': int(data['GA_days']),
+                'GA_weeks': int(data['GA_days'])//7,
                 'Age_mother': data['Age_mother']}
         
         for path in data['img_paths']:
