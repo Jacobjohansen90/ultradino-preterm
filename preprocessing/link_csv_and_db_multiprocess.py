@@ -99,6 +99,7 @@ def worker(mother_cpr_i,
         else:    
             temp = {'cpr_phair_mother': cpr_phair_mother}
             temp['cpr_phair_child'] = cpr_phair_child
+            temp['birthdate'] = birthdate
     
             for i in range(len(csv_variables_i)):
                 temp[variables_from_csv[i]] = row[csv_variables_i[i]]
@@ -131,11 +132,11 @@ def worker(mother_cpr_i,
                             if entry[-1] is None:
                                 error_que.put([entry[0], 'Img_path - image_missing_on_NGC'])
                             else:
-                                ps1 = entry[6]
-                                ps2 = entry[7]
+                                pdx = entry[8]
+                                pdy = entry[9]
                                 model = str(entry[3]) + ' - ' + str(entry[4])
                                 img_path = entry[-1]
-                                img_paths.append([img_path, ps1, ps2, model])
+                                img_paths.append([img_path, pdx, pdy, model, study_date])
     
             if len(img_paths) > 0:
                 temp['img_paths'] = img_paths
