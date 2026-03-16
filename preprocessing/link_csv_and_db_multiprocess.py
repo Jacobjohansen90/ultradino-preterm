@@ -6,14 +6,7 @@ Created on Thu Mar 12 14:42:12 2026
 @author: jacob
 """
 
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Feb 24 12:40:03 2026
-
-@author: jacob
-"""
-
+#%% Imports
 import sqlite3
 import csv
 from datetime import datetime
@@ -22,7 +15,22 @@ import logging
 import multiprocessing as mp
 import time
 
+#%% Set variables
+#Number of threads for MP
 num_workers = 60
+
+#Base directory
+working_dir = '/projects/users/data/UCPH/DeepFetal/projects/preterm/'
+
+#We append these variables from the CSV
+variables_from_csv = ['GA_days',
+                      'Age_mother']
+
+#We need these variables form the CSV to link and check which images to take
+child_cpr = 'cpr_child'
+mother_cpr = 'cpr_mother'
+text_date = 'Birthdate'
+
 
 csv_que = mp.Queue()
 error_que = mp.Queue()
@@ -35,19 +43,12 @@ logging.basicConfig(filename="/projects/users/data/UCPH/DeepFetal/projects/prete
 logger = logging.getLogger('link_csv_and_db')
 logger.setLevel(logging.INFO)
 
-variables_from_csv = ['GA_days',
-                      'Age_mother']
-
-working_dir = '/projects/users/data/UCPH/DeepFetal/projects/preterm/'
 
 f = open(working_dir + "Registers/data.csv")
 f_csv = csv.reader(f)
 
 headers = next(f_csv)
 
-child_cpr = 'cpr_child'
-mother_cpr = 'cpr_mother'
-text_date = 'Birthdate'
 
 csv_variables_i = []
 

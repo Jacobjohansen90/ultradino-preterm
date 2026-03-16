@@ -11,11 +11,13 @@ from torch.utils.data import Subset, DataLoader
 import numpy as np
 from sklearn.model_selection import train_test_split
 import torch
+from torchmetrics.classification import AUROC, Recall, Precision, Specificity, Accuracy
 
 from dataloader.dataloader import PreTermDataset, DummySet
 from utils.model_loader import model_from_conf
 from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
 from utils.loss_loader import get_loss
+from utils.metric_loader import get_metrics
 
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
@@ -66,6 +68,8 @@ scheduler = get_cosine_schedule_with_warmup(optimizer, conf, len(TrainLoader))
 
 loss_fn = get_loss(conf)
 
+metrics = get_metrics(conf)
+
 for epoch in range(conf.training.epochs):
     if epoch == conf.training.vit_frozen_until:
         model.unfreeze_model(model.vit_model)
@@ -77,8 +81,9 @@ for epoch in range(conf.training.epochs):
     train_loss = 0
     for data in iter(TrainLoader):
         optimizer.zero_grad()
+        #TODO: Move to(device) into the dataloaders
         outputs = model(data['img'].to(conf.device.type), data['ehr_data'].to(conf.device.type))
-        loss = loss_fn(outputs, data['ga'].to(conf.device.type))
+        loss = loss_fn(outputs, data['label'].to(conf.device.type))
         loss.backward()
 
         train_loss += loss.item() / len(TrainLoader)
@@ -89,9 +94,17 @@ for epoch in range(conf.training.epochs):
     val_loss = 0
     with torch.no_grad():
         for val_data in iter(ValLoader):
-            outputs = model(data['img'].to(conf.device.type), data['ehr_data'].to(conf.device.type))
-            loss = loss_fn(outputs, data['ga'].to(conf.device.type))
+            preds = model(data['img'].to(conf.device.type), data['ehr_data'].to(conf.device.type))
+            labels = data['label'].to(conf.device.type)
+            loss = loss_fn(outputs, labels)
             val_loss += loss.item() / len(ValLoader)
+            
+            for key in metrics.keys():
+                metrics[key](preds, labels)
+            
+    for key in metrics.keys():
+        print(metrics[key].compute())
+        metrics[key].reset()
     print(val_loss)
     print(train_loss)
             

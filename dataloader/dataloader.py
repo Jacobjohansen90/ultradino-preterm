@@ -59,21 +59,23 @@ class DummySet(Dataset):
         
         ehr_data = torch.randint(14, 60, (1,1), dtype=torch.float32)
         
-        ga = torch.randint(25, 50, (1,), dtype=torch.float32)
+        label = torch.round(torch.rand((1,), dtype=torch.float32))
         
-        return {'img': img, 'pixel_spacing': pixel_spacing, 'ehr_data': ehr_data, 'ga': ga}
+        return {'img': img, 'pixel_spacing': pixel_spacing, 'ehr_data': ehr_data, 'label': label}
         
 class PreTermDataset(Dataset):
     def __init__(self,
                  csv_path,
                  train,
                  resize=[224,224],
-                 ehr_data=['mothers_age']):
+                 ehr_data=['mothers_age'],
+                 ga_cutoff=34):
 
         super().__init__()
         self.df = pd.read_csv(csv_path)
         self.resize = resize
         self.ehr_data = ehr_data
+        self.ga_cutoff = ga_cutoff
 
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424        
@@ -119,4 +121,6 @@ class PreTermDataset(Dataset):
         
         ga = torch.Tensor(data['ga'])        
         
-        return {'img': img, 'pixel_spacing': pixel_spacing, 'ehr_data': ehr_data, 'ga': ga}
+        label = 1.*(ga <= self.ga_cutoff)
+        
+        return {'img': img, 'pixel_spacing': pixel_spacing, 'ehr_data': ehr_data, 'label': label}
