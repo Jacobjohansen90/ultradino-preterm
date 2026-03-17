@@ -52,7 +52,7 @@ You will likely want to do something smarter like looping over the headers
 
 #%% Define worker functions
 
-def csv_extracter(path_to_csv, csv_que, done):
+def csv_extracter(path_to_csv, csv_que, done, csv_size):
     """
     This function loads the CSV info, including the phair_cpr_hash
 
@@ -69,6 +69,8 @@ def csv_extracter(path_to_csv, csv_que, done):
     f_csv = csv.reader(f)
     #Load headers and throw them away
     _ = next(f_csv)
+    
+    csv_size.value = sum(1 for line in f_csv)
     
     for row in f_csv:
         csv_que.put(row)
@@ -164,6 +166,8 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
                         else:
                             for key in db_idx.keys():
                                 img_temp[key] = entry[db_idx[key]]
+                        imgs.append(img_temp)
+
             if len(imgs) > 0:
                 data_temp['imgs'] = imgs
                 data_que.put(data_temp)
@@ -179,6 +183,7 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
 csv_que = mp.Queue()
 data_que = mp.Queue()
 done = mp.Value('b', False)
+csv_size = mp.Value('i', 0)
 
 
 logging.basicConfig(filename="/some/path/log.log", filemode='w')
@@ -213,7 +218,7 @@ counter = 0
 #Be aware that the mothers cpr phair hash might have multiple entries and result in collisions
 #Using the childs cpr phair hash is a safe option with no collisions
 
-while data_que.qsize() > 0 and not done.value:
+while counter < csv_size.value:
     data = data_que.get()
     final_data[str(counter)] = data
     counter += 1
