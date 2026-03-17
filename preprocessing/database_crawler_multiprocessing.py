@@ -64,6 +64,8 @@ def csv_extracter(path_to_csv, csv_que, done, csv_size):
         mp.Queue where we put the extracted csv rows
     done : mp.Value
         shared memory across processes telling the crawlers the csv_extractor is done
+    csv_size : mp.Value
+        shared memory across processes telling the main proccess how many data entries to expect
     """
     f = open(path_to_csv)
     f_csv = csv.reader(f)
@@ -212,7 +214,7 @@ for i in range(num_workers):
 #You might want to do something else / more
 
 final_data = {}
-counter = 0
+counter = 1
 
 #Here we use a dummy index - counter
 #Be aware that the mothers cpr phair hash might have multiple entries and result in collisions

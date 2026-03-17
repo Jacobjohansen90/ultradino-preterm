@@ -21,29 +21,30 @@ import time
 num_workers = 60
 
 #Base directory
-path_to_csv = '/projects/users/data/UCPH/DeepFetal/projects/preterm/Registers/data.csv'
-path_to_db = '/projects/users/data/UCPH/DeepFetal/projects/preterm/Registers/ultrasound_metadata_db.sqlite'
-save_path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/preprocessing/'
+path_to_csv = '/projects/users/data/UCPH/DeepFetal/projects/preterm/registers/data.csv'
+path_to_db = '/projects/users/data/UCPH/DeepFetal/projects/preterm/registers/ultrasound_metadata_db.sqlite'
+save_path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/data/'
 
 #CSV indexes we want in the final output
 variables_from_csv = ['GA_days',
                       'Age_mother',
                       'cpr_child',
-                      'cpr_mother'
-                      'birthdate']
+                      'cpr_mother',
+                      'Birthdate']
 
 #Sqlite database indexes we want in the final output
 db_idx = {'img_path': -1,
           'sonai_path': 0,
           'manufactor': 3,
           'scanner_type': 4,
+          'studydate': 5,
           'pdx': 8,
           'pdy': 9}
 
 
 #%% Define worker functions
 
-def csv_extracter(path_to_csv, csv_que, done, csv_size):
+def csv_extracter(path_to_csv, csv_que, done):
     """
     This function loads the CSV info, including the phair_cpr_hash
 
@@ -60,8 +61,6 @@ def csv_extracter(path_to_csv, csv_que, done, csv_size):
     f_csv = csv.reader(f)
     #Load headers and throw them away
     _ = next(f_csv)
-    
-    csv_size.value = sum(1 for line in f_csv)
 
     for row in f_csv:
         csv_que.put(row)
@@ -82,7 +81,7 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
         cpr_mother = row[csv_idx['cpr_mother']]
         cpr_child = row[csv_idx['cpr_child']]
 
-        birthdate = datetime.strptime(str(row[csv_idx['birthdate']]).replace("-",""), "%Y%m%d").date()
+        birthdate = datetime.strptime(str(row[csv_idx['Birthdate']]).replace("-",""), "%Y%m%d").date()
         
         query = f"SELECT xxhash FROM cpr_hashes WHERE phair_hash = '{cpr_mother}'"
         cpr_hashes = list(cur.execute(query))
@@ -139,13 +138,19 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
 
 
 #%% Setup ques, loggers and start processes
-f = open(path_to_csv)
-f_csv = csv.reader(f)
-headers = next(f_csv)
-f.close()
+csv_que = mp.Queue()
+data_que = mp.Queue()
+done = mp.Value('b', False)
+csv_size = mp.Value('i', 0)
 
 csv_idx = {}
 
+
+f = open(path_to_csv)
+f_csv = csv.reader(f)
+headers = next(f_csv)
+csv_size.value = sum(1 for line in f_csv)
+f.close()
 for i in range(len(headers)):
     for variable in variables_from_csv:
         if headers[i] == variable:
@@ -153,13 +158,9 @@ for i in range(len(headers)):
 
 if len(variables_from_csv) != len(csv_idx):
     found = list(csv_idx.keys())
-    diff = list(set(found) - set(variables_from_csv))
+    diff = list(set(variables_from_csv) - set(found))
     raise Exception(f"Did not find variables {diff} in CSV")
 
-csv_que = mp.Queue()
-data_que = mp.Queue()
-done = mp.Value('b', False)
-csv_size = mp.Value('i', 0)
 
 logging.basicConfig(filename="/projects/users/data/UCPH/DeepFetal/projects/preterm/preprocess.log", filemode='w')
 logger = logging.getLogger('link_csv_and_db')
@@ -170,7 +171,7 @@ num_workers = min(num_workers, mp.cpu_count()-4)
 logger.info(f"Starting {num_workers} workers - " + str(datetime.now().strftime('%H:%M:%S')))
 
 processes = []
-p = mp.Process(target=csv_extracter, args=(path_to_csv, csv_que, done))
+p = mp.Process(target=csv_extracter, args=(path_to_csv, csv_que, done, csv_size))
 p.start()
 processes.append(p)
 
@@ -192,19 +193,18 @@ while n < csv_size.value:
     if n % 1000 == 0:
         logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))
 
+    data = data_que.get()
+    if data[0] == 'error':
+        errors.append(data[1])
+    elif data[0] == 'not_found':
+        n += 1
+        not_found.append(data[1])
     else:
-        data = data_que.get()
-        if data[0] == 'error':
-            errors.append(data[1])
-        elif data[0] == 'not_found':
-            n += 1
-            not_found.append(data[1])
-        else:
-            final_data[data[0]] = data[1]
-            n += 1
+        final_data[data[0]] = data[1]
+        n += 1
             
 
-with open(save_path + 'missing.csv', 'w', newline='') as file:
+with open(save_path + 'misc/missing.csv', 'w', newline='') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
     wr.writerow(["cpr_phair_mother", "cpr_phair_child", "error"])
     for row in not_found:
