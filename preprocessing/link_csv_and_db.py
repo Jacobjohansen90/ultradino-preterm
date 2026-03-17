@@ -202,7 +202,11 @@ while n < csv_size.value:
         if n % 1000 == 0:
             logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))
     else:
-        final_data[data[0]] = data[1]
+        if data[0] == 'INVALID':
+            final_data['child_' + str(invalid_counter)] = data[1]
+            invalid_counter += 1
+        else:
+            final_data[data[0]] = data[1]
         n += 1
         if n % 1000 == 0:
             logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))            
@@ -219,7 +223,7 @@ with open(save_path + 'logs/errors.csv', 'w', newline='') as file:
     for row in errors:
         wr.writerow(row)
 
-with open(save_path + 'database_crawl.json', 'w') as file:
+with open(save_path + 'all_data.json', 'w') as file:
     json.dump(final_data, file)
     
 with open(save_path + 'image_list.csv', 'w') as file:
