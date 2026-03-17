@@ -36,14 +36,16 @@ for pred in preds:
                     'cpr_phair_child': data['cpr_phair_child'],
                     'GA_days': int(data['GA_days']),
                     'GA_weeks': int(data['GA_days'])//7,
-                    'Age_mother': data['Age_mother']}
+                    'age_mother': data['Age_mother'],
+                    'birthday': data['birthday']}
             
             for path in data['img_paths']:
                 if path[0] == pred[0]:
                     temp['img_path'] = path[0]
-                    temp['ps1'] = path[1]
-                    temp['ps2'] = path[2]
+                    temp['pdx'] = path[1]
+                    temp['pdy'] = path[2]
                     temp['scanner'] = path[3]
+                    temp['studydate'] = path[4]
                     break
                     
             
