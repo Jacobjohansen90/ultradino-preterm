@@ -12,16 +12,22 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import torch
 
+
 from dataloader.dataloader import PreTermDataset, DummySet
 from utils.model_loader import model_from_conf
 from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
 from utils.loss_loader import get_loss
 from utils.metric_loader import get_metrics
+from utils.documentation import setup, Logger
 
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
 
 conf = OmegaConf.load("./confs/append_tokens_vitb16.yaml")
+
+save_path = setup(conf)
+
+logger = Logger(save_path)
 
 #%% Setup dataloaders and models
 
@@ -62,11 +68,8 @@ model.freeze_model(model.ehr_model)
 #%% Setup finetuning
 
 optimizer = get_optimizer(model, conf)
-
 scheduler = get_cosine_schedule_with_warmup(optimizer, conf, len(TrainLoader))
-
 loss_fn = get_loss(conf)
-
 metrics = get_metrics(conf)
 
 for epoch in range(conf.training.epochs):
@@ -99,11 +102,11 @@ for epoch in range(conf.training.epochs):
             
             for key in metrics.keys():
                 metrics[key](preds, labels)
-            
-    for key in metrics.keys():
-        print(metrics[key].compute())
-        metrics[key].reset()
-    print(val_loss)
-    print(train_loss)
-            
+    
+
+    torch.save(model.state_dict(), save_path + '/weights/' + str(epoch).zfill(3) + '.pth')        
+    
+    logger.log_metrics(metrics, train_loss, val_loss)
+    logger.plot_metrics()
+   
         

@@ -9,9 +9,9 @@ Created on Mon Mar 16 13:27:47 2026
 import csv
 import json
 
-preds_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/preprocessing/cervix_preds.csv"
-img_link_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/preprocessing/img_cpr_link.json"
-data_path =  "/projects/users/data/UCPH/DeepFetal/projects/preterm/preprocessing/data.json"
+preds_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/data/cervix_preds.csv"
+img_link_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/data/img_cpr_link.json"
+data_path =  "/projects/users/data/UCPH/DeepFetal/projects/preterm/data/all_data.json"
 save_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/preprocessing/"
 
 

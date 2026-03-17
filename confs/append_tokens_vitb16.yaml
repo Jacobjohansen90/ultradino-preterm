@@ -24,7 +24,7 @@ model:
     weights_path: 
   
   ehr:
-    weights_path: /home/jacob/Desktop/NAS/Work/PreTerm/Weights/ehr.pt
+    weights_path: /home/jacob/Desktop/NAS/Work/PreTerm/weights/ehr.pt
   
   ehr_transform:
     layer_dims: [256]
