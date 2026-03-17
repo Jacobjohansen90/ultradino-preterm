@@ -52,7 +52,7 @@ You will likely want to do something smarter like looping over the headers
 
 #%% Define worker functions
 
-def csv_extracter(path_to_csv, csv_que, done, csv_size):
+def csv_extracter(path_to_csv, csv_que, done):
     """
     This function loads the CSV info, including the phair_cpr_hash
 
@@ -64,16 +64,12 @@ def csv_extracter(path_to_csv, csv_que, done, csv_size):
         mp.Queue where we put the extracted csv rows
     done : mp.Value
         shared memory across processes telling the crawlers the csv_extractor is done
-    csv_size : mp.Value
-        shared memory across processes telling the main proccess how many data entries to expect
     """
     f = open(path_to_csv)
     f_csv = csv.reader(f)
     #Load headers and throw them away
     _ = next(f_csv)
-    
-    csv_size.value = sum(1 for line in f_csv)
-    
+        
     for row in f_csv:
         csv_que.put(row)
         #Avoid flooding the queue. Not strictly necessary, but preserve memory
@@ -105,7 +101,7 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
     con = sqlite3.connect(path_to_db)
     cur = con.cursor()
     #Loop
-    while not done.value and csv_que.qsize() > 0:
+    while not done.value or csv_que.qsize() > 0:
         #Get row, extract cpr_phair_hash and link to database
         row = csv_que.get()
         cpr_phair_mother = row[csv_idx['cpr_phair_mother']]
@@ -187,6 +183,11 @@ data_que = mp.Queue()
 done = mp.Value('b', False)
 csv_size = mp.Value('i', 0)
 
+f = open(path_to_csv)
+f_csv = csv.reader(f)
+headers = next(f_csv) #use these headers to automatically infer the csv_idx
+csv_size.value = sum(1 for line in f_csv) #set csv_size based on lines in csv
+f.close()
 
 logging.basicConfig(filename="/some/path/log.log", filemode='w')
 logger = logging.getLogger("Database_extractor")

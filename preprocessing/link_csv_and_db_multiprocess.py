@@ -76,7 +76,7 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
 
     con = sqlite3.connect(path_to_db)
     cur = con.cursor()
-    while not done.value and csv_que.qsize() > 0:
+    while not done.value or csv_que.qsize() > 0:
         row = csv_que.get()
         cpr_mother = row[csv_idx['cpr_mother']]
         cpr_child = row[csv_idx['cpr_child']]
@@ -151,6 +151,7 @@ f_csv = csv.reader(f)
 headers = next(f_csv)
 csv_size.value = sum(1 for line in f_csv)
 f.close()
+
 for i in range(len(headers)):
     for variable in variables_from_csv:
         if headers[i] == variable:
@@ -162,7 +163,7 @@ if len(variables_from_csv) != len(csv_idx):
     raise Exception(f"Did not find variables {diff} in CSV")
 
 
-logging.basicConfig(filename="/projects/users/data/UCPH/DeepFetal/projects/preterm/preprocess.log", filemode='w')
+logging.basicConfig(filename=save_path + 'logs/database_linker.log', filemode='w')
 logger = logging.getLogger('link_csv_and_db')
 logger.setLevel(logging.INFO)
 
@@ -171,7 +172,7 @@ num_workers = min(num_workers, mp.cpu_count()-4)
 logger.info(f"Starting {num_workers} workers - " + str(datetime.now().strftime('%H:%M:%S')))
 
 processes = []
-p = mp.Process(target=csv_extracter, args=(path_to_csv, csv_que, done, csv_size))
+p = mp.Process(target=csv_extracter, args=(path_to_csv, csv_que, done))
 p.start()
 processes.append(p)
 
@@ -190,36 +191,38 @@ invalid_counter = 0
 n = 1
 
 while n < csv_size.value:
-    if n % 1000 == 0:
-        logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))
 
     data = data_que.get()
+
     if data[0] == 'error':
         errors.append(data[1])
     elif data[0] == 'not_found':
         n += 1
         not_found.append(data[1])
+        if n % 1000 == 0:
+            logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))
     else:
         final_data[data[0]] = data[1]
         n += 1
-            
+        if n % 1000 == 0:
+            logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))            
 
-with open(save_path + 'misc/missing.csv', 'w', newline='') as file:
+with open(save_path + 'logs/missing.csv', 'w', newline='') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
     wr.writerow(["cpr_phair_mother", "cpr_phair_child", "error"])
     for row in not_found:
         wr.writerow(row)
 
-with open(save_path + 'errors.csv', 'w', newline='') as file:
+with open(save_path + 'logs/errors.csv', 'w', newline='') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
     wr.writerow(["info", "error"])
     for row in errors:
         wr.writerow(row)
 
-with open(save_path + 'data.json', 'w') as file:
+with open(save_path + 'database_crawl.json', 'w') as file:
     json.dump(final_data, file)
     
-with open(save_path + 'cervix_check.csv', 'w') as file:
+with open(save_path + 'image_list.csv', 'w') as file:
     wr = csv.writer(file)
     wr.writerow(["filename"])
     for key in final_data.keys():
