@@ -36,9 +36,16 @@ d = csv.reader(f)
 
 headers = next(d)
 
-missing = sum(1 for line in d)
+stats['n_missing_in_database'] = 0
 
-stats['n_missing_in_database'] = missing
+for row in d:
+    stats['n_missing_in_database'] += 1
+    if row[2] not in stats.keys():
+        stats[row[2]] = 1
+    else:
+        stats[row[2]] += 1
+
+stats['unaccounted_for'] = stats['total_births'] - stats['n_in_database'] - stats['n_missing_in_database']
 
 f.close()
 #%%Count images
@@ -72,7 +79,7 @@ for row in d:
 f = open(path + 'data/cervix_data.json')
 d = json.load(f)
 
-stats['has_cervix'] = len(d)
+stats['is_cervix'] = len(d)
 
 f.close()
 
