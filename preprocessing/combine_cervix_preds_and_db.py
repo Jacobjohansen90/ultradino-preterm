@@ -41,11 +41,11 @@ for pred in preds:
             temp = {}
             for key in data.keys():
                 if key == 'imgs':
-                    for img in data['imgs']:
+                    for img in data[key]:
                         if img['img_path'] == pred[0]:
                             for key in img.keys():
                                 temp[key] = img[key]
-                        break
+                            break
                 else:
                     temp[key] = data[key]
                                
