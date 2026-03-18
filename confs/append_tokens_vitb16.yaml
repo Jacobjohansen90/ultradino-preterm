@@ -21,7 +21,7 @@ auxiliary:
 model:
   vit:
     type: vitb16
-    weights_path: 
+    weights_path: #/projects/users/data/UCPH/DeepFetal/projects/UltraDino/experiments/vitb16_dinus_preterm_rtc_short/V1/pretrain/model_final.rank_0.pth
   
   ehr:
     weights_path: /home/jacob/Desktop/NAS/Work/PreTerm/weights/ehr.pt
