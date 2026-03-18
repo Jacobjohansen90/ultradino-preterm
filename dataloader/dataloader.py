@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 import albumentations as A
+import json
 
 
 FUS13M_MEAN = 0.1842924807
@@ -65,14 +66,17 @@ class DummySet(Dataset):
         
 class PreTermDataset(Dataset):
     def __init__(self,
-                 csv_path,
+                 dict_path,
                  train,
                  resize=[224,224],
-                 ehr_data=['mothers_age'],
+                 ehr_data=['Age_mother'],
                  ga_cutoff=34):
 
         super().__init__()
-        self.df = pd.read_csv(csv_path)
+        f = open(dict_path)
+        d = json.load(f)
+        df = pd.DataFrame.from_dict(d)
+        self.df = df.T
         self.resize = resize
         self.ehr_data = ehr_data
         self.ga_cutoff = ga_cutoff
@@ -110,7 +114,7 @@ class PreTermDataset(Dataset):
         img = np.asarray(img)
         img = self.transforms(image=img)['image']
         
-        pixel_spacing = torch.Tensor(data['pixel_spacing'])
+        img_data = torch.Tensor(data['pdx'], data['pdy'])
         
         ehr_data = []
         
@@ -119,8 +123,8 @@ class PreTermDataset(Dataset):
         
         ehr_data = torch.Tensor(ehr_data)
         
-        ga = torch.Tensor(data['ga'])        
+        ga = torch.Tensor(data['GA_days']//7)        
         
         label = 1.*(ga <= self.ga_cutoff)
         
-        return {'img': img, 'pixel_spacing': pixel_spacing, 'ehr_data': ehr_data, 'label': label}
+        return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'label': label}
