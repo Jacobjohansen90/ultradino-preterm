@@ -36,24 +36,24 @@ for pred in preds:
         img = pred[0]
         data = db_data[img_link[img]]
         
-        try:
-            temp = {'cpr_mother': data['cpr_mother'],
-                    'cpr_child': data['cpr_child'],
-                    'GA_days': int(data['GA_days']),
-                    'GA_weeks': int(data['GA_days'])//7,
-                    'Age_mother': data['Age_mother'],
-                    'Birthday': data['Birthday']}
-            
-            for img in data['imgs']:
-                if img['img_path'] == pred[0]:
-                    for key in img.keys():
-                        temp[key] = img[key]
-                    break
+        if data['GA_days'] == '.':
+            wrong_ga.append([img_link[img], data['GA_days']])
+        else:
+            temp = {}
+            for key in data.keys():
+                if key == 'imgs':
+                    for img in data['imgs']:
+                        if img['img_path'] == pred[0]:
+                            for key in img.keys():
+                                temp[key] = img[key]
+                        break
+                elif key == 'GA_days':
+                    temp[key] = int(data[key])
+                    temp['GA_weeks'] = int(data[key])//7
+                else:
+                    temp[key] = data[key]
                                
             cervix_data[img] = temp
-
-        except:
-            wrong_ga.append([img_link[img], data['GA_days']])
         
 f_img_link.close()
 f_data.close()
