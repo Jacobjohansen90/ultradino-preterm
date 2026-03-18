@@ -23,7 +23,7 @@ f_preds = open(path + 'cervix_preds.csv')
 preds = csv.reader(f_preds)
 
 f_holdout = open(holdout_path)  
-holdout = csv.reader(f_holdout)  
+holdout_list = csv.reader(f_holdout)  
 
 headers = next(preds)
 
@@ -34,7 +34,7 @@ holdout = []
 wrong_ga = []
 
 for row in holdout:
-    holdout.append(row[0])
+    holdout_list.append(row[0])
 
 for pred in preds:
     if pred[1] == '14':
@@ -64,7 +64,7 @@ with open(save_path + 'cervix_data_all.json', 'w') as f:
     json.dump(cervix_data_all, f)
 
 for key in cervix_data_all.keys():
-    if key in holdout:
+    if key in holdout_list:
         holdout[key] = cervix_data_all[key]
     else:
         cervix_data[key] = cervix_data_all[key]
