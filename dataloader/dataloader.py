@@ -117,14 +117,15 @@ class PreTermDataset(Dataset):
             ehr_data.append(float(data[key]))
         ehr_data = torch.Tensor(ehr_data)
         
-        ga_weeks = torch.Tensor(int(data['GA_days'])//7)        
+        ga_weeks = int(data['GA_days'])//7        
         
-        label = 1.*(ga_weeks <= self.ga_cutoff)
+        label = ga_weeks <= self.ga_cutoff
+        
+        torch.Tensor([label*1])
         
         return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'label': label}
     
 def collate_fn(batch):
-    print(list(x['label'] for x in batch))
     return {'img': torch.stack([x['img'] for x in batch]),
             'img_data': torch.stack([x['img_data'] for x in batch]),
             'ehr_data': torch.stack([x['ehr_data'] for x in batch]),
