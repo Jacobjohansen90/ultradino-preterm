@@ -14,7 +14,7 @@ path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/data/"
 preds_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/data/cervix_preds.csv"
 img_link_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/data/img_cpr_link.json"
 data_path =  "/projects/users/data/UCPH/DeepFetal/projects/preterm/data/all_data.json"
-save_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/preprocessing/"
+save_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/data/"
 
 
 f_img_link  = open(path + 'img_cpr_link.json')
@@ -33,16 +33,16 @@ wrong_ga = []
 
 for pred in preds:
     if pred[1] == '14':
-        cpr_idx = img_link[pred[0]]
-        data = db_data[cpr_idx]
+        img = pred[0]
+        data = db_data[img_link[img]]
         
         try:
             temp = {'cpr_mother': data['cpr_mother'],
                     'cpr_child': data['cpr_child'],
                     'GA_days': int(data['GA_days']),
                     'GA_weeks': int(data['GA_days'])//7,
-                    'age_mother': data['Age_mother'],
-                    'birthday': data['birthday']}
+                    'Age_mother': data['Age_mother'],
+                    'Birthday': data['Birthday']}
             
             for img in data['imgs']:
                 if img['img_path'] == pred[0]:
@@ -50,10 +50,10 @@ for pred in preds:
                         temp[key] = img[key]
                     break
                                
-            cervix_data[cpr_idx] = temp
+            cervix_data[img] = temp
 
         except:
-            wrong_ga.append([cpr_idx, data['GA_days']])
+            wrong_ga.append([img_link[img], data['GA_days']])
         
 f_img_link.close()
 f_data.close()
@@ -62,7 +62,7 @@ f_preds.close()
 with open(save_path + 'cervix_data.json', 'w') as f:
     json.dump(cervix_data, f)
 
-with open(save_path + 'ga_error.csv', 'w') as f:
+with open(save_path + 'logs/ga_error.csv', 'w') as f:
     writer = csv.writer(f)
     writer.writerows(wrong_ga)
 
