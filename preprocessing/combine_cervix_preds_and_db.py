@@ -47,9 +47,6 @@ for pred in preds:
                             for key in img.keys():
                                 temp[key] = img[key]
                         break
-                elif key == 'GA_days':
-                    temp[key] = int(data[key])
-                    temp['GA_weeks'] = int(data[key])//7
                 else:
                     temp[key] = data[key]
                                
