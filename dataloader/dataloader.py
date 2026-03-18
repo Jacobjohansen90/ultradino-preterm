@@ -109,7 +109,7 @@ class PreTermDataset(Dataset):
         img = np.asarray(img)
         img = self.transforms(image=img)['image']
         
-        img_data = torch.Tensor(data['pdx'], data['pdy'])
+        img_data = torch.Tensor([data['pdx'], data['pdy']])
         
         ehr_data = []
         
