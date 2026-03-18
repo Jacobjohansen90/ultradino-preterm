@@ -66,13 +66,13 @@ f_preds.close()
 f_holdout.close()
 
 with open(save_path + 'cervix_data_all.json', 'w') as f:
-    json.dump(cervix_data, f)
+    json.dump(cervix_data_all, f)
 
 with open(save_path + 'holdout_data.json', 'w') as f:
     json.dump(cervix_data, f)
 
 with open(save_path + 'cervix_data.json', 'w') as f:
-    json.dump(cervix_data, f)
+    json.dump(holdout_data, f)
 
 
 with open(save_path + 'logs/ga_error.csv', 'w') as f:
