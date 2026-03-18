@@ -121,7 +121,7 @@ class PreTermDataset(Dataset):
         
         label = ga_weeks <= self.ga_cutoff
         
-        torch.Tensor([label*1])
+        torch.Tensor([label*1.])
         
         return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'label': label}
     
