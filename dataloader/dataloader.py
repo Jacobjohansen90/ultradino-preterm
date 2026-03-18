@@ -72,9 +72,9 @@ class PreTermDataset(Dataset):
         d = json.load(f)
         df = pd.DataFrame.from_dict(d)
         self.df = df.T
-        self.resize = conf.size
-        self.ehr_data = conf.ehr_data
-        self.ga_cutoff = conf.ga_cutoff_weeks
+        self.resize = conf.data.size
+        self.ehr_data = conf.data.ehr_data
+        self.ga_cutoff = conf.data.ga_cutoff_weeks
 
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424        
