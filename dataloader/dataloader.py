@@ -117,7 +117,7 @@ class PreTermDataset(Dataset):
             ehr_data.append(float(data[key]))
         ehr_data = torch.Tensor(ehr_data)
         
-        ga_weeks = torch.Tensor(data['GA_days']//7)        
+        ga_weeks = torch.Tensor(int(data['GA_days'])//7)        
         
         label = 1.*(ga_weeks <= self.ga_cutoff)
         
