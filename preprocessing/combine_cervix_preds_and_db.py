@@ -9,50 +9,51 @@ Created on Mon Mar 16 13:27:47 2026
 import csv
 import json
 
+path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/data/"
+
 preds_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/data/cervix_preds.csv"
 img_link_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/data/img_cpr_link.json"
 data_path =  "/projects/users/data/UCPH/DeepFetal/projects/preterm/data/all_data.json"
 save_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/preprocessing/"
 
 
-f_img_link  = open(img_link_path)
+f_img_link  = open(path + 'img_cpr_link.json')
 img_link = json.load(f_img_link)
 
-f_data = open(data_path)
+f_data = open(path + 'all_data.json')
 db_data = json.load(f_data)
     
-f_preds = open(preds_path)
+f_preds = open(path + 'cervix_preds.csv')
 preds = csv.reader(f_preds)
     
 headers = next(preds)
+
 cervix_data = {}
 wrong_ga = []
+
 for pred in preds:
     if pred[1] == '14':
         cpr_idx = img_link[pred[0]]
-        data = db_data[img_link[pred[0]]]
+        data = db_data[cpr_idx]
+        
         try:
-            temp = {'cpr_phair_mother': data['cpr_phair_mother'],
-                    'cpr_phair_child': data['cpr_phair_child'],
+            temp = {'cpr_mother': data['cpr_mother'],
+                    'cpr_child': data['cpr_child'],
                     'GA_days': int(data['GA_days']),
                     'GA_weeks': int(data['GA_days'])//7,
                     'age_mother': data['Age_mother'],
                     'birthday': data['birthday']}
             
-            for path in data['img_paths']:
-                if path[0] == pred[0]:
-                    temp['img_path'] = path[0]
-                    temp['pdx'] = path[1]
-                    temp['pdy'] = path[2]
-                    temp['scanner'] = path[3]
-                    temp['studydate'] = path[4]
+            for img in data['imgs']:
+                if img['img_path'] == pred[0]:
+                    for key in img.keys():
+                        temp[key] = img[key]
                     break
-                    
-            
+                               
             cervix_data[cpr_idx] = temp
+
         except:
             wrong_ga.append([cpr_idx, data['GA_days']])
-        
         
 f_img_link.close()
 f_data.close()
