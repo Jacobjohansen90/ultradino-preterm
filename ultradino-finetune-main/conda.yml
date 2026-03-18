@@ -1,0 +1,2 @@
+dependencies:
+  - "python=3.12" # Some prospective production environments require 3.12
