@@ -5,10 +5,13 @@ defaults:
   - _self_
 
 data:
-  path: path_to_csv.csv
-  batch_size: 16
+  path: /projects/users/data/UCPH/DeepFetal/projects/preterm/data/cervix_data.json
+  batch_size: 64
   val_frac: 0.05
   workers: 32
+  ga_cutoff_weeks: 34
+  ehr_data: ['Age_mother']
+  size: [224, 224]
 
 training:
   epochs: 15
@@ -21,10 +24,10 @@ auxiliary:
 model:
   vit:
     type: vitb16
-    weights_path: #/projects/users/data/UCPH/DeepFetal/projects/UltraDino/experiments/vitb16_dinus_preterm_rtc_short/V1/pretrain/model_final.rank_0.pth
+    weights_path: /projects/users/data/UCPH/DeepFetal/projects/UltraDino/experiments/vitb16_dinus_preterm_rtc_short/V1/pretrain/model_final.rank_0.pth
   
   ehr:
-    weights_path: /home/jacob/Desktop/NAS/Work/PreTerm/weights/ehr.pt
+    weights_path: 
   
   ehr_transform:
     layer_dims: [256]

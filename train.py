@@ -31,11 +31,11 @@ logger = Logger(save_path)
 
 #%% Setup dataloaders and models
 
-TrainData = DummySet(train=True)
-ValData = DummySet(train=False)
+#TrainData = DummySet(train=True)
+#ValData = DummySet(train=False)
 
-# TrainData = PreTermDataset(conf.data.path, train=True)
-# ValData = PreTermDataset(conf.data.path, train=False)
+TrainData = PreTermDataset(conf, train=True)
+ValData = PreTermDataset(conf, train=False)
 
 
 train_split, val_split = train_test_split(np.arange(len(TrainData)), 

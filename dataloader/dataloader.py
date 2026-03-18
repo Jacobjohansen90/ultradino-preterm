@@ -65,21 +65,16 @@ class DummySet(Dataset):
         return {'img': img, 'pixel_spacing': pixel_spacing, 'ehr_data': ehr_data, 'label': label}
         
 class PreTermDataset(Dataset):
-    def __init__(self,
-                 dict_path,
-                 train,
-                 resize=[224,224],
-                 ehr_data=['Age_mother'],
-                 ga_cutoff=34):
+    def __init__(self, conf, train):
 
         super().__init__()
-        f = open(dict_path)
+        f = open(conf.data.path)
         d = json.load(f)
         df = pd.DataFrame.from_dict(d)
         self.df = df.T
-        self.resize = resize
-        self.ehr_data = ehr_data
-        self.ga_cutoff = ga_cutoff
+        self.resize = conf.size
+        self.ehr_data = conf.ehr_data
+        self.ga_cutoff = conf.ga_cutoff_weeks
 
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424        
@@ -123,8 +118,8 @@ class PreTermDataset(Dataset):
         
         ehr_data = torch.Tensor(ehr_data)
         
-        ga = torch.Tensor(data['GA_days']//7)        
+        ga_weeks = torch.Tensor(data['GA_days']//7)        
         
-        label = 1.*(ga <= self.ga_cutoff)
+        label = 1.*(ga_weeks <= self.ga_cutoff)
         
         return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'label': label}
