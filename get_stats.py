@@ -89,5 +89,5 @@ f.close()
 
 f = open(path + 'stats.txt', 'w')
 for key, stat in stats.items():
-    f.write(f"{key} : {stat}")
+    f.write(f"{key} : {stat}\n")
 
