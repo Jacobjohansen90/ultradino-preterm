@@ -124,6 +124,7 @@ class PreTermDataset(Dataset):
         return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'label': label}
     
 def collate_fn(batch):
+    print(x['label'] for x in batch)
     return {'img': torch.stack([x['img'] for x in batch]),
             'img_data': torch.stack([x['img_data'] for x in batch]),
             'ehr_data': torch.stack([x['ehr_data'] for x in batch]),
