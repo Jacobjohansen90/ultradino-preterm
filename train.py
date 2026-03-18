@@ -11,7 +11,7 @@ from torch.utils.data import Subset, DataLoader
 import numpy as np
 from sklearn.model_selection import train_test_split
 import torch
-
+from tqdm import tqdm
 
 from dataloader.dataloader import PreTermDataset, DummySet, collate_fn
 from utils.model_loader import model_from_conf
@@ -83,7 +83,7 @@ for epoch in range(conf.training.epochs):
 
     model.train(True)
     train_loss = 0
-    for data in iter(TrainLoader):
+    for i, data in enumerate(tqdm(TrainLoader)):
         optimizer.zero_grad()
         outputs = model(data['img'].to(conf.device.type), data['ehr_data'].to(conf.device.type))
         loss = loss_fn(outputs, data['label'].to(conf.device.type))
