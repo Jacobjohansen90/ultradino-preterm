@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 import torch
 
 
-from dataloader.dataloader import PreTermDataset, DummySet
+from dataloader.dataloader import PreTermDataset, DummySet, collate_fn
 from utils.model_loader import model_from_conf
 from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
 from utils.loss_loader import get_loss
@@ -51,14 +51,16 @@ TrainLoader = DataLoader(TrainData,
                          shuffle=True,
                          pin_memory=True,
                          drop_last=True,
-                         num_workers=conf.data.workers)
+                         num_workers=conf.data.workers,
+                         collate_fn=collate_fn)
 
 ValLoader = DataLoader(ValData,
                        conf.data.batch_size,
                        shuffle=False,
                        pin_memory=False,
                        drop_last=False,
-                       num_workers=conf.data.workers)
+                       num_workers=conf.data.workers,
+                       collate_fn=collate_fn)
 
 
 model = model_from_conf(conf)
