@@ -72,7 +72,7 @@ class PreTermDataset(Dataset):
         d = json.load(f)
         df = pd.DataFrame.from_dict(d)
         self.df = df.T
-        self.resize = conf.data.size
+        self.img_size = conf.data.size
         self.ehr_data = conf.data.ehr_data
         self.ga_cutoff = conf.data.ga_cutoff_weeks
 
