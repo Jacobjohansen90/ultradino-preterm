@@ -114,8 +114,7 @@ class PreTermDataset(Dataset):
         ehr_data = []
         
         for key in self.ehr_data:
-            ehr_data.append(data[key])
-        print(ehr_data)
+            ehr_data.append(float(data[key]))
         ehr_data = torch.Tensor(ehr_data)
         
         ga_weeks = torch.Tensor(data['GA_days']//7)        
