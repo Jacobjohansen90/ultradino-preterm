@@ -33,8 +33,8 @@ holdout_data = {}
 holdout = []
 wrong_ga = []
 
-for row in holdout:
-    holdout_list.append(row[0])
+for row in holdout_list:
+    holdout.append(row[0])
 
 for pred in preds:
     if pred[1] == '14':
@@ -64,8 +64,8 @@ with open(save_path + 'cervix_data_all.json', 'w') as f:
     json.dump(cervix_data_all, f)
 
 for key in cervix_data_all.keys():
-    if key in holdout_list:
-        holdout[key] = cervix_data_all[key]
+    if key in holdout:
+        holdout_data[key] = cervix_data_all[key]
     else:
         cervix_data[key] = cervix_data_all[key]
 
