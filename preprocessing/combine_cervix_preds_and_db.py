@@ -53,12 +53,7 @@ for pred in preds:
                             break
                 else:
                     temp[key] = data[key]
-            if pred[0] in holdout:
-                holdout_data[pred[0]] = temp
-                cervix_data_all[pred[0]] = temp
-            else:
-                cervix_data[pred[0]] = temp
-                cervix_data_all[pred[0]] = temp
+            cervix_data_all[pred[0]] = temp
         
 f_img_link.close()
 f_data.close()
@@ -67,6 +62,12 @@ f_holdout.close()
 
 with open(save_path + 'cervix_data_all.json', 'w') as f:
     json.dump(cervix_data_all, f)
+
+for key in cervix_data_all.keys():
+    if key in holdout:
+        holdout[key] = cervix_data_all[key]
+    else:
+        cervix_data[key] = cervix_data_all[key]
 
 with open(save_path + 'holdout_data.json', 'w') as f:
     json.dump(holdout_data, f)
