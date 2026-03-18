@@ -33,11 +33,10 @@ wrong_ga = []
 
 for pred in preds:
     if pred[1] == '14':
-        img = pred[0]
-        data = db_data[img_link[img]]
+        data = db_data[img_link[pred[0]]]
         
         if data['GA_days'] == '.':
-            wrong_ga.append([img_link[img], data['GA_days']])
+            wrong_ga.append([img_link[pred[0]], data['GA_days']])
         else:
             temp = {}
             for key in data.keys():
@@ -50,7 +49,7 @@ for pred in preds:
                 else:
                     temp[key] = data[key]
                                
-            cervix_data[img] = temp
+            cervix_data[pred[0]] = temp
         
 f_img_link.close()
 f_data.close()
