@@ -1,0 +1,76 @@
+# @package _global_
+defaults:
+  - _self_
+
+hydra:
+  run: # single-run output dir
+    dir: outputs/${hydra:job.config_name}/${now:%Y-%m-%d_%H-%M-%S}
+
+  # pattern for multirun sweeps
+  sweep:
+    dir: sweeps/${hydra:job.config_name}
+    subdir: ${hydra.job.num}          # 0,1,2…
+
+model:
+
+  freeze_encoder: false
+  use_proxy: false
+  pixel_spacing_embed_dim: false
+  
+  planes:
+    - cervix
+
+  encoder:
+    type: vits16
+    weights_path: /data/proto/CommonCode/UltraDINO/weights/vits16_dinus_2m/20250123-162345-490406/pretrain/model_final.rank_0.pth
+
+  decoder:
+    type: basic
+    outputs:
+      - preterm
+      - CL 
+
+data:
+  csv_dir: "/data/proto/Joris/UltraDINO_Bias/metadata/ASMUS_MICCAI_dataset_splits_newps.csv"
+  split_index: "fold_1"
+  label: "birth_before_week_37"
+  
+finetune:
+  batch_size: 48
+  num_workers: 4
+  max_epochs: 50
+  checkpoints:
+    every_n_epochs: 10
+  load_best: True
+  metric_best: "AUROC"
+
+# Optimizer hyperparameters
+optimizer:
+  type: "adamw"  # adam, adamw, sgd
+  learning_rate: 1e-4
+  weight_decay: 1e-5
+  # Adam-specific parameters
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_eps: 1e-8
+
+# Learning rate scheduler
+scheduler:
+  type: "cosine_warmup"  # none, cosine, cosine_warmup, reduce_on_plateau
+  patience: 5    # for reduce_on_plateau
+  factor: 0.5    # for reduce_on_plateau
+  warmup_epochs: 2
+  lr_decay_rate: 0.65
+  patch_embed_lr_mult: 0.2
+
+# Regularization
+regularization:
+  dropout_rate: 0.1
+  early_stopping_patience: 0
+  early_stopping_metric: "val_loss"
+  early_stopping_mode: "min"
+
+device:
+  accelerator: "gpu"
+  num_devices: 1
+  strategy: "ddp"  # Distributed Data Parallel
