@@ -16,7 +16,7 @@ import pandas as pd
 import shutil
 
 from utils import csv_extracter, db_crawler
-from cervix_prediction import infer
+from inference_classification import infer
 #%%Variables
 
 #Path to Data folder and holdout test set
