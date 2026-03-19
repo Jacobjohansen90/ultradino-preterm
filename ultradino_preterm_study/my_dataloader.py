@@ -19,7 +19,7 @@ FUS13M_MEAN = 0.1842924807
 FUS13M_STD = 0.2187705424
 
 class PreTermDataset(Dataset):
-    def __init__(self, data_path, train):
+    def __init__(self, data_path, cutoff=37, train=True):
 
         super().__init__()
         f = open(data_path)
@@ -27,7 +27,7 @@ class PreTermDataset(Dataset):
         df = pd.DataFrame.from_dict(d)
         self.df = df.T
         self.img_size = [224,224]
-        self.ga_cutoff = 37
+        self.ga_cutoff = cutoff
 
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424        

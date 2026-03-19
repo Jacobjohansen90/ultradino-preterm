@@ -25,7 +25,7 @@ data_path = '../data/cervix_data_all.json'
 
 metrics = get_metrics('cuda')
 
-ValData = PreTermDataset(data_path, train=False)
+ValData = PreTermDataset(data_path, cutoff=37, train=False)
 
 ValLoader = DataLoader(ValData,
                        64,
@@ -63,7 +63,7 @@ for folder in os.listdir(folds_path):
                 preds = model(data['image'].to('cuda'), data['ps'].to('cuda'))
                 pred_dict[folder].append(preds['preterm'].tolist())
                 labels = data['label'].to('cuda')
-                label_dict.append(data['label'].tolist())
+                label_dict[folder].append(data['label'].tolist())
                 for key in metrics.keys():
                     metrics[key](preds['preterm'], labels.squeeze())
             
