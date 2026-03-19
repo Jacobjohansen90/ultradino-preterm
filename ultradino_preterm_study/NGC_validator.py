@@ -15,6 +15,7 @@ import torch
 from torch.utils.data import  DataLoader
 from metric_loader import get_metrics
 import csv
+import json 
 
 cfg = OmegaConf.load("Vit_Small_Img_Resampled_B2M_cervical.yaml")
 
@@ -73,7 +74,12 @@ for folder in os.listdir(folds_path):
 
             writer.writerow(report)
             
-        
+with open('labels.json', 'w') as file:
+    json.dump(label_dict, file)
+      
+
+with open('preds.json', 'w') as file:
+    json.dump(pred_dict, file)
 
 
 
