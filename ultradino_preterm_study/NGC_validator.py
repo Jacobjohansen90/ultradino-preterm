@@ -65,14 +65,14 @@ for folder in os.listdir(folds_path):
                 labels = data['label'].to('cuda')
                 label_dict.append(data['label'].tolist())
                 for key in metrics.keys():
-                    metrics[key](preds, labels)
+                    metrics[key](preds['preterm'], labels.squeeze())
             
-            report = [folder]
-            
-            for key in metrics.keys():
-                report.append(round(metrics[key].compute().item(), 3))
+        report = [folder]
+        
+        for key in metrics.keys():
+            report.append(round(metrics[key].compute().item(), 3))
 
-            writer.writerow(report)
+        writer.writerow(report)
             
 with open('labels.json', 'w') as file:
     json.dump(label_dict, file)
