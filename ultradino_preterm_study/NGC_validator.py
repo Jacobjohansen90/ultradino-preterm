@@ -19,9 +19,9 @@ import csv
 
 cfg = OmegaConf.load("Vit_Small_Img_Resampled_B2M_cervical.yaml")
 
-folds_path = "../all_folds/All_Folds_Spacing_CL2026-03-13_13-21-52/"
+folds_path = "../../all_folds37w/All_Folds_Spacing_CL2026-03-13_13-21-52/"
 
-data_path = '../data/cervix_data_all.json'
+data_path = '../../data/cervix_data_all.json'
 
 metrics = get_metrics('cuda')
 
@@ -37,7 +37,7 @@ ValLoader = DataLoader(ValData,
 
 
 
-f = open("data.csv")
+f = open("data.csv", 'w')
 wr = csv.writer(f)
 wr.writerow(['cpr', 'pred', 'label', 'fold'])
 
