@@ -14,6 +14,7 @@ import multiprocessing as mp
 from pathlib import Path
 import pandas as pd
 import shutil
+import sqlite3
 
 from utils import csv_extracter, db_crawler
 from inference_classification import infer
@@ -51,14 +52,16 @@ variables_from_db = ['file_path',
                      'physical_delta_x',
                      'physical_delta_y']
 
-
-
+#Setup logger
+logging.basicConfig(filename=path + 'preprocess.log', filemode='w')
+logger = logging.getLogger('Preprocess')
+logger.setLevel(logging.INFO)
 
 #%%Combine CSVs
 
 n_csv = 0
-
 if 'data.csv' not in os.listdir(path + 'registers') or force_overwrite:
+    logger.info(f"Combining CSVs - " + str(datetime.now().strftime('%H:%M:%S')))
     with open(path + 'data.csv', 'w') as file:
         wr = csv.writer(file, quoting=csv.QUOTE_ALL)
         wr.writerow(headers)
@@ -129,11 +132,6 @@ for i in range(len(db_headers)):
     for variable in variables_from_db:
         if headers[i] == variable:
             db_idx[variable] = i
-
-
-logging.basicConfig(filename=path + 'preprocess.log', filemode='w')
-logger = logging.getLogger('Preprocess')
-logger.setLevel(logging.INFO)
 
 num_workers = min(num_workers, mp.cpu_count()-4)
 
@@ -212,6 +210,7 @@ with open(save_path + 'image_data/img_cpr_link.json', 'w') as file:
 del not_found
     
 #%%Do cervix prediction
+logger.info(f"Starting cervix prediction - " + str(datetime.now().strftime('%H:%M:%S')))
 
 if os.path.exists(path + 'image_data/misc/cervix_preds.csv') and not force_overwrite:    
     f = open(path + 'image_data/misc/cervix_preds.csv')
@@ -243,6 +242,7 @@ else:
     os.rename(path + 'image_data/misc/cervix_preds_temp.csv', path + 'image_data/misc/cervix_preds.csv')
 
 #%%Remove test set from data  
+logger.info(f"Removing test data from dataset - " + str(datetime.now().strftime('%H:%M:%S')))
 f_preds = open(path + 'cervix_preds.csv')
 preds = csv.reader(f_preds)
 

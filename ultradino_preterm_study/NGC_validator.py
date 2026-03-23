@@ -28,7 +28,7 @@ metrics = get_metrics('cuda')
 ValData = PreTermDataset(data_path, cutoff=37, train=False)
 
 ValLoader = DataLoader(ValData,
-                       64,
+                       1,
                        shuffle=False,
                        pin_memory=False,
                        drop_last=False,
@@ -36,13 +36,8 @@ ValLoader = DataLoader(ValData,
                        collate_fn=collate_fn)
 
 
-f = open('results.csv', 'w')
-writer = csv.writer(f)
 
-headers = ['Fold'] + list(metrics.keys())
-
-pred_dict = {}
-label_dict = {}
+data_dict = {}
 
 for folder in os.listdir(folds_path):
     if 'fold' in folder:
@@ -55,31 +50,29 @@ for folder in os.listdir(folds_path):
                                                        model=model, 
                                                        map_location='cuda')
         
-        pred_dict[folder] = []
-        label_dict[folder] = []
+        data_dict[folder] = {}
         model.eval()
         with torch.no_grad():
             for i, data in enumerate(tqdm(ValLoader)):
                 preds = model(data['image'].to('cuda'), data['ps'].to('cuda'))
-                pred_dict[folder].append(preds['preterm'].tolist())
+                pred = preds['preterm']
+                if data['cpr_child'] in data_dict[folder].keys():
+                    data_dict[data['cpr_child']]['preds'].append(preds)
+                else:
+                    data_dict[data['cpr_child']] = {'preds': [pred]}
+                    data_dict[data['cpr_child']]['label'] = data['label'].squeeze()
+
                 labels = data['label'].to('cuda')
-                label_dict[folder].append(data['label'].tolist())
+
                 for key in metrics.keys():
                     metrics[key](preds['preterm'], labels.squeeze())
             
-        report = [folder]
-        
-        for key in metrics.keys():
-            report.append(round(metrics[key].compute().item(), 3))
 
-        writer.writerow(report)
             
-with open('labels.json', 'w') as file:
-    json.dump(label_dict, file)
+with open('preds.json', 'w') as file:
+    json.dump(data_dict, file)
       
 
-with open('preds.json', 'w') as file:
-    json.dump(pred_dict, file)
 
 
 

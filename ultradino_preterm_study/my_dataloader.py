@@ -64,6 +64,7 @@ class PreTermDataset(Dataset):
         
         img_data = torch.Tensor([data['pdx'], data['pdy']])
         
+        cpr_child = data['cpr_child']        
         
         ga_weeks = int(data['GA_days'])//7        
         
@@ -76,4 +77,5 @@ class PreTermDataset(Dataset):
 def collate_fn(batch):
     return {'image': torch.stack([x['image'] for x in batch]),
             'ps': torch.stack([x['ps'] for x in batch]),
-            'label': torch.stack([x['label'] for x in batch])}
+            'label': torch.stack([x['label'] for x in batch]),
+            'cpr_child': [x['cpr_child'] for x in batch]}
