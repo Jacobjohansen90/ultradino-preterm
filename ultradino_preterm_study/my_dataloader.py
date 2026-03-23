@@ -61,11 +61,19 @@ class PreTermDataset(Dataset):
         
         img = Image.open(data['img_path'])
         img = np.asarray(img)
-        img = self.resample(img, data['pdx'], data['pdy'])
+        if np.isnan(data['pdx']):
+            pdx = 0.01
+        else:
+            pdx = data['pdx']
+        if np.isnan(data['pdy']):
+            pdy = 0.01
+        else:
+            pdy = data['pdy']
+        img = self.resample(img, pdx, pdy)
         
         img = self.transforms(image=img)['image']
         
-        img_data = torch.Tensor([data['pdx'], data['pdy']])
+        img_data = torch.Tensor([pdx, pdy])
         
         cpr_child = data['cpr_child']        
         
