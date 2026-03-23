@@ -13,6 +13,7 @@ import pandas as pd
 from PIL import Image
 import albumentations as A
 import json
+import cv2
 
 
 FUS13M_MEAN = 0.1842924807
@@ -60,6 +61,8 @@ class PreTermDataset(Dataset):
         
         img = Image.open(data['img_path'])
         img = np.asarray(img)
+        img = self.resample(img, data['pdx'], data['pdy'])
+        
         img = self.transforms(image=img)['image']
         
         img_data = torch.Tensor([data['pdx'], data['pdy']])
@@ -72,7 +75,33 @@ class PreTermDataset(Dataset):
                 
         label = torch.Tensor([label*1.])
         
-        return {'image': img, 'ps': img_data, 'label': label}
+        return {'image': img, 'ps': img_data, 'label': label, 'cpr_child': cpr_child}
+    
+    def resample(img, pdx, pdy):
+        w_max = 18.353558778762817
+        h_max = 13.765169084072113
+        new_h = img.shape[0]*pdx
+        new_w = img.shape[1]*pdy
+        ratio = img.shape[0]/img.shape[1]
+        new_dim = max((int(ratio*224 * new_h / h_max)),224), max((int(224 * new_w / w_max)), 224)
+        
+        h_ref, w_ref = new_dim
+
+        delta_h = 224 - h_ref # 133
+        uneven_h = delta_h%2 # 1
+        start_h = delta_h // 2 + uneven_h # 66 - 1 = 65
+        end_h = 224 - delta_h // 2 # 224 - 66 = 158  158 * 65 = 93
+        
+        delta_w = 224 - w_ref
+        uneven_w = delta_w%2
+        start_w = delta_w // 2 + uneven_w
+        end_w = 224 - delta_w // 2
+        canvas = np.zeros((224,224,3)).astype('uint8')
+        data_resampled = cv2.resize(img, (w_ref, h_ref), interpolation=cv2.INTER_CUBIC)
+        canvas[start_h:end_h, start_w:end_w,:] = data_resampled
+        return canvas
+
+        
     
 def collate_fn(batch):
     return {'image': torch.stack([x['image'] for x in batch]),

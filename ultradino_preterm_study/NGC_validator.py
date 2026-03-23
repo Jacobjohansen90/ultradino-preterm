@@ -14,8 +14,8 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import  DataLoader
 from metric_loader import get_metrics
-import csv
 import json 
+import csv
 
 cfg = OmegaConf.load("Vit_Small_Img_Resampled_B2M_cervical.yaml")
 
@@ -28,7 +28,7 @@ metrics = get_metrics('cuda')
 ValData = PreTermDataset(data_path, cutoff=37, train=False)
 
 ValLoader = DataLoader(ValData,
-                       1,
+                       128,
                        shuffle=False,
                        pin_memory=False,
                        drop_last=False,
@@ -37,10 +37,13 @@ ValLoader = DataLoader(ValData,
 
 
 
-data_dict = {}
+f = open("data.csv")
+wr = csv.writer(f)
+wr.writerow(['cpr', 'pred', 'label', 'fold'])
 
 for folder in os.listdir(folds_path):
     if 'fold' in folder:
+
         weights = os.listdir(folds_path + folder + '/checkpoints/')[0]
         weight_path = folds_path + folder + '/checkpoints/' + weights
         
@@ -50,28 +53,19 @@ for folder in os.listdir(folds_path):
                                                        model=model, 
                                                        map_location='cuda')
         
-        data_dict[folder] = {}
         model.eval()
         with torch.no_grad():
             for i, data in enumerate(tqdm(ValLoader)):
                 preds = model(data['image'].to('cuda'), data['ps'].to('cuda'))
                 pred = preds['preterm']
-                if data['cpr_child'] in data_dict[folder].keys():
-                    data_dict[data['cpr_child']]['preds'].append(preds)
-                else:
-                    data_dict[data['cpr_child']] = {'preds': [pred]}
-                    data_dict[data['cpr_child']]['label'] = data['label'].squeeze()
-
-                labels = data['label'].to('cuda')
-
-                for key in metrics.keys():
-                    metrics[key](preds['preterm'], labels.squeeze())
+                cprs = data['cpr_child']
+                labels = data['label']
+                for j in range(len(cprs)):
+                    wr.writerow([cprs[j], pred[j], labels[j], folder])
             
 
             
-with open('preds.json', 'w') as file:
-    json.dump(data_dict, file)
-      
+f.close()      
 
 
 
