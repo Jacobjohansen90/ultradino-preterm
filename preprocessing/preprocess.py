@@ -132,7 +132,7 @@ with sqlite3.connect(path_to_db) as con:
 
 for i in range(len(db_headers)):
     for variable in variables_from_db:
-        if headers[i] == variable:
+        if db_headers[i] == variable:
             db_idx[variable] = i
 
 num_workers = min(num_workers, mp.cpu_count()-4)
