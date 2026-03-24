@@ -15,6 +15,7 @@ from pathlib import Path
 import pandas as pd
 import shutil
 import sqlite3
+from datetime import datetime
 
 from utils import csv_extracter, db_crawler
 from inference_classification import infer
@@ -61,14 +62,14 @@ logger.setLevel(logging.INFO)
 
 n_csv = 0
 if 'data.csv' not in os.listdir(path + 'registers') or force_overwrite:
-    logger.info(f"Combining CSVs - " + str(datetime.now().strftime('%H:%M:%S')))
+    logger.info("Combining CSVs - " + str(datetime.now().strftime('%H:%M:%S')))
     with open(path + 'data.csv', 'w') as file:
         wr = csv.writer(file, quoting=csv.QUOTE_ALL)
         wr.writerow(headers)
     
         for csv_info in csvs:
             idxs = []
-            csv_file = open(working_path + csv_info[0])
+            csv_file = open(path + 'registers/' + csv_info[0])
             csv_headers = csv_info[1]
             csv_ = csv.reader(csv_file)
             temp_headers = next(csv_)
@@ -100,6 +101,7 @@ done = mp.Value('b', False)
 csv_size = mp.Value('i', 0)
 path_to_db = path + 'registers/ultrasound_metadata_db.sqlite'
 csv_idx = {}
+db_idx = {}
 
 #Crawl CSV for variable indexes
 if n_csv == 0:
@@ -125,8 +127,8 @@ if len(variables_from_csv) != len(csv_idx):
 #Crawl DB for variables indexes
 with sqlite3.connect(path_to_db) as con:
     cur = con.cursor()
-    cursor.execute("SELECT * FROM metadata_cache LIMIT 0")
-    db_headers = [desc[0] for desc in cursor.description]
+    cur.execute("SELECT * FROM metadata_cache LIMIT 0")
+    db_headers = [desc[0] for desc in cur.description]
 
 for i in range(len(db_headers)):
     for variable in variables_from_db:
@@ -204,13 +206,13 @@ with open(path + 'image_data/misc/image_list.csv', 'w') as file:
             wr.writerow([path])
             img_cpr_link[path] = key
         
-with open(save_path + 'image_data/img_cpr_link.json', 'w') as file:
+with open(path + 'image_data/img_cpr_link.json', 'w') as file:
     json.dump(img_cpr_link, file)
     
 del not_found
     
 #%%Do cervix prediction
-logger.info(f"Starting cervix prediction - " + str(datetime.now().strftime('%H:%M:%S')))
+logger.info("Starting cervix prediction - " + str(datetime.now().strftime('%H:%M:%S')))
 
 if os.path.exists(path + 'image_data/misc/cervix_preds.csv') and not force_overwrite:    
     f = open(path + 'image_data/misc/cervix_preds.csv')
@@ -242,7 +244,7 @@ else:
     os.rename(path + 'image_data/misc/cervix_preds_temp.csv', path + 'image_data/misc/cervix_preds.csv')
 
 #%%Remove test set from data  
-logger.info(f"Removing test data from dataset - " + str(datetime.now().strftime('%H:%M:%S')))
+logger.info("Removing test data from dataset - " + str(datetime.now().strftime('%H:%M:%S')))
 f_preds = open(path + 'cervix_preds.csv')
 preds = csv.reader(f_preds)
 
@@ -260,10 +262,10 @@ holdout_set = set(list(holdout_csv))
 
 for pred in preds:
     if pred[1] == '14':
-        data = db_data[img_link[pred[0]]]
+        data = final_data[img_cpr_link[pred[0]]]
         
         if data['GA_days'] == '.':
-            no_ga.append([img_link[pred[0]]])
+            no_ga.append([img_cpr_link[pred[0]]])
         else:
             temp = {}
             for key in data.keys():
@@ -275,7 +277,7 @@ for pred in preds:
                             break
                 else:
                     temp[key] = data[key]
-            if pred[0] in holdout:
+            if pred[0] in holdout_csv:
                 holdout_data[pred[0]] = temp
                 cervix_data_all[pred[0]] = temp
             else:
@@ -297,5 +299,5 @@ with open(path + '/image_data/cervix_data.json', 'w') as f:
 
 with open(path + 'logs/ga_missing.csv', 'w') as f:
     writer = csv.writer(f)
-    writer.writerows(wrong_ga)
+    writer.writerows(no_ga)
 

@@ -85,15 +85,20 @@ class PreTermDataset(Dataset):
         
         return {'image': img, 'ps': img_data, 'label': label, 'cpr_child': cpr_child}
     
-    def resample(img, pdx, pdy):
+    def resample(self, img, pdx, pdy):
         w_max = 18.353558778762817
         h_max = 13.765169084072113
         new_h = img.shape[0]*pdx
         new_w = img.shape[1]*pdy
         ratio = img.shape[0]/img.shape[1]
-        new_dim = max((int(ratio*224 * new_h / h_max)),224), max((int(224 * new_w / w_max)), 224)
+        new_dim = min((int(ratio*224 * new_h / h_max)),223), min((int(224 * new_w / w_max)), 223)
         
         h_ref, w_ref = new_dim
+        
+        if h_ref < 0 or w_ref < 0:
+            h_ref = abs(h_ref)
+            w_ref = abs(w_ref)
+            
 
         delta_h = 224 - h_ref # 133
         uneven_h = delta_h%2 # 1
