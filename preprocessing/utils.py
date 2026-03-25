@@ -32,7 +32,7 @@ def csv_extracter(path_to_csv, csv_que, done):
 
     for row in f_csv:
         csv_que.put(row)
-        #Avoid flooding the queue. Not strictly necessary, but preserve memory
+        #Avoid flooding the queue. Not strictly necessary, but preserves memory
         if csv_que.qsize() > 5000:
             time.sleep(1)         
     #Set the shared value true, so the crawlers know no more csv rows are comming

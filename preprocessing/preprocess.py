@@ -26,7 +26,7 @@ path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/"
 holdout_path = "/projects/users/data/UCPH/DeepFetal/projects/ultrasound_preprocessing/splits/PRETERM_RCT_PT_V2/holdout_test_5pct.csv"
 
 #Variables
-force_overwrite = False #Force complete preprocess
+debug = False #Run on a small sample for debugging purposes
 
 num_workers = 60 #Number of MP workers
 
@@ -60,37 +60,38 @@ logger.setLevel(logging.INFO)
 
 #%%Combine CSVs
 
-n_csv = 0
-if 'data.csv' not in os.listdir(path + 'registers') or force_overwrite:
-    logger.info("Combining CSVs - " + str(datetime.now().strftime('%H:%M:%S')))
-    with open(path + 'data.csv', 'w') as file:
-        wr = csv.writer(file, quoting=csv.QUOTE_ALL)
-        wr.writerow(headers)
-    
-        for csv_info in csvs:
-            idxs = []
-            csv_file = open(path + 'registers/' + csv_info[0])
-            csv_headers = csv_info[1]
-            csv_ = csv.reader(csv_file)
-            temp_headers = next(csv_)
-            
-            for head in csv_headers:
-                i = 0
-                for temp_head in temp_headers:
-                    if temp_head == head:
-                        idxs.append(i)
-                        break
-                    else:
-                        i += 1
-                    
-            for row in csv_:
-                info = []
-                for idx in idxs:
-                    n_csv += 1
-                    info.append(row[idx])
-                wr.writerow(info)
+n_births = 0
+logger.info("Combining CSVs - " + str(datetime.now().strftime('%H:%M:%S')))
+with open(path + 'data.csv', 'w') as file:
+    wr = csv.writer(file, quoting=csv.QUOTE_ALL)
+    wr.writerow(headers)
+
+    for csv_info in csvs:
+        idxs = []
+        csv_file = open(path + 'registers/' + csv_info[0])
+        csv_headers = csv_info[1]
+        csv_temp = csv.reader(csv_file)
+        temp_headers = next(csv_temp)
         
-        csv_file.close()
+        for head in csv_headers:
+            i = 0
+            for temp_head in temp_headers:
+                if temp_head == head:
+                    idxs.append(i)
+                    break
+                else:
+                    i += 1
+                
+        for row in csv_temp:
+            info = []
+            for idx in idxs:
+                n_births += 1
+                info.append(row[idx])
+            wr.writerow(info)
+            if debug and n_births > 1000:
+                break
+
+csv_file.close()
 
 #%%Crawl database
 
@@ -103,16 +104,7 @@ path_to_db = path + 'registers/ultrasound_metadata_db.sqlite'
 csv_idx = {}
 db_idx = {}
 
-#Crawl CSV for variable indexes
-if n_csv == 0:
-    f = open(path + 'registers/data.csv')
-    f_csv = csv.reader(f)
-    csv_headers = next(f_csv)
-    csv_size.value = sum(1 for line in f_csv)
-    f.close()
-
-else:
-    csv_size.value = n_csv
+csv_size.value = n_births
 
 for i in range(len(csv_headers)):
     for variable in variables_from_csv:
@@ -214,7 +206,7 @@ del not_found
 #%%Do cervix prediction
 logger.info("Starting cervix prediction - " + str(datetime.now().strftime('%H:%M:%S')))
 
-if os.path.exists(path + 'image_data/misc/cervix_preds.csv') and not force_overwrite:    
+if os.path.exists(path + 'image_data/misc/cervix_preds.csv') and not debug:
     f = open(path + 'image_data/misc/cervix_preds.csv')
     reader = csv.reader(f)
     headers = next(reader)
@@ -236,7 +228,7 @@ else:
 del images
 infer()
 
-if os.path.exists(path + 'image_data/misc/cervix_preds.csv') and not force_overwrite:    
+if os.path.exists(path + 'image_data/misc/cervix_preds.csv') and not debug:  
     df1 = pd.read_csv(path + 'image_data/misc/cervix_preds_temp.csv')
     df1.to_csv(path + 'image_data/misc/cervix_preds.csv', mode='a', header=False, index=False)
     os.remove(path + 'image_data/misc/cervix_preds_temp.csv')
