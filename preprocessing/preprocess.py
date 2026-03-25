@@ -17,7 +17,7 @@ import shutil
 import sqlite3
 from datetime import datetime
 
-from utils import csv_extracter, db_crawler
+from workers import csv_extracter, db_crawler
 from inference_classification import infer
 #%%Variables
 
@@ -84,8 +84,8 @@ with open(path + 'registers/data.csv', 'w') as file:
                 
         for row in csv_temp:
             info = []
+            n_births += 1
             for idx in idxs:
-                n_births += 1
                 info.append(row[idx])
             wr.writerow(info)
             if debug and n_births > 1000:
