@@ -62,7 +62,7 @@ logger.setLevel(logging.INFO)
 
 n_births = 0
 logger.info("Combining CSVs - " + str(datetime.now().strftime('%H:%M:%S')))
-with open(path + 'data.csv', 'w') as file:
+with open(path + 'registers/data.csv', 'w') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
     wr.writerow(headers)
 
@@ -192,8 +192,8 @@ with open(path + 'image_data/misc/image_list.csv', 'w') as file:
     wr = csv.writer(file)
     wr.writerow(["filename"])
     for key in final_data.keys():
-        for img_path in final_data[key]['imgs']:
-            path = img_path['img_path']
+        for img_info in final_data[key]['imgs']:
+            path = img_info['no_ocr_preprocessed_file_path']
             images.append(path)
             wr.writerow([path])
             img_cpr_link[path] = key
@@ -216,8 +216,8 @@ if os.path.exists(path + 'image_data/misc/cervix_preds.csv') and not debug:
     f = open(path + 'image_data/misc/cervix_check.csv', 'w')
     writer = csv.writer(f)
     writer.writerow(["filename"])
-    for path in new_images:
-        writer.writerow([path])
+    for img_path in new_images:
+        writer.writerow([img_path])
         
     f.close()
     
@@ -278,6 +278,9 @@ for pred in preds:
 
 f_preds.close()
 f_holdout.close()
+
+#Remove cervix models output folder
+shutil.rmtree("/users/data/UCPH/DeepFetal/projects/preterm/jobs/outputs/")
 
 with open(path + 'image_data/misc/cervix_data_all.json', 'w') as f:
     json.dump(cervix_data_all, f)
