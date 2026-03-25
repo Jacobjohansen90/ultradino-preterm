@@ -193,10 +193,10 @@ with open(path + 'image_data/misc/image_list.csv', 'w') as file:
     wr.writerow(["filename"])
     for key in final_data.keys():
         for img_info in final_data[key]['imgs']:
-            path = img_info['no_ocr_preprocessed_file_path']
-            images.append(path)
-            wr.writerow([path])
-            img_cpr_link[path] = key
+            img_path = img_info['no_ocr_preprocessed_file_path']
+            images.append(img_path)
+            wr.writerow([img_path])
+            img_cpr_link[img_path] = key
         
 with open(path + 'image_data/img_cpr_link.json', 'w') as file:
     json.dump(img_cpr_link, file)
