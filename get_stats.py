@@ -166,8 +166,8 @@ for line in d:
             
 stats.write('Birth with images\n')
 for key in n_reg:
-    stats.write('\t- ' + str(key) + ' :' + str(counter[key]) + '\n')
+    stats.write('\t- ' + str(key) + ' :' + str(n_reg[key]) + '\n')
 stats.write('\n')
 for key in n_hos:
-    stats.write('\t- ' + str(key) + ' :' + str(counter[key]) + '\n')
+    stats.write('\t- ' + str(key) + ' :' + str(n_hos[key]) + '\n')
  
