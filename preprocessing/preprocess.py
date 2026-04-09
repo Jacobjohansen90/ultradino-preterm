@@ -31,18 +31,18 @@ debug = False #Run on a small sample for debugging purposes
 num_workers = 60 #Number of MP workers
 
 #CSV Variables we want from registeres in each file
-headers = ["cpr_child", "cpr_mother", "GA_days", "Age_mother", "Birthdate"]
+headers = ["cpr_child", "cpr_mother", "GA_days", "Birthdate", "Hospital"]
 
-csvs = [["mfr.csv", ["CPR_BARN", "CPR_MODER", "GESTATIONSALDER_DAGE", "ALDER_MODER", "FOEDSELSDATO"]],
-        ["nyfoedte.csv", ["CPRnummer_Barn", "CPRnummer_Mor", "Gestationsalder", "Alder_Mor", "FoedselsDato_Barn"]]]
+csvs = [["mfr.csv", ["CPR_BARN", "CPR_MODER", "GESTATIONSALDER_DAGE", "FOEDSELSDATO", "SYGEHUS" ]],
+        ["nyfoedte.csv", ["CPRnummer_Barn", "CPRnummer_Mor", "Gestationsalder", "FoedselsDato_Barn", "AnsvarligInstitution_Kode"]]]
 
 
 #CSV indexes we want in the final output
 variables_from_csv = ['GA_days',
-                      'Age_mother',
                       'cpr_child',
                       'cpr_mother',
-                      'Birthdate']
+                      'Birthdate',
+                      'Hospital',]
 
 #Sqlite database indexes we want in the final output
 variables_from_db = ['file_path',
@@ -99,12 +99,11 @@ csv_file.close()
 csv_que = mp.Queue()
 data_que = mp.Queue()
 done = mp.Value('b', False)
-csv_size = mp.Value('i', 0)
+csv_size = mp.Value('i', n_births)
 path_to_db = path + 'registers/ultrasound_metadata_db.sqlite'
 csv_idx = {}
 db_idx = {}
 
-csv_size.value = n_births
 
 for i in range(len(csv_headers)):
     for variable in variables_from_csv:
