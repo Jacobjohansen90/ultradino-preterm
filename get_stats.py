@@ -133,9 +133,11 @@ translator = {}
 for line in d:
     if line[hos_kode] not in translator.keys():
         translator[hos_kode] = [line[hos_txt], line[reg_txt]]
+    else:
+        print(line[hos_kode])
 
 f.close()
-
+print(translator)
 f = open(path + 'Data/image_data/img_data.json')
 cprs = json.load(f)
 
@@ -151,8 +153,6 @@ for line in d:
         try:
             reg, hos = translator[line[4]]
         except:
-            print(line[4])
-            print(translator)
             reg = 'Unknown'
             hos = 'Unknown'
         if reg not in n_reg.keys():
