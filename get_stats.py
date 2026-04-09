@@ -11,7 +11,7 @@ import csv
 
 path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/'
 
-stats = open(path + 'stats.txt')
+stats = open(path + 'stats.txt', 'w')
 
 #%%Count births
 f = open(path + 'Data/registers/combined.csv')
@@ -47,9 +47,9 @@ counter = {}
 for row in d:
     missing += 1
     if row[2] not in counter.keys():
-        stats[row[2]] = 1
+        counter[row[2]] = 1
     else:
-        stats[row[2]] += 1
+        counter[row[2]] += 1
 
 stats.write('Total births missing in SQL db: ' + str(missing) + '\n')
 for key in counter:
@@ -83,7 +83,7 @@ headers = next(d)
 counter = {}
 
 for row in d:
-    if row[1] not in stats.keys():
+    if row[1] not in counter.keys():
         counter[row[1]] = 1
     else:
         counter[row[1]] += 1
