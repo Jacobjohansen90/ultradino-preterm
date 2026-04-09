@@ -150,7 +150,11 @@ _ = next(d)
 
 for line in d:
     if line[0] in cpr_child:
-        reg, hos = translator[line[4]]
+        try:
+            reg, hos = translator[line[4]]
+        except:
+            reg = 'Unknown'
+            hos = 'Unknown'
         if reg not in n_reg.keys():
             n_reg[reg] = 1
         else:
@@ -159,7 +163,7 @@ for line in d:
             n_hos[hos] = 1
         else:
             n_hos[hos] += 1
-
+            
 stats.write('Birth with images\n')
 for key in n_reg:
     stats.write('\t- ' + str(key) + ' :' + str(counter[key]) + '\n')
