@@ -62,7 +62,7 @@ logger.setLevel(logging.INFO)
 
 n_births = 0
 logger.info("Combining CSVs - " + str(datetime.now().strftime('%H:%M:%S')))
-with open(path + 'registers/data.csv', 'w') as file:
+with open(path + 'registers/combined.csv', 'w') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
     wr.writerow(headers)
 
@@ -131,7 +131,7 @@ num_workers = min(num_workers, mp.cpu_count()-4)
 logger.info(f"Starting {num_workers} workers - " + str(datetime.now().strftime('%H:%M:%S')))
 
 processes = []
-p = mp.Process(target=csv_extracter, args=(path + 'registers/data.csv', csv_que, done))
+p = mp.Process(target=csv_extracter, args=(path + 'registers/combined.csv', csv_que, done))
 p.start()
 processes.append(p)
 
@@ -184,7 +184,7 @@ with open(path + 'logs/errors.csv', 'w', newline='') as file:
     for row in errors:
         wr.writerow(row)
 
-with open(path + 'image_data/all_data.json', 'w') as file:
+with open(path + 'image_data/img_data.json', 'w') as file:
     json.dump(final_data, file)
     
 with open(path + 'image_data/misc/image_list.csv', 'w') as file:

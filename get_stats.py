@@ -10,24 +10,28 @@ import json
 import csv
 
 path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/'
-stats = {}
+
+stats = open(path + 'stats.txt')
+
 #%%Count births
-f = open(path + 'registers/data.csv')
+f = open(path + 'Data/registers/combined.csv')
 d = csv.reader(f)
 
 headers = next(d)
-
+   
 births = sum(1 for line in d)
-
-stats['total_births'] = births
+stats.write('--Total Births--\n')
+stats.write('Total births in SDS: ' + str(births) + '\n')
 
 f.close()
 
 #%%Count DB
-f = open(path + 'data/all_data.json')
+f = open(path + 'Data/image_data/img_data.json')
 d = json.load(f)
 
-stats['n_in_database'] = len(d)
+births_in_sql = len(d)
+
+stats.write('Total births in SQL db: '+ str(births_in_sql) + '\n')
 
 f.close()
 
@@ -36,31 +40,42 @@ d = csv.reader(f)
 
 headers = next(d)
 
-stats['n_missing_in_database'] = 0
+missing = 0
+
+counter = {}
 
 for row in d:
-    stats['n_missing_in_database'] += 1
-    if row[2] not in stats.keys():
+    missing += 1
+    if row[2] not in counter.keys():
         stats[row[2]] = 1
     else:
         stats[row[2]] += 1
 
-stats['unaccounted_for'] = stats['total_births'] - stats['n_in_database'] - stats['n_missing_in_database']
+stats.write('Total births missing in SQL db: ' + str(missing) + '\n')
+for key in counter:
+    stats.write('\t- ' + str(key) + ' :' + str(counter[key]) + '\n')
+    
+uacc = births - births_in_sql - missing
+stats.write('Unaccounted for: ' + str(uacc) + '\n')
 
 f.close()
+
 #%%Count images
-f = open(path + 'data/image_list.csv')
+stats.write('\n')
+stats.write('--Images--\n')
+
+f = open(path + 'Data/image_data/misc/image_list.csv')
 d = csv.reader(f)
 
 headers = next(d)
 
 imgs = sum(1 for line in d)
 
-stats['images'] = imgs
+stats.write('Total images: ' + str(imgs) + '\n')
 
 f.close()
 #%%Count errors
-f = open(path + 'data/logs/errors.csv')
+f = open(path + 'Data/logs/errors.csv')
 d = csv.reader(f)
 
 headers = next(d)
@@ -69,32 +84,86 @@ counter = {}
 
 for row in d:
     if row[1] not in stats.keys():
-        stats[row[1]] = 1
+        counter[row[1]] = 1
     else:
-        stats[row[1]] += 1
+        counter[row[1]] += 1
+        
+for key in counter:
+    stats.write('\t- ' + str(key) + ' :' + str(counter[key]) + '\n')       
 
+#%%Count cervix TBD
 
-#%%Count cervix
+# f = open(path + 'data/cervix_data.json')
+# d = json.load(f)
 
-f = open(path + 'data/cervix_data.json')
-d = json.load(f)
+# stats['is_cervix'] = len(d)
 
-stats['is_cervix'] = len(d)
+# f.close()
 
-f.close()
+# f = open(path + 'data/logs/ga_error.csv')
+# d = csv.reader(f)
 
-f = open(path + 'data/logs/ga_error.csv')
+# missing = sum(1 for line in d)
+
+# stats['missing_GA'] = missing
+
+# f.close()
+
+#%%Regional + hospital breakdown
+stats.write('\n')
+stats.write('--Regional + Hospital breakdown--\n')
+stats.write('\n')
+
+f = open(path + 'Data/registers/nyfoedte.csv')
 d = csv.reader(f)
 
-missing = sum(1 for line in d)
+headers = next(d)
 
-stats['missing_GA'] = missing
+n_reg = {}
+n_hos = {}
+
+for i, header in enumerate(headers):
+    if header == 'AnsvarligRegion_Geo_Tekst':
+        reg_txt = i
+    elif header == 'AnsvarligInstitution_Kode':
+        hos_kode = i
+    elif header == 'AnsvarligInstitution_Tekst':
+        hos_txt = i
+
+translator = {}
+
+for line in d:
+    if line[hos_kode] not in translator.keys():
+        translator[hos_kode] = [line[hos_txt], line[reg_txt]]
 
 f.close()
 
-#%%Write to file
+f = open(path + 'Data/image_data/img_data.json')
+cprs = json.load(f)
 
-f = open(path + 'stats.txt', 'w')
-for key, stat in stats.items():
-    f.write(f"{key} : {stat}\n")
+cpr_child = set(cprs.keys())
 
+g = open(path + 'Data/registers/combined.csv')
+d = csv.reader(g)
+
+_ = next(d)
+
+for line in d:
+    if line[0] in cpr_child:
+        reg, hos = translator[line[4]]
+        if reg not in n_reg.keys():
+            n_reg[reg] = 1
+        else:
+            n_reg[reg] += 1
+        if hos not in n_hos.keys():
+            n_hos[hos] = 1
+        else:
+            n_hos[hos] += 1
+
+stats.write('Birth with images\n')
+for key in n_reg:
+    stats.write('\t- ' + str(key) + ' :' + str(counter[key]) + '\n')
+stats.write('\n')
+for key in n_hos:
+    stats.write('\t- ' + str(key) + ' :' + str(counter[key]) + '\n')
+ 
