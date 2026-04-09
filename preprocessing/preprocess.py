@@ -33,7 +33,7 @@ num_workers = 60 #Number of MP workers
 #CSV Variables we want from registeres in each file
 headers = ["cpr_child", "cpr_mother", "GA_days", "Birthdate", "Hospital"]
 
-csvs = [["mfr.csv", ["CPR_BARN", "CPR_MODER", "GESTATIONSALDER_DAGE", "FOEDSELSDATO", "SYGEHUS" ]],
+csvs = [["mfr.csv", ["CPR_BARN", "CPR_MODER", "GESTATIONSALDER_DAGE", "FOEDSELSDATO", "SYGEHUS"]],
         ["nyfoedte.csv", ["CPRnummer_Barn", "CPRnummer_Mor", "Gestationsalder", "FoedselsDato_Barn", "AnsvarligInstitution_Kode"]]]
 
 

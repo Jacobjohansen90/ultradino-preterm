@@ -8,7 +8,6 @@ Created on Wed Mar 18 10:22:13 2026
 
 import json
 import csv
-
 path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/'
 
 stats = open(path + 'stats.txt', 'w')
@@ -53,7 +52,7 @@ for row in d:
 
 stats.write('Total births missing in SQL db: ' + str(missing) + '\n')
 for key in counter:
-    stats.write('\t- ' + str(key) + ' :' + str(counter[key]) + '\n')
+    stats.write('\t- ' + str(key) + ': ' + str(counter[key]) + '\n')
     
 uacc = births - births_in_sql - missing
 stats.write('Unaccounted for: ' + str(uacc) + '\n')
@@ -89,7 +88,7 @@ for row in d:
         counter[row[1]] += 1
         
 for key in counter:
-    stats.write('\t- ' + str(key) + ' :' + str(counter[key]) + '\n')       
+    stats.write('\t- ' + str(key) + ': ' + str(counter[key]) + '\n')       
 
 #%%Count cervix TBD
 
@@ -112,7 +111,6 @@ for key in counter:
 #%%Regional + hospital breakdown
 stats.write('\n')
 stats.write('--Regional + Hospital breakdown--\n')
-stats.write('\n')
 
 f = open(path + 'Data/registers/nyfoedte.csv')
 d = csv.reader(f)
@@ -153,6 +151,8 @@ for line in d:
         try:
             reg, hos = translator[line[4]]
         except:
+            print(line[4])
+            print(translator)
             reg = 'Unknown'
             hos = 'Unknown'
         if reg not in n_reg.keys():
@@ -164,10 +164,12 @@ for line in d:
         else:
             n_hos[hos] += 1
             
-stats.write('Birth with images\n')
+stats.write('Births with images\n')
+stats.write('\tRegions:')
 for key in n_reg:
-    stats.write('\t- ' + str(key) + ' :' + str(n_reg[key]) + '\n')
+    stats.write('\t- ' + str(key) + ': ' + str(n_reg[key]) + '\n')
 stats.write('\n')
+stats.write('\tHospitals:')
 for key in n_hos:
-    stats.write('\t- ' + str(key) + ' :' + str(n_hos[key]) + '\n')
+    stats.write('\t- ' + str(key) + ': ' + str(n_hos[key]) + '\n')
  
