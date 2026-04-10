@@ -176,13 +176,13 @@ stats.write('Births with images\n')
 stats.write('\tRegions:\n')
 total = 0
 for key in n_reg:
-    if key == 'Unknown':
+    if key == 'No SHAK Code':
         total += n_reg[key]
         continue
     else:
         stats.write('\t- ' + str(key) + ': ' + str(n_reg[key]) + '\n')
         total += n_reg[key]
-stats.write('\t- ' + 'Unknown' + ': ' + str(n_reg['Unknown']) + '\n')
+stats.write('\t- ' + 'No SHAK Code' + ': ' + str(n_reg['No SHAK Code']) + '\n')
 stats.write('\t- ' + 'TOTAL' + ': ' + str(total) + '\n')
 
 stats.write('\n')
@@ -190,13 +190,13 @@ stats.write('\n')
 stats.write('\tHospitals:\n')
 total = 0
 for key in n_hos:
-    if key == 'Unknown':
+    if key == 'No SHAK Code':
         total += n_hos[key]
         continue
     else:
         stats.write('\t- ' + str(key) + ': ' + str(n_hos[key]) + '\n')
         total += n_hos[key]
 
-stats.write('\t- ' + 'Unknown' + ': ' + str(n_hos['Unknown']) + '\n')
+stats.write('\t- ' + 'No SHAK Code' + ': ' + str(n_hos['No SHAK Code']) + '\n')
 stats.write('\t- ' + 'TOTAL' + ': ' + str(total) + '\n')
 
