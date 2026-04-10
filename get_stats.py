@@ -136,7 +136,9 @@ translator = {'1501': ['Kbh Amts Sygehus i Gentofte', 'Region Hovedstadion'],
               '1502': ['Kbh. Amts Sygehus i Glostrup', 'Region Hovedstaden'],
               '7026': ['Skejby Sygehus', 'Region Midtjylland'],
               '6501': ['Holstebro Centralsygehus', 'Region Midtjylland'],
-              '5001': ['Sønderborg Sygehus', 'Region Syddanmark']}
+              '5001': ['Sønderborg Sygehus', 'Region Syddanmark'],
+              '5002': ['Haderslev Sygehus', 'Region Syddanmark'],
+              '6502': ['Herning Sygehus', 'Region Midtjylland']}
 
 for line in d:
     if line[hos_kode] not in translator.keys():
