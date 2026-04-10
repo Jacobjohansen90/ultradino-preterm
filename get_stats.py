@@ -128,7 +128,10 @@ for i, header in enumerate(headers):
     elif header == 'AnsvarligInstitution_Tekst':
         hos_txt = i
 
-translator = {}
+translator = {'1501': ['Kbh Amts Sygehus i Gentofte', 'Region Hovedstadion'],
+              '4212': ['OUH Svenborg Sygehus', 'Region Syddanmark'],
+              '7601': ['Viborg Sygehus', 'Region Midtjylland'],
+              '7002': ['Silkeborg Centralsygehus', 'Region Midtjylland']}
 
 for line in d:
     if line[hos_kode] not in translator.keys():
