@@ -12,22 +12,24 @@ import json
 import logging
 import multiprocessing as mp
 from pathlib import Path
-import pandas as pd
-import shutil
 import sqlite3
 from datetime import datetime
 
 from workers import csv_extracter, db_crawler
-from inference_classification import infer
 #%%Variables
 
 #Path to Data folder and holdout test set
 path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/"
 holdout_path = "/projects/users/data/UCPH/DeepFetal/projects/ultrasound_preprocessing/splits/PRETERM_RCT_PT_V2/holdout_test_5pct.csv"
 
+#Path to images
+img_path = '/projects/users/data/UCPH/DeepFetal/ultrasound/PNG_pretrain/'
+
+#Cutoff date for SP inclusion
+SP_date_cutoff = datetime.strptime("20251105", "%Y%m%d")
+
 #Variables
 debug = False #Run on a small sample for debugging purposes
-
 num_workers = 60 #Number of MP workers
 
 #CSV Variables we want from registeres in each file
@@ -46,7 +48,6 @@ variables_from_csv = ['GA_days',
 
 #Sqlite database indexes we want in the final output
 variables_from_db = ['file_path',
-                     'no_ocr_preprocessed_file_path',
                      'manufacturer',
                      'manufacturer_model',
                      'study_date',
@@ -172,7 +173,7 @@ while n < csv_size.value:
 Path(path + 'logs/').mkdir(exist_ok=True)
 Path(path + 'image_data/misc/').mkdir(parents=True, exist_ok=True)
 
-with open(path + 'logs/missing.csv', 'w', newline='') as file:
+with open(path + 'logs/birth_missing.csv', 'w', newline='') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
     wr.writerow(["cpr_phair_mother", "cpr_phair_child", "error"])
     for row in not_found:
@@ -192,7 +193,7 @@ with open(path + 'image_data/misc/image_list.csv', 'w') as file:
     wr.writerow(["filename"])
     for key in final_data.keys():
         for img_info in final_data[key]['imgs']:
-            img_path = img_info['no_ocr_preprocessed_file_path']
+            img_path = img_info['file_path']
             images.append(img_path)
             wr.writerow([img_path])
             img_cpr_link[img_path] = key
@@ -202,96 +203,124 @@ with open(path + 'image_data/img_cpr_link.json', 'w') as file:
     
 del not_found
     
-#%%Do cervix prediction
-logger.info("Starting cervix prediction - " + str(datetime.now().strftime('%H:%M:%S')))
+#%%Identify Cervix scans & make train and test sets
+logger.info("Linking cervix preds with database - " + str(datetime.now().strftime('%H:%M:%S')))
 
-if os.path.exists(path + 'image_data/misc/cervix_preds.csv') and not debug:
-    f = open(path + 'image_data/misc/cervix_preds.csv')
-    reader = csv.reader(f)
-    headers = next(reader)
-    new_images = [path for path in images not in set(list(reader))]
-    f.close()
-    
-    f = open(path + 'image_data/misc/cervix_check.csv', 'w')
-    writer = csv.writer(f)
-    writer.writerow(["filename"])
-    for img_path in new_images:
-        writer.writerow([img_path])
-        
-    f.close()
-    
-
-else:
-    shutil.copyfile(path + 'image_data/misc/image_list.csv', path + 'image_data/misc/cervix_check.csv')
-        
-del images
-infer()
-
-if os.path.exists(path + 'image_data/misc/cervix_preds.csv') and not debug:  
-    df1 = pd.read_csv(path + 'image_data/misc/cervix_preds_temp.csv')
-    df1.to_csv(path + 'image_data/misc/cervix_preds.csv', mode='a', header=False, index=False)
-    os.remove(path + 'image_data/misc/cervix_preds_temp.csv')
-else:
-    os.rename(path + 'image_data/misc/cervix_preds_temp.csv', path + 'image_data/misc/cervix_preds.csv')
-
-#%%Remove test set from data  
-logger.info("Removing test data from dataset - " + str(datetime.now().strftime('%H:%M:%S')))
-f_preds = open(path + 'cervix_preds.csv')
-preds = csv.reader(f_preds)
+f = open(path + 'image_data/misc/cervix_preds.csv')
+d = csv.reader(f)
+_ = next(d)
 
 f_holdout = open(holdout_path)  
 holdout_csv = csv.reader(f_holdout)  
 
-headers = next(preds)
+holdout_set = []
 
-cervix_data_all = {}
+for holdout_img in holdout_csv:
+    holdout_set.append(holdout_img.split('PNG_processed_no_OCR')[1])
+
+holdout_set = set(holdout_set)
+
+missing = []
 cervix_data = {}
-holdout_data = {}
+cervix_data_holdout = {}
+cervix_data_SP = {}
+cervix_data_SP_holdout = {}
+
 no_ga = []
 
-holdout_set = set(list(holdout_csv))
-
-for pred in preds:
-    if pred[1] == '14':
-        data = final_data[img_cpr_link[pred[0]]]
-        
-        if data['GA_days'] == '.':
-            no_ga.append([img_cpr_link[pred[0]]])
+for file in d:
+    if file[1] == '14':
+        if not os.path.isfile(file[0]):
+            missing.append(file[0])
         else:
-            temp = {}
-            for key in data.keys():
-                if key == 'imgs':
-                    for img in data[key]:
-                        if img['img_path'] == pred[0]:
-                            for key in img.keys():
-                                temp[key] = img[key]
-                            break
+            cpr_child = img_cpr_link[file[0]]
+            if final_data[cpr_child]['GA_days'] == '.':
+                  no_ga.append(cpr_child)
+                  continue
+            for imgs in final_data[cpr_child]['imgs']:
+                if imgs['file_path'] == file[0]:
+                    img_data = imgs
+            
+            if file[0] in holdout_set:
+                if cpr_child in cervix_data_holdout.keys():
+                    cervix_data_holdout[cpr_child]['imgs'].append(img_data)
+                    if datetime.strptime(img_data['studydate'], '%Y%m%d') >= SP_date_cutoff:
+                        if cpr_child in cervix_data_SP_holdout.keys():
+                            cervix_data_SP_holdout[cpr_child]['imgs'].append(img_data)
+                        else:
+                            for key in final_data[cpr_child].keys():
+                                if key == 'imgs':
+                                    cervix_data_SP_holdout[key] = [img_data]
+                                else:
+                                    cervix_data_SP_holdout[key] = final_data[cpr_child][key]
+    
                 else:
-                    temp[key] = data[key]
-            if pred[0] in holdout_csv:
-                holdout_data[pred[0]] = temp
-                cervix_data_all[pred[0]] = temp
-            else:
-                cervix_data[pred[0]] = temp
-                cervix_data_all[pred[0]] = temp
+                    if datetime.strptime(img_data['studydate'], '%Y%m%d') >= SP_date_cutoff:
+                        for key in final_data[cpr_child].keys():
+                            if key == 'imgs':
+                                cervix_data_holdout[key] = [img_data]
+                                cervix_data_SP_holdout[key] = [img_data]
+                            else:
+                                cervix_data_holdout[key] = final_data[cpr_child][key]
+                                cervix_data_SP_holdout[key] = final_data[cpr_child][key]
+    
+                    else:
+                        for key in final_data[cpr_child].keys():
+                            if key == 'imgs':
+                                cervix_data_holdout[key] = [img_data]
+                            else:
+                                cervix_data_holdout[key] = final_data[cpr_child][key]
 
-f_preds.close()
-f_holdout.close()
+            else:            
+                if cpr_child in cervix_data.keys():
+                    cervix_data[cpr_child]['imgs'].append(img_data)
+                    if datetime.strptime(img_data['studydate'], '%Y%m%d') >= SP_date_cutoff:
+                        if cpr_child in cervix_data_SP.keys():
+                            cervix_data_SP[cpr_child]['imgs'].append(img_data)
+                        else:
+                            for key in final_data[cpr_child].keys():
+                                if key == 'imgs':
+                                    cervix_data_SP[key] = [img_data]
+                                else:
+                                    cervix_data_SP[key] = final_data[cpr_child][key]
+    
+                else:
+                    if datetime.strptime(img_data['studydate'], '%Y%m%d') >= SP_date_cutoff:
+                        for key in final_data[cpr_child].keys():
+                            if key == 'imgs':
+                                cervix_data[key] = [img_data]
+                                cervix_data_SP[key] = [img_data]
+                            else:
+                                cervix_data[key] = final_data[cpr_child][key]
+                                cervix_data_SP[key] = final_data[cpr_child][key]
+    
+                    else:
+                        for key in final_data[cpr_child].keys():
+                            if key == 'imgs':
+                                cervix_data[key] = [img_data]
+                            else:
+                                cervix_data[key] = final_data[cpr_child][key]
 
-#Remove cervix models output folder
-shutil.rmtree("/users/data/UCPH/DeepFetal/projects/preterm/jobs/outputs/")
-
-with open(path + 'image_data/misc/cervix_data_all.json', 'w') as f:
-    json.dump(cervix_data_all, f)
-
-with open(path + 'image_data/holdout_data.json', 'w') as f:
-    json.dump(holdout_data, f)
-
-with open(path + '/image_data/cervix_data.json', 'w') as f:
+with open(path + 'cervix_data_all_train.json', 'w') as f:
     json.dump(cervix_data, f)
 
+with open(path + 'cervix_data_all_train_SP.json', 'w') as f:
+    json.dump(cervix_data_SP, f)
+
+with open(path + 'cervix_data_all_test.json', 'w') as f:
+    json.dump(cervix_data_holdout, f)
+
+with open(path + 'cervix_data_all_test_SP.json', 'w') as f:
+    json.dump(cervix_data_SP_holdout, f)
+
+with open(path + 'logs/pred_img_missing.csv', 'w') as f:
+    writer = csv.writer(f)
+    writer.writerow(['filepath_ngc'])
+    writer.writerows(missing)
 
 with open(path + 'logs/ga_missing.csv', 'w') as f:
     writer = csv.writer(f)
+    writer.writerow(['cpr_child'])
     writer.writerows(no_ga)
+
 

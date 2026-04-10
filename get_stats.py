@@ -128,7 +128,7 @@ for i, header in enumerate(headers):
     elif header == 'AnsvarligInstitution_Tekst':
         hos_txt = i
 
-translator = {'1501': ['Kbh Amts Sygehus i Gentofte', 'Region Hovedstadion'],
+translator = {'1501': ['Kbh Amts Sygehus i Gentofte', 'Region Hovedstaden'],
               '4212': ['OUH Svenborg Sygehus', 'Region Syddanmark'],
               '7601': ['Viborg Sygehus', 'Region Midtjylland'],
               '7002': ['Silkeborg Centralsygehus', 'Region Midtjylland'],
@@ -138,8 +138,7 @@ translator = {'1501': ['Kbh Amts Sygehus i Gentofte', 'Region Hovedstadion'],
               '6501': ['Holstebro Centralsygehus', 'Region Midtjylland'],
               '5001': ['Sønderborg Sygehus', 'Region Syddanmark'],
               '5002': ['Haderslev Sygehus', 'Region Syddanmark'],
-              '6502': ['Herning Sygehus', 'Region Midtjylland'],
-              '':['No SKH', 'No SKH']}
+              '6502': ['Herning Sygehus', 'Region Midtjylland']}
 
 for line in d:
     if line[hos_kode] not in translator.keys():
@@ -162,9 +161,8 @@ for line in d:
         try:
             hos, reg = translator[line[4]]
         except:
-            print(line[4])
-            reg = 'Unknown'
-            hos = 'Unknown'
+            reg = 'No SHAK Code'
+            hos = 'No SHAK Code'
         if reg not in n_reg.keys():
             n_reg[reg] = 1
         else:
