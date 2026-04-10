@@ -149,8 +149,9 @@ _ = next(d)
 for line in d:
     if line[0] in cpr_child:
         try:
-            reg, hos = translator[line[4]]
+            hos, reg = translator[line[4]]
         except:
+            print(line[4])
             reg = 'Unknown'
             hos = 'Unknown'
         if reg not in n_reg.keys():
@@ -163,11 +164,30 @@ for line in d:
             n_hos[hos] += 1
             
 stats.write('Births with images\n')
-stats.write('\tRegions:')
+stats.write('\tRegions:\n')
+total = 0
 for key in n_reg:
-    stats.write('\t- ' + str(key) + ': ' + str(n_reg[key]) + '\n')
+    if key == 'Unknown':
+        total += n_reg[key]
+        continue
+    else:
+        stats.write('\t- ' + str(key) + ': ' + str(n_reg[key]) + '\n')
+        total += n_reg[key]
+stats.write('\t- ' + 'Unknown' + ': ' + str(n_reg['Unknown']) + '\n')
+stats.write('\t- ' + 'TOTAL' + ': ' + str(total) + '\n')
+
 stats.write('\n')
-stats.write('\tHospitals:')
+
+stats.write('\tHospitals:\n')
+total = 0
 for key in n_hos:
-    stats.write('\t- ' + str(key) + ': ' + str(n_hos[key]) + '\n')
- 
+    if key == 'Unknown':
+        total += n_hos[key]
+        continue
+    else:
+        stats.write('\t- ' + str(key) + ': ' + str(n_hos[key]) + '\n')
+        total += n_hos[key]
+
+stats.write('\t- ' + 'Unknown' + ': ' + str(n_hos['Unknown']) + '\n')
+stats.write('\t- ' + 'TOTAL' + ': ' + str(total) + '\n')
+
