@@ -83,20 +83,17 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
                             study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
                         except:
                             if entry[-1] is not None:
-                                data_que.put(['error', [entry[db_idx['no_ocr_preprocessed_file_path']], 'Img_path - date_not_found_or_wrong_format']])
+                                data_que.put(['error', [entry[db_idx['file_path']], 'Img_path - date_not_found_or_wrong_format']])
                                 continue
                             else:
                                 data_que.put(['error', [entry[db_idx['file_path']], 'Img_path - image_missing_on_NGC']])
                                 continue
                         
                         if abs((study_date - birthdate).days) < 280:
-                            if entry[db_idx['no_ocr_preprocessed_file_path']] is None:
-                                data_que.put(['error', [entry[db_idx['file_path']], 'Img_path - image_missing_on_NGC']])
-                            else:
-                                img_temp = {}
-                                for key in db_idx.keys():
-                                    img_temp[key] = entry[db_idx[key]]
-                                imgs.append(img_temp)
+                            img_temp = {}
+                            for key in db_idx.keys():
+                                img_temp[key] = entry[db_idx[key]]
+                            imgs.append(img_temp)
     
             if len(imgs) > 0:
                 data_temp['imgs'] = imgs
