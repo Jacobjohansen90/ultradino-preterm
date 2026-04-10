@@ -131,7 +131,12 @@ for i, header in enumerate(headers):
 translator = {'1501': ['Kbh Amts Sygehus i Gentofte', 'Region Hovedstadion'],
               '4212': ['OUH Svenborg Sygehus', 'Region Syddanmark'],
               '7601': ['Viborg Sygehus', 'Region Midtjylland'],
-              '7002': ['Silkeborg Centralsygehus', 'Region Midtjylland']}
+              '7002': ['Silkeborg Centralsygehus', 'Region Midtjylland'],
+              '1401': ['Frederiksberg Hosdpital', 'Region Hovedstaden'],
+              '1502': ['Kbh. Amts Sygehus i Glostrup', 'Region Hovedstaden'],
+              '7026': ['Skejby Sygehus', 'Region Midtjylland'],
+              '6501': ['Holstebro Centralsygehus', 'Region Midtjylland'],
+              '5001': ['Sønderborg Sygehus', 'Region Syddanmark']}
 
 for line in d:
     if line[hos_kode] not in translator.keys():
