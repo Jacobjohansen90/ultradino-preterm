@@ -89,7 +89,7 @@ with open(path + 'registers/combined.csv', 'w') as file:
             for idx in idxs:
                 info.append(row[idx])
             wr.writerow(info)
-            if debug and n_births > 1000:
+            if debug and n_births > 10000:
                 break
 
 csv_file.close()
@@ -216,7 +216,7 @@ holdout_csv = csv.reader(f_holdout)
 holdout_set = []
 
 for holdout_img in holdout_csv:
-    holdout_set.append(holdout_img.split('PNG_processed_no_OCR')[1])
+    holdout_set.append(holdout_img[0].split('PNG_processed_no_OCR')[1])
 
 holdout_set = set(holdout_set)
 
