@@ -56,7 +56,7 @@ variables_from_db = ['file_path',
 
 #Setup logger
 logging.basicConfig(filename=path + 'preprocess.log', filemode='w')
-logger = logging.getLogger('Preprocess')
+logger = logging.getLogger('')
 logger.setLevel(logging.INFO)
 
 #%%Combine CSVs
@@ -227,17 +227,17 @@ cervix_data_SP = {}
 cervix_data_SP_holdout = {}
 
 no_ga = []
-no_cpr_link = []
+img_not_in_db = []
 
 for file in d:
     if file[1] == '14':
         if not os.path.isfile(path_imgs + file[0]):
-            missing.append(path_imgs + [file[0]])
+            missing.append(path_imgs + file[0])
         else:
             try:
                 cpr_child = img_cpr_link[file[0]]
             except:
-                no_cpr_link.append(file[0])
+                img_not_in_db.append(file[0])
                 continue
             if final_data[cpr_child]['GA_days'] == '.':
                   no_ga.append(cpr_child)
@@ -249,7 +249,7 @@ for file in d:
             if file[0] in holdout_set:
                 if cpr_child in cervix_data_holdout.keys():
                     cervix_data_holdout[cpr_child]['imgs'].append(img_data)
-                    if datetime.strptime(img_data['studydate'], '%Y%m%d') >= SP_date_cutoff:
+                    if datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff:
                         if cpr_child in cervix_data_SP_holdout.keys():
                             cervix_data_SP_holdout[cpr_child]['imgs'].append(img_data)
                         else:
@@ -260,7 +260,7 @@ for file in d:
                                     cervix_data_SP_holdout[key] = final_data[cpr_child][key]
     
                 else:
-                    if datetime.strptime(img_data['studydate'], '%Y%m%d') >= SP_date_cutoff:
+                    if datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff:
                         for key in final_data[cpr_child].keys():
                             if key == 'imgs':
                                 cervix_data_holdout[key] = [img_data]
@@ -279,7 +279,7 @@ for file in d:
             else:            
                 if cpr_child in cervix_data.keys():
                     cervix_data[cpr_child]['imgs'].append(img_data)
-                    if datetime.strptime(img_data['studydate'], '%Y%m%d') >= SP_date_cutoff:
+                    if datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff:
                         if cpr_child in cervix_data_SP.keys():
                             cervix_data_SP[cpr_child]['imgs'].append(img_data)
                         else:
@@ -290,7 +290,7 @@ for file in d:
                                     cervix_data_SP[key] = final_data[cpr_child][key]
     
                 else:
-                    if datetime.strptime(img_data['studydate'], '%Y%m%d') >= SP_date_cutoff:
+                    if datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff:
                         for key in final_data[cpr_child].keys():
                             if key == 'imgs':
                                 cervix_data[key] = [img_data]
@@ -306,16 +306,16 @@ for file in d:
                             else:
                                 cervix_data[key] = final_data[cpr_child][key]
 
-with open(path + 'cervix_data_train.json', 'w') as f:
+with open(path + 'traindata.json', 'w') as f:
     json.dump(cervix_data, f)
 
-with open(path + 'cervix_data_train_SP.json', 'w') as f:
+with open(path + 'traindata_SP.json', 'w') as f:
     json.dump(cervix_data_SP, f)
 
-with open(path + 'cervix_data_test.json', 'w') as f:
+with open(path + 'testdata.json', 'w') as f:
     json.dump(cervix_data_holdout, f)
 
-with open(path + 'cervix_data_test_SP.json', 'w') as f:
+with open(path + 'testdata_SP.json', 'w') as f:
     json.dump(cervix_data_SP_holdout, f)
 
 with open(path + 'logs/pred_img_missing.csv', 'w') as f:
@@ -328,7 +328,9 @@ with open(path + 'logs/ga_missing.csv', 'w') as f:
     writer.writerow(['cpr_child'])
     writer.writerows(no_ga)
 
-with open(path + 'logs/no_cpr_link.csv', 'w') as f:
+with open(path + 'logs/img_not_in_db.csv', 'w') as f:
     writer = csv.writer(f)
     writer.writerow(['img_path'])
-    writer.writerows(no_cpr_link)
+    writer.writerows(img_not_in_db)
+
+logger.info("Preprocessing done - " + str(datetime.now().strftime('%H:%M:%S')))
