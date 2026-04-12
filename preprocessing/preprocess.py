@@ -227,7 +227,7 @@ cervix_data_SP = {}
 cervix_data_SP_holdout = {}
 
 no_ga = []
-np_cpr_link = []
+no_cpr_link = []
 
 for file in d:
     if file[1] == '14':
