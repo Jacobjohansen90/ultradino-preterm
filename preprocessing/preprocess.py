@@ -238,6 +238,7 @@ for file in d:
                 cpr_child = img_cpr_link[file[0]]
             except:
                 no_cpr_link.append(file[0])
+                continue
             if final_data[cpr_child]['GA_days'] == '.':
                   no_ga.append(cpr_child)
                   continue
@@ -305,16 +306,16 @@ for file in d:
                             else:
                                 cervix_data[key] = final_data[cpr_child][key]
 
-with open(path + 'cervix_data_all_train.json', 'w') as f:
+with open(path + 'cervix_data_train.json', 'w') as f:
     json.dump(cervix_data, f)
 
-with open(path + 'cervix_data_all_train_SP.json', 'w') as f:
+with open(path + 'cervix_data_train_SP.json', 'w') as f:
     json.dump(cervix_data_SP, f)
 
-with open(path + 'cervix_data_all_test.json', 'w') as f:
+with open(path + 'cervix_data_test.json', 'w') as f:
     json.dump(cervix_data_holdout, f)
 
-with open(path + 'cervix_data_all_test_SP.json', 'w') as f:
+with open(path + 'cervix_data_test_SP.json', 'w') as f:
     json.dump(cervix_data_SP_holdout, f)
 
 with open(path + 'logs/pred_img_missing.csv', 'w') as f:
