@@ -158,7 +158,7 @@ while n < csv_size.value:
     elif data[0] == 'not_found':
         n += 1
         not_found.append(data[1])
-        if n % 1000000 == 0:
+        if n % 100000 == 0:
             logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))
     else:
         if data[0] == 'INVALID':
@@ -167,7 +167,7 @@ while n < csv_size.value:
         else:
             final_data[data[0]] = data[1]
         n += 1
-        if n % 1000000 == 0:
+        if n % 100000 == 0:
             logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))            
 
 Path(path + 'logs/').mkdir(exist_ok=True)
@@ -230,8 +230,8 @@ no_ga = []
 
 for file in d:
     if file[1] == '14':
-        if not os.path.isfile(file[0]):
-            missing.append(file[0])
+        if not os.path.isfile(img_path + file[0]):
+            missing.append([file[0]])
         else:
             cpr_child = img_cpr_link[file[0]]
             if final_data[cpr_child]['GA_days'] == '.':
