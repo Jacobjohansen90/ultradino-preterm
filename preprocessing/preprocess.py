@@ -23,7 +23,7 @@ path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/"
 holdout_path = "/projects/users/data/UCPH/DeepFetal/projects/ultrasound_preprocessing/splits/PRETERM_RCT_PT_V2/holdout_test_5pct.csv"
 
 #Path to images
-img_path = '/projects/users/data/UCPH/DeepFetal/ultrasound/PNG_pretrain/'
+path_imgs = '/projects/users/data/UCPH/DeepFetal/ultrasound/PNG_pretrain/'
 
 #Cutoff date for SP inclusion
 SP_date_cutoff = datetime.strptime("20251105", "%Y%m%d")
@@ -89,7 +89,7 @@ with open(path + 'registers/combined.csv', 'w') as file:
             for idx in idxs:
                 info.append(row[idx])
             wr.writerow(info)
-            if debug and n_births > 10000:
+            if debug and n_births > 1000:
                 break
 
 csv_file.close()
@@ -227,13 +227,17 @@ cervix_data_SP = {}
 cervix_data_SP_holdout = {}
 
 no_ga = []
+np_cpr_link = []
 
 for file in d:
     if file[1] == '14':
-        if not os.path.isfile(img_path + file[0]):
-            missing.append([file[0]])
+        if not os.path.isfile(path_imgs + file[0]):
+            missing.append(path_imgs + [file[0]])
         else:
-            cpr_child = img_cpr_link[file[0]]
+            try:
+                cpr_child = img_cpr_link[file[0]]
+            except:
+                no_cpr_link.append(file[0])
             if final_data[cpr_child]['GA_days'] == '.':
                   no_ga.append(cpr_child)
                   continue
@@ -323,4 +327,7 @@ with open(path + 'logs/ga_missing.csv', 'w') as f:
     writer.writerow(['cpr_child'])
     writer.writerows(no_ga)
 
-
+with open(path + 'logs/no_cpr_link.csv', 'w') as f:
+    writer = csv.writer(f)
+    writer.writerow(['img_path'])
+    writer.writerows(no_cpr_link)
