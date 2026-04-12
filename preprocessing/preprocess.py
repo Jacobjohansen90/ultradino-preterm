@@ -232,15 +232,15 @@ img_not_in_db = []
 for file in d:
     if file[1] == '14':
         if not os.path.isfile(path_imgs + file[0]):
-            missing.append(path_imgs + file[0])
+            missing.append([path_imgs + file[0]])
         else:
             try:
                 cpr_child = img_cpr_link[file[0]]
             except:
-                img_not_in_db.append(file[0])
+                img_not_in_db.append([file[0]])
                 continue
             if final_data[cpr_child]['GA_days'] == '.':
-                  no_ga.append(cpr_child)
+                  no_ga.append([cpr_child])
                   continue
             for imgs in final_data[cpr_child]['imgs']:
                 if imgs['file_path'] == file[0]:

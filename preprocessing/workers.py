@@ -45,7 +45,7 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
     con = sqlite3.connect(path_to_db)
     cur = con.cursor()
     while not done.value or csv_que.qsize() > 0:
-        row = csv_que.get()
+        row = csv_que.get(timeout=30)
         cpr_mother = row[csv_idx['cpr_mother']]
         cpr_child = row[csv_idx['cpr_child']]
 
