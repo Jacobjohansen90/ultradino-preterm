@@ -14,51 +14,47 @@ def calc_stats(path):
     stats = open(path + 'stats.txt', 'w')
     
     #%%Count births
-    f = open(path + 'Data/registers/combined.csv')
-    d = csv.reader(f)
+    with open(path + 'Data/registers/combined.csv') as f:
+        d = csv.reader(f)
     
-    headers = next(d)
+        headers = next(d)
        
-    births = sum(1 for line in d)
-    stats.write('--Total Births--\n')
-    stats.write('Total births in SDS: ' + str(births) + '\n')
+        births = sum(1 for line in d)
+        stats.write('--Total Births--\n')
+        stats.write('Total births in SDS: ' + str(births) + '\n')
     
-    f.close()
     
     #%%Count DB
-    f = open(path + 'Data/image_data/img_data.json')
-    d = json.load(f)
+    with open(path + 'Data/image_data/img_data.json') as f:
+        d = json.load(f)
     
     births_in_sql = len(d)
     
     stats.write('Total births in SQL db: '+ str(births_in_sql) + '\n')
     
-    f.close()
+    with open(path + 'Data/logs/birth_missing.csv') as f:
+        d = csv.reader(f)
     
-    f = open(path + 'Data/logs/birth_missing.csv')
-    d = csv.reader(f)
+        headers = next(d)
     
-    headers = next(d)
+        missing = 0
     
-    missing = 0
+        counter = {}
     
-    counter = {}
-    
-    for row in d:
-        missing += 1
-        if row[2] not in counter.keys():
-            counter[row[2]] = 1
-        else:
-            counter[row[2]] += 1
-    
-    stats.write('Total births missing in SQL db: ' + str(missing) + '\n')
-    for key in counter:
-        stats.write('\t- ' + str(key) + ': ' + str(counter[key]) + '\n')
+        for row in d:
+            missing += 1
+            if row[2] not in counter.keys():
+                counter[row[2]] = 1
+            else:
+                counter[row[2]] += 1
         
-    uacc = births - births_in_sql - missing
-    stats.write('Unaccounted for: ' + str(uacc) + '\n')
+        stats.write('Total births missing in SQL db: ' + str(missing) + '\n')
+        for key in counter:
+            stats.write('\t- ' + str(key) + ': ' + str(counter[key]) + '\n')
+            
+        uacc = births - births_in_sql - missing
+        stats.write('Unaccounted for: ' + str(uacc) + '\n')
     
-    f.close()
     #%%Count births with cervix
     stats.write('\n')
     with open(path + 'Data/traindata.json') as f:
@@ -83,16 +79,15 @@ def calc_stats(path):
     stats.write('\n')
     stats.write('--Images--\n')
     
-    f = open(path + 'Data/image_data/misc/image_list.csv')
-    d = csv.reader(f)
+    with open(path + 'Data/image_data/misc/image_list.csv') as f:
+        d = csv.reader(f)
+        
+        headers = next(d)
+        
+        imgs = sum(1 for line in d)
+        
+        stats.write('Total images: ' + str(imgs) + '\n')
     
-    headers = next(d)
-    
-    imgs = sum(1 for line in d)
-    
-    stats.write('Total images: ' + str(imgs) + '\n')
-    
-    f.close()
     #%%Count cervix images
     all_count = {}
     SP_count = {}
@@ -148,89 +143,87 @@ def calc_stats(path):
     stats.write('\t Train/Test: ' + str(n_train_SP) + ' / ' + str(n_test_SP) + '\n')
     stats.write('\n')  
     stats.write('Max number of cervix images in 1 birth: ' + str(n_max) + '\n')
-    stats.write('Avg number of cervix images per birth: ' + str(round((n_train + n_test)/cervix_births),2) + '\n')
+    stats.write('Avg number of cervix images per birth: ' + str(round((n_train + n_test)/cervix_births,2)) + '\n')
 
     #%%Count errors
-    f = open(path + 'Data/logs/errors.csv')
-    d = csv.reader(f)
+    with open(path + 'Data/logs/errors.csv') as f:
+        d = csv.reader(f)
     
-    headers = next(d)
-    
-    counter = {}
-    
-    for row in d:
-        if row[1] not in counter.keys():
-            counter[row[1]] = 1
-        else:
-            counter[row[1]] += 1
-            
-    for key in counter:
-        stats.write('\t- ' + str(key) + ': ' + str(counter[key]) + '\n')       
+        headers = next(d)
+        
+        counter = {}
+        
+        for row in d:
+            if row[1] not in counter.keys():
+                counter[row[1]] = 1
+            else:
+                counter[row[1]] += 1
+                
+        for key in counter:
+            stats.write('\t- ' + str(key) + ': ' + str(counter[key]) + '\n')       
     
     
     #%%Regional + hospital breakdown
     stats.write('\n')
     stats.write('--Regional + Hospital breakdown--\n')
     
-    f = open(path + 'Data/registers/nyfoedte.csv')
-    d = csv.reader(f)
+    with open(path + 'Data/registers/nyfoedte.csv') as f:
+        d = csv.reader(f)
+        
+        headers = next(d)
+        
+        n_reg = {}
+        n_hos = {}
+        
+        for i, header in enumerate(headers):
+            if header == 'AnsvarligRegion_Geo_Tekst':
+                reg_txt = i
+            elif header == 'AnsvarligInstitution_Kode':
+                hos_kode = i
+            elif header == 'AnsvarligInstitution_Tekst':
+                hos_txt = i
+        
+        translator = {'1501': ['Kbh Amts Sygehus i Gentofte', 'Region Hovedstaden'],
+                      '4212': ['OUH Svenborg Sygehus', 'Region Syddanmark'],
+                      '7601': ['Viborg Sygehus', 'Region Midtjylland'],
+                      '7002': ['Silkeborg Centralsygehus', 'Region Midtjylland'],
+                      '1401': ['Frederiksberg Hosdpital', 'Region Hovedstaden'],
+                      '1502': ['Kbh. Amts Sygehus i Glostrup', 'Region Hovedstaden'],
+                      '7026': ['Skejby Sygehus', 'Region Midtjylland'],
+                      '6501': ['Holstebro Centralsygehus', 'Region Midtjylland'],
+                      '5001': ['Sønderborg Sygehus', 'Region Syddanmark'],
+                      '5002': ['Haderslev Sygehus', 'Region Syddanmark'],
+                      '6502': ['Herning Sygehus', 'Region Midtjylland']}
+        
+        for line in d:
+            if line[hos_kode] not in translator.keys():
+                translator[line[hos_kode]] = [line[hos_txt], line[reg_txt]]
     
-    headers = next(d)
-    
-    n_reg = {}
-    n_hos = {}
-    
-    for i, header in enumerate(headers):
-        if header == 'AnsvarligRegion_Geo_Tekst':
-            reg_txt = i
-        elif header == 'AnsvarligInstitution_Kode':
-            hos_kode = i
-        elif header == 'AnsvarligInstitution_Tekst':
-            hos_txt = i
-    
-    translator = {'1501': ['Kbh Amts Sygehus i Gentofte', 'Region Hovedstaden'],
-                  '4212': ['OUH Svenborg Sygehus', 'Region Syddanmark'],
-                  '7601': ['Viborg Sygehus', 'Region Midtjylland'],
-                  '7002': ['Silkeborg Centralsygehus', 'Region Midtjylland'],
-                  '1401': ['Frederiksberg Hosdpital', 'Region Hovedstaden'],
-                  '1502': ['Kbh. Amts Sygehus i Glostrup', 'Region Hovedstaden'],
-                  '7026': ['Skejby Sygehus', 'Region Midtjylland'],
-                  '6501': ['Holstebro Centralsygehus', 'Region Midtjylland'],
-                  '5001': ['Sønderborg Sygehus', 'Region Syddanmark'],
-                  '5002': ['Haderslev Sygehus', 'Region Syddanmark'],
-                  '6502': ['Herning Sygehus', 'Region Midtjylland']}
-    
-    for line in d:
-        if line[hos_kode] not in translator.keys():
-            translator[line[hos_kode]] = [line[hos_txt], line[reg_txt]]
-    
-    f.close()
-    
-    f = open(path + 'Data/image_data/img_data.json')
-    cprs = json.load(f)
+    with open(path + 'Data/image_data/img_data.json') as f:
+        cprs = json.load(f)
     
     cpr_child = set(cprs.keys())
     
-    g = open(path + 'Data/registers/combined.csv')
-    d = csv.reader(g)
-    
-    _ = next(d)
-    
-    for line in d:
-        if line[0] in cpr_child:
-            try:
-                hos, reg = translator[line[4]]
-            except:
-                reg = 'No SHAK Code'
-                hos = 'No SHAK Code'
-            if reg not in n_reg.keys():
-                n_reg[reg] = 1
-            else:
-                n_reg[reg] += 1
-            if hos not in n_hos.keys():
-                n_hos[hos] = 1
-            else:
-                n_hos[hos] += 1
+    with open(path + 'Data/registers/combined.csv') as f:
+        d = csv.reader(f)
+        
+        _ = next(d)
+        
+        for line in d:
+            if line[0] in cpr_child:
+                try:
+                    hos, reg = translator[line[4]]
+                except:
+                    reg = 'No SHAK Code'
+                    hos = 'No SHAK Code'
+                if reg not in n_reg.keys():
+                    n_reg[reg] = 1
+                else:
+                    n_reg[reg] += 1
+                if hos not in n_hos.keys():
+                    n_hos[hos] = 1
+                else:
+                    n_hos[hos] += 1
        
     n_reg_cer = {}
     n_hos_cer = {}
@@ -251,7 +244,7 @@ def calc_stats(path):
         if hos not in n_hos_cer.keys():
             n_hos_cer[hos] = 1
         else:
-            n_reg_cer[hos] += 1
+            n_hos_cer[hos] += 1
 
     for key in SP_count:
         try:
