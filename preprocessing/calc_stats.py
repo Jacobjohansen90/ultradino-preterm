@@ -238,13 +238,13 @@ def calc_stats(path):
             reg = 'No SHAK Code'
             hos = 'No SHAK Code'        
         if reg not in n_reg_cer.keys():
-            n_reg_cer[reg] = 1
+            n_reg_cer[reg] = all_count[key]
         else:
-            n_reg_cer[reg] += 1
+            n_reg_cer[reg] += all_count[key]
         if hos not in n_hos_cer.keys():
-            n_hos_cer[hos] = 1
+            n_hos_cer[hos] = all_count[key]
         else:
-            n_hos_cer[hos] += 1
+            n_hos_cer[hos] += all_count[key]
 
     for key in SP_count:
         try:
@@ -253,13 +253,13 @@ def calc_stats(path):
             reg = 'No SHAK Code'
             hos = 'No SHAK Code'        
         if reg not in n_reg_cer_SP.keys():
-            n_reg_cer_SP[reg] = 1
+            n_reg_cer_SP[reg] = SP_count[key]
         else:
-            n_reg_cer_SP[reg] += 1
+            n_reg_cer_SP[reg] += SP_count[key]
         if hos not in n_hos_cer_SP.keys():
-            n_hos_cer_SP[hos] = 1
+            n_hos_cer_SP[hos] = SP_count[key]
         else:
-            n_hos_cer_SP[hos] += 1
+            n_hos_cer_SP[hos] += SP_count[key]
             
             
     stats.write('Births with images\n')
