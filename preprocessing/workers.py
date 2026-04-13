@@ -57,6 +57,9 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
         if len(cpr_hashes) == 0:
             data_que.put(['not_found', [cpr_mother, cpr_child, 'no_cpr_link_mother', SHAK, birthdate]])
         
+        elif row[csv_idx['GA_days']] == '.':
+            data_que.put(['not_found', [cpr_mother, cpr_child, 'no_GA', SHAK, birthdate]])
+            
         else:    
             data_temp = {}
             
