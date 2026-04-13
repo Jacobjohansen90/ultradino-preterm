@@ -31,7 +31,7 @@ crawl_db = True #Recrawl database
 
 #Variables
 num_workers = 60 #Number of MP workers
-SP_date_cutoff = datetime.strptime("20251105", "%Y%m%d") #Cutoff date for SP inclusion
+SP_date_cutoff = datetime.strptime("20151105", "%Y%m%d") #Cutoff date for SP inclusion
 
 
 #CSV Variables we want from registeres in each file
@@ -226,13 +226,13 @@ f = open(path + 'image_data/misc/cervix_preds.csv')
 d = csv.reader(f)
 _ = next(d)
 
-f_holdout = open(holdout_path)  
-holdout_csv = csv.reader(f_holdout)  
-
 holdout_set = []
 
-for holdout_img in holdout_csv:
-    holdout_set.append(holdout_img[0].split('PNG_processed_no_OCR')[1])
+with open(holdout_path) as f:  
+    holdout_csv = csv.reader(f)  
+
+    for holdout_img in holdout_csv:
+        holdout_set.append(holdout_img[0].split('PNG_processed_no_OCR/')[1])
 
 holdout_set = set(holdout_set)
 
@@ -328,6 +328,7 @@ for file in d:
                             else:
                                 cervix_data[cpr_child][key] = final_data[cpr_child][key]
 
+
 with open(path + 'traindata.json', 'w') as f:
     json.dump(cervix_data, f)
 
@@ -357,6 +358,6 @@ with open(path + 'logs/img_not_in_db.csv', 'w') as f:
 
 #%% Calculate stats
 logger.info("Calculating stats - " + str(datetime.now().strftime('%H:%M:%S')))
-calc_stats(path.split('/'.join(path.split('/')[:-2])) + '/')
+calc_stats('/'.join(path.split('/')[:-2]) + '/')
 
 logger.info("Preprocessing done - " + str(datetime.now().strftime('%H:%M:%S')))
