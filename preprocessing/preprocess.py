@@ -277,7 +277,7 @@ for file in d:
                                     cervix_data_SP_holdout[cpr_child][key] = final_data[cpr_child][key]
     
                 else:
-                    cervix_data_SP[cpr_child] = {}
+                    cervix_data_holdout[cpr_child] = {}
                     if datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff:
                         cervix_data_SP_holdout[cpr_child] = {}
                         for key in final_data[cpr_child].keys():
@@ -291,9 +291,9 @@ for file in d:
                     else:
                         for key in final_data[cpr_child].keys():
                             if key == 'imgs':
-                                cervix_data_holdout[key] = [img_data]
+                                cervix_data_holdout[cpr_child][key] = [img_data]
                             else:
-                                cervix_data_holdout[key] = final_data[cpr_child][key]
+                                cervix_data_holdout[cpr_child][key] = final_data[cpr_child][key]
 
             else:            
                 if cpr_child in cervix_data.keys():

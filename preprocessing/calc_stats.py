@@ -35,7 +35,7 @@ def calc_stats(path):
     
     f.close()
     
-    f = open(path + 'data/logs/missing.csv')
+    f = open(path + 'Data/logs/birth_missing.csv')
     d = csv.reader(f)
     
     headers = next(d)
