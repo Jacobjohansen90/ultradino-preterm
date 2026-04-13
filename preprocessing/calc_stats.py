@@ -71,9 +71,9 @@ def calc_stats(path):
         n_test_SP = len(d)
     cervix_births = n_train + n_test
     stats.write('Total births with cervix scans: ' + str(n_train + n_test) + '\n')
-    stats.write('\t Train/Test: ' + str(n_train) + ' / ' + str(n_test) + '\n')
+    stats.write('\t- Train/Test: ' + str(n_train) + ' / ' + str(n_test) + '\n')
     stats.write('Total births with cervix scans + SP: ' + str(n_train_SP + n_test_SP) + '\n')
-    stats.write('\t Train/Test: ' + str(n_train_SP) + ' / ' + str(n_test_SP) + '\n')
+    stats.write('\t- Train/Test: ' + str(n_train_SP) + ' / ' + str(n_test_SP) + '\n')
 
     #%%Count images
     stats.write('\n')
@@ -138,9 +138,9 @@ def calc_stats(path):
                 SP_count[d[key]['Hospital']] = 1
     
     stats.write('Total cervix images: ' + str(n_train + n_test) + '\n')
-    stats.write('\t Train/Test: ' + str(n_train) + ' / ' + str(n_test) + '\n')
+    stats.write('\t- Train/Test: ' + str(n_train) + ' / ' + str(n_test) + '\n')
     stats.write('Total cervix images with SP: ' + str(n_train_SP + n_test_SP) + '\n')
-    stats.write('\t Train/Test: ' + str(n_train_SP) + ' / ' + str(n_test_SP) + '\n')
+    stats.write('\t- Train/Test: ' + str(n_train_SP) + ' / ' + str(n_test_SP) + '\n')
     stats.write('\n')  
     stats.write('Max number of cervix images in 1 birth: ' + str(n_max) + '\n')
     stats.write('Avg number of cervix images per birth: ' + str(round((n_train + n_test)/cervix_births,2)) + '\n')
@@ -259,7 +259,7 @@ def calc_stats(path):
         if hos not in n_hos_cer_SP.keys():
             n_hos_cer_SP[hos] = 1
         else:
-            n_reg_cer_SP[hos] += 1
+            n_hos_cer_SP[hos] += 1
             
             
     stats.write('Births with images\n')
@@ -267,13 +267,13 @@ def calc_stats(path):
     total = [0,0,0]
     for key in n_reg:
         count = [0,0,0]
-        count[0] = n_reg[key]
-        total[0] = n_reg[key]
+        count[0] += n_reg[key]
+        total[0] += n_reg[key]
         if key in n_reg_cer.keys():
-            count[1] = n_reg_cer[key]
+            count[1] += n_reg_cer[key]
             total[1] += n_reg_cer[key]
         if key in n_reg_cer_SP.keys():
-            count[2] = n_reg_cer_SP[key]
+            count[2] += n_reg_cer_SP[key]
             total[2] += n_reg_cer_SP[key]
         if key == 'No SHAK Code':
             s_shak = str(count[0]) + ' / ' + str(count[1]) + ' / ' + str(count[2]) + '\n'
@@ -291,13 +291,13 @@ def calc_stats(path):
     total = [0,0,0]
     for key in n_hos:
         count = [0,0,0]
-        count[0] = n_hos[key]
-        total[0] = n_hos[key]
+        count[0] += n_hos[key]
+        total[0] += n_hos[key]
         if key in n_hos_cer.keys():
-            count[1] = n_hos_cer[key]
+            count[1] += n_hos_cer[key]
             total[1] += n_hos_cer[key]
         if key in n_hos_cer_SP.keys():
-            count[2] = n_hos_cer_SP[key]
+            count[2] += n_hos_cer_SP[key]
             total[2] += n_hos_cer_SP[key]
         if key == 'No SHAK Code':
             s_shak = str(count[0]) + ' / ' + str(count[1]) + ' / ' + str(count[2]) + '\n'
