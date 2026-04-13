@@ -48,14 +48,14 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
         row = csv_que.get()
         cpr_mother = row[csv_idx['cpr_mother']]
         cpr_child = row[csv_idx['cpr_child']]
-
+        SHAK = row[csv_idx['Hospital']]
         birthdate = datetime.strptime(str(row[csv_idx['Birthdate']]).replace("-",""), "%Y%m%d").date()
         
         query = f"SELECT xxhash FROM cpr_hashes WHERE phair_hash = '{cpr_mother}'"
         cpr_hashes = list(cur.execute(query))
         
         if len(cpr_hashes) == 0:
-            data_que.put(['not_found', [cpr_mother, cpr_child, 'no_cpr_link_mother']])
+            data_que.put(['not_found', [cpr_mother, cpr_child, 'no_cpr_link_mother', SHAK, birthdate]])
         
         else:    
             data_temp = {}
@@ -99,4 +99,4 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
                 data_temp['imgs'] = imgs
                 data_que.put([cpr_child, data_temp])
             else:
-                data_que.put(['not_found', [cpr_mother, cpr_child, 'no_imgs_for_child']])
+                data_que.put(['not_found', [cpr_mother, cpr_child, 'no_imgs_for_child', SHAK, birthdate]])

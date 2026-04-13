@@ -148,7 +148,6 @@ def calc_stats(path):
     #%%Count errors
     with open(path + 'Data/logs/errors.csv') as f:
         d = csv.reader(f)
-    
         headers = next(d)
         
         counter = {}
