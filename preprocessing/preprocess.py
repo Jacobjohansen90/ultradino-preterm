@@ -98,9 +98,10 @@ csv_file.close()
 
 #%%Crawl database
 if not crawl_db:
+    logger.info("Using existing database - " + str(datetime.now().strftime('%H:%M:%S')))
     with open(path + 'image_data/img_data.json') as f:
         final_data = json.load(f)
-    with open(path + 'image_data/img_cpr_link') as f:
+    with open(path + 'image_data/img_cpr_link.json') as f:
         img_cpr_link = json.load(f)
         
 else:
@@ -268,6 +269,7 @@ for file in d:
                         if cpr_child in cervix_data_SP_holdout.keys():
                             cervix_data_SP_holdout[cpr_child]['imgs'].append(img_data)
                         else:
+                            cervix_data_SP_holdout[cpr_child] = {}
                             for key in final_data[cpr_child].keys():
                                 if key == 'imgs':
                                     cervix_data_SP_holdout[cpr_child][key] = [img_data]
@@ -275,7 +277,9 @@ for file in d:
                                     cervix_data_SP_holdout[cpr_child][key] = final_data[cpr_child][key]
     
                 else:
+                    cervix_data_SP[cpr_child] = {}
                     if datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff:
+                        cervix_data_SP_holdout[cpr_child] = {}
                         for key in final_data[cpr_child].keys():
                             if key == 'imgs':
                                 cervix_data_holdout[cpr_child][key] = [img_data]
@@ -298,6 +302,7 @@ for file in d:
                         if cpr_child in cervix_data_SP.keys():
                             cervix_data_SP[cpr_child]['imgs'].append(img_data)
                         else:
+                            cervix_data_SP[cpr_child] = {}
                             for key in final_data[cpr_child].keys():
                                 if key == 'imgs':
                                     cervix_data_SP[cpr_child][key] = [img_data]
@@ -305,7 +310,9 @@ for file in d:
                                     cervix_data_SP[cpr_child][key] = final_data[cpr_child][key]
     
                 else:
+                    cervix_data[cpr_child] = {}
                     if datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff:
+                        cervix_data_SP[cpr_child] = {}
                         for key in final_data[cpr_child].keys():
                             if key == 'imgs':
                                 cervix_data[cpr_child][key] = [img_data]

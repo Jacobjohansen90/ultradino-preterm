@@ -10,7 +10,7 @@ import json
 import csv
 
 #%%Main process
-def calculate_stats(path):
+def calc_stats(path):
     stats = open(path + 'stats.txt', 'w')
     
     #%%Count births
@@ -204,4 +204,4 @@ def calculate_stats(path):
 #%%Make script individual callable
 if __name__ ==  'main':
     path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/'
-    calculate_stats(path)
+    calc_stats(path)
