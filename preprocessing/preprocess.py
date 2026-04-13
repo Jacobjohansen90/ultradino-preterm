@@ -16,6 +16,7 @@ import sqlite3
 from datetime import datetime
 
 from workers import csv_extracter, db_crawler
+from calc_stats import calc_stats
 #%%Variables
 
 #Path to Data folder and holdout test set
@@ -25,12 +26,13 @@ holdout_path = "/projects/users/data/UCPH/DeepFetal/projects/ultrasound_preproce
 #Path to images
 path_imgs = '/projects/users/data/UCPH/DeepFetal/ultrasound/PNG_pretrain/'
 
-#Cutoff date for SP inclusion
-SP_date_cutoff = datetime.strptime("20251105", "%Y%m%d")
+debug = False #Run on a small sample for debugging purposes
+crawl_db = True #Recrawl database
 
 #Variables
-debug = False #Run on a small sample for debugging purposes
 num_workers = 60 #Number of MP workers
+SP_date_cutoff = datetime.strptime("20251105", "%Y%m%d") #Cutoff date for SP inclusion
+
 
 #CSV Variables we want from registeres in each file
 headers = ["cpr_child", "cpr_mother", "GA_days", "Birthdate", "Hospital"]
@@ -89,119 +91,132 @@ with open(path + 'registers/combined.csv', 'w') as file:
             for idx in idxs:
                 info.append(row[idx])
             wr.writerow(info)
-            if debug and n_births > 1000:
+            if debug and n_births > 10000:
                 break
 
 csv_file.close()
 
 #%%Crawl database
-
-#Setup ques, loggers and start processes
-csv_que = mp.Queue()
-data_que = mp.Queue()
-done = mp.Value('b', False)
-csv_size = mp.Value('i', n_births)
-path_to_db = path + 'registers/ultrasound_metadata_db.sqlite'
-csv_idx = {}
-db_idx = {}
-
-
-for i in range(len(csv_headers)):
-    for variable in variables_from_csv:
-        if headers[i] == variable:
-            csv_idx[variable] = i
-
-if len(variables_from_csv) != len(csv_idx):
-    found = list(csv_idx.keys())
-    diff = list(set(variables_from_csv) - set(found))
-    raise Exception(f"Did not find variables {diff} in CSV")
-
-#Crawl DB for variables indexes
-with sqlite3.connect(path_to_db) as con:
-    cur = con.cursor()
-    cur.execute("SELECT * FROM metadata_cache LIMIT 0")
-    db_headers = [desc[0] for desc in cur.description]
-
-for i in range(len(db_headers)):
-    for variable in variables_from_db:
-        if db_headers[i] == variable:
-            db_idx[variable] = i
-
-num_workers = min(num_workers, mp.cpu_count()-4)
-
-logger.info(f"Starting {num_workers} workers - " + str(datetime.now().strftime('%H:%M:%S')))
-
-processes = []
-p = mp.Process(target=csv_extracter, args=(path + 'registers/combined.csv', csv_que, done))
-p.start()
-processes.append(p)
-
-for i in range(num_workers):
-    p = mp.Process(target=db_crawler, args=(csv_idx, db_idx, path_to_db, csv_que, data_que, done))
+if not crawl_db:
+    with open(path + 'image_data/img_data.json') as f:
+        final_data = json.load(f)
+    with open(path + 'image_data/img_cpr_link') as f:
+        img_cpr_link = json.load(f)
+        
+else:
+    #Setup ques, loggers and start processes
+    csv_que = mp.Queue()
+    data_que = mp.Queue()
+    done = mp.Value('b', False)
+    csv_size = mp.Value('i', n_births)
+    path_to_db = path + 'registers/ultrasound_metadata_db.sqlite'
+    csv_idx = {}
+    db_idx = {}
+    
+    
+    for i in range(len(csv_headers)):
+        for variable in variables_from_csv:
+            if headers[i] == variable:
+                csv_idx[variable] = i
+    
+    if len(variables_from_csv) != len(csv_idx):
+        found = list(csv_idx.keys())
+        diff = list(set(variables_from_csv) - set(found))
+        raise Exception(f"Did not find variables {diff} in CSV")
+    
+    #Crawl DB for variables indexes
+    with sqlite3.connect(path_to_db) as con:
+        cur = con.cursor()
+        cur.execute("SELECT * FROM metadata_cache LIMIT 0")
+        db_headers = [desc[0] for desc in cur.description]
+    
+    for i in range(len(db_headers)):
+        for variable in variables_from_db:
+            if db_headers[i] == variable:
+                db_idx[variable] = i
+    
+    num_workers = min(num_workers, mp.cpu_count()-4)
+    
+    logger.info(f"Starting {num_workers} workers - " + str(datetime.now().strftime('%H:%M:%S')))
+    
+    processes = []
+    p = mp.Process(target=csv_extracter, args=(path + 'registers/combined.csv', csv_que, done))
     p.start()
     processes.append(p)
-
-not_found = []
-errors = []
-final_data = {}
-img_cpr_link = {}
-invalid_counter = 0
-n = 1
-images = []
-
-while n < csv_size.value:
-
-    data = data_que.get()
-
-    if data[0] == 'error':
-        errors.append(data[1])
-    elif data[0] == 'not_found':
-        n += 1
-        not_found.append(data[1])
-        if n % 100000 == 0:
-            logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))
-    else:
-        if data[0] == 'INVALID':
-            final_data['child_' + str(invalid_counter)] = data[1]
-            invalid_counter += 1
+    
+    for i in range(num_workers):
+        p = mp.Process(target=db_crawler, args=(csv_idx, db_idx, path_to_db, csv_que, data_que, done))
+        p.start()
+        processes.append(p)
+    
+    not_found = []
+    errors = []
+    final_data = {}
+    img_cpr_link = {}
+    invalid_counter = 0
+    n = 1
+    images = []
+    
+    while n < csv_size.value:
+    
+        data = data_que.get()
+    
+        if data[0] == 'error':
+            errors.append(data[1])
+        elif data[0] == 'not_found':
+            n += 1
+            not_found.append(data[1])
+            if n % 100000 == 0:
+                logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))
         else:
-            final_data[data[0]] = data[1]
-        n += 1
-        if n % 100000 == 0:
-            logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))            
-
-Path(path + 'logs/').mkdir(exist_ok=True)
-Path(path + 'image_data/misc/').mkdir(parents=True, exist_ok=True)
-
-with open(path + 'logs/birth_missing.csv', 'w', newline='') as file:
-    wr = csv.writer(file, quoting=csv.QUOTE_ALL)
-    wr.writerow(["cpr_phair_mother", "cpr_phair_child", "error"])
-    for row in not_found:
-        wr.writerow(row)
-
-with open(path + 'logs/errors.csv', 'w', newline='') as file:
-    wr = csv.writer(file, quoting=csv.QUOTE_ALL)
-    wr.writerow(["info", "error"])
-    for row in errors:
-        wr.writerow(row)
-
-with open(path + 'image_data/img_data.json', 'w') as file:
-    json.dump(final_data, file)
+            if data[0] == 'INVALID':
+                final_data['child_' + str(invalid_counter)] = data[1]
+                invalid_counter += 1
+            else:
+                final_data[data[0]] = data[1]
+            n += 1
+            if n % 100000 == 0:
+                logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))            
     
-with open(path + 'image_data/misc/image_list.csv', 'w') as file:
-    wr = csv.writer(file)
-    wr.writerow(["filename"])
-    for key in final_data.keys():
-        for img_info in final_data[key]['imgs']:
-            img_path = img_info['file_path']
-            images.append(img_path)
-            wr.writerow([img_path])
-            img_cpr_link[img_path] = key
+    #Shutdown processes
+    for p in processes:
+        p.terminate()
+    
+    Path(path + 'logs/').mkdir(exist_ok=True)
+    Path(path + 'image_data/misc/').mkdir(parents=True, exist_ok=True)
+    
+    
+    
+    with open(path + 'logs/birth_missing.csv', 'w', newline='') as file:
+        wr = csv.writer(file, quoting=csv.QUOTE_ALL)
+        wr.writerow(["cpr_phair_mother", "cpr_phair_child", "error"])
+        for row in not_found:
+            wr.writerow(row)
+    
+    with open(path + 'logs/errors.csv', 'w', newline='') as file:
+        wr = csv.writer(file, quoting=csv.QUOTE_ALL)
+        wr.writerow(["info", "error"])
+        for row in errors:
+            wr.writerow(row)
+    
+    with open(path + 'image_data/img_data.json', 'w') as file:
+        json.dump(final_data, file)
         
-with open(path + 'image_data/img_cpr_link.json', 'w') as file:
-    json.dump(img_cpr_link, file)
-    
-del not_found
+    with open(path + 'image_data/misc/image_list.csv', 'w') as file:
+        wr = csv.writer(file)
+        wr.writerow(["filename"])
+        for key in final_data.keys():
+            for img_info in final_data[key]['imgs']:
+                img_path = img_info['file_path']
+                images.append(img_path)
+                wr.writerow([img_path])
+                img_cpr_link[img_path] = key
+            
+    with open(path + 'image_data/img_cpr_link.json', 'w') as file:
+        json.dump(img_cpr_link, file)
+        
+    del not_found
+    del errors
     
 #%%Identify Cervix scans & make train and test sets
 logger.info("Linking cervix preds with database - " + str(datetime.now().strftime('%H:%M:%S')))
@@ -255,19 +270,19 @@ for file in d:
                         else:
                             for key in final_data[cpr_child].keys():
                                 if key == 'imgs':
-                                    cervix_data_SP_holdout[key] = [img_data]
+                                    cervix_data_SP_holdout[cpr_child][key] = [img_data]
                                 else:
-                                    cervix_data_SP_holdout[key] = final_data[cpr_child][key]
+                                    cervix_data_SP_holdout[cpr_child][key] = final_data[cpr_child][key]
     
                 else:
                     if datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff:
                         for key in final_data[cpr_child].keys():
                             if key == 'imgs':
-                                cervix_data_holdout[key] = [img_data]
-                                cervix_data_SP_holdout[key] = [img_data]
+                                cervix_data_holdout[cpr_child][key] = [img_data]
+                                cervix_data_SP_holdout[cpr_child][key] = [img_data]
                             else:
-                                cervix_data_holdout[key] = final_data[cpr_child][key]
-                                cervix_data_SP_holdout[key] = final_data[cpr_child][key]
+                                cervix_data_holdout[cpr_child][key] = final_data[cpr_child][key]
+                                cervix_data_SP_holdout[cpr_child][key] = final_data[cpr_child][key]
     
                     else:
                         for key in final_data[cpr_child].keys():
@@ -285,26 +300,26 @@ for file in d:
                         else:
                             for key in final_data[cpr_child].keys():
                                 if key == 'imgs':
-                                    cervix_data_SP[key] = [img_data]
+                                    cervix_data_SP[cpr_child][key] = [img_data]
                                 else:
-                                    cervix_data_SP[key] = final_data[cpr_child][key]
+                                    cervix_data_SP[cpr_child][key] = final_data[cpr_child][key]
     
                 else:
                     if datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff:
                         for key in final_data[cpr_child].keys():
                             if key == 'imgs':
-                                cervix_data[key] = [img_data]
-                                cervix_data_SP[key] = [img_data]
+                                cervix_data[cpr_child][key] = [img_data]
+                                cervix_data_SP[cpr_child][key] = [img_data]
                             else:
-                                cervix_data[key] = final_data[cpr_child][key]
-                                cervix_data_SP[key] = final_data[cpr_child][key]
+                                cervix_data[cpr_child][key] = final_data[cpr_child][key]
+                                cervix_data_SP[cpr_child][key] = final_data[cpr_child][key]
     
                     else:
                         for key in final_data[cpr_child].keys():
                             if key == 'imgs':
-                                cervix_data[key] = [img_data]
+                                cervix_data[cpr_child][key] = [img_data]
                             else:
-                                cervix_data[key] = final_data[cpr_child][key]
+                                cervix_data[cpr_child][key] = final_data[cpr_child][key]
 
 with open(path + 'traindata.json', 'w') as f:
     json.dump(cervix_data, f)
@@ -332,5 +347,9 @@ with open(path + 'logs/img_not_in_db.csv', 'w') as f:
     writer = csv.writer(f)
     writer.writerow(['img_path'])
     writer.writerows(img_not_in_db)
+
+#%% Calculate stats
+logger.info("Calculating stats - " + str(datetime.now().strftime('%H:%M:%S')))
+calc_stats(path.split('/'.join(path.split('/')[:-2])) + '/')
 
 logger.info("Preprocessing done - " + str(datetime.now().strftime('%H:%M:%S')))
