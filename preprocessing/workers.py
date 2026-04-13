@@ -3,7 +3,7 @@
 """
 Created on Thu Mar 19 14:37:28 2026
 
-@author: jacob
+@author: jj@di.ku.dk
 """
 
 import sqlite3
