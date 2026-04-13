@@ -158,7 +158,7 @@ else:
     n = 1
     images = []
     
-    while n < csv_size.value:
+    while n <= csv_size.value:
     
         data = data_que.get()
     

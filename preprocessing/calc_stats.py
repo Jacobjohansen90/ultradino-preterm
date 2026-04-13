@@ -59,7 +59,26 @@ def calc_stats(path):
     stats.write('Unaccounted for: ' + str(uacc) + '\n')
     
     f.close()
-    
+    #%%Count births with cervix
+    stats.write('\n')
+    with open(path + 'Data/traindata.json') as f:
+        d = json.load(f)
+        n_train = len(d)
+    with open(path + 'Data/testdata.json') as f:
+        d = json.load(f)
+        n_test = len(d) 
+    with open(path + 'Data/traindata_SP.json') as f:
+        d = json.load(f)
+        n_train_SP = len(d)
+    with open(path + 'Data/testdata_SP.json') as f:
+        d = json.load(f)
+        n_test_SP = len(d)
+    cervix_births = n_train + n_test
+    stats.write('Total births with cervix scans: ' + str(n_train + n_test) + '\n')
+    stats.write('\t Train/Test: ' + str(n_train) + ' / ' + str(n_test) + '\n')
+    stats.write('Total births with cervix scans + SP: ' + str(n_train_SP + n_test_SP) + '\n')
+    stats.write('\t Train/Test: ' + str(n_train_SP) + ' / ' + str(n_test_SP) + '\n')
+
     #%%Count images
     stats.write('\n')
     stats.write('--Images--\n')
@@ -74,6 +93,63 @@ def calc_stats(path):
     stats.write('Total images: ' + str(imgs) + '\n')
     
     f.close()
+    #%%Count cervix images
+    all_count = {}
+    SP_count = {}
+    stats.write('\n')
+    n_max = 0
+    with open(path + 'Data/traindata.json') as f:
+        d = json.load(f)
+        n_train = 0
+        for key in d.keys():
+            n_train += len(d[key]['imgs'])
+            if len(d[key]['imgs']) > n_max:
+                n_max = len(d[key]['imgs'])
+            if d[key]['Hospital'] in all_count.keys():
+                all_count[d[key]['Hospital']] += 1
+            else:
+                all_count[d[key]['Hospital']] = 1
+
+    with open(path + 'Data/testdata.json') as f:
+        d = json.load(f)
+        n_test = 0
+        for key in d.keys():
+            n_test += len(d[key]['imgs'])
+            if len(d[key]['imgs']) > n_max:
+                n_max = len(d[key]['imgs'])
+            if d[key]['Hospital'] in all_count.keys():
+                all_count[d[key]['Hospital']] += 1
+            else:
+                all_count[d[key]['Hospital']] = 1
+
+    with open(path + 'Data/traindata_SP.json') as f:
+        d = json.load(f)
+        n_train_SP = 0
+        for key in d.keys():
+            n_train_SP += len(d[key]['imgs'])
+            if d[key]['Hospital'] in SP_count.keys():
+                SP_count[d[key]['Hospital']] += 1
+            else:
+                SP_count[d[key]['Hospital']] = 1
+
+    with open(path + 'Data/testdata_SP.json') as f:
+        d = json.load(f)
+        n_test_SP = 0
+        for key in d.keys():
+            n_test_SP += len(d[key]['imgs'])
+            if d[key]['Hospital'] in SP_count.keys():
+                SP_count[d[key]['Hospital']] += 1
+            else:
+                SP_count[d[key]['Hospital']] = 1
+    
+    stats.write('Total cervix images: ' + str(n_train + n_test) + '\n')
+    stats.write('\t Train/Test: ' + str(n_train) + ' / ' + str(n_test) + '\n')
+    stats.write('Total cervix images with SP: ' + str(n_train_SP + n_test_SP) + '\n')
+    stats.write('\t Train/Test: ' + str(n_train_SP) + ' / ' + str(n_test_SP) + '\n')
+    stats.write('\n')  
+    stats.write('Max number of cervix images in 1 birth: ' + str(n_max) + '\n')
+    stats.write('Avg number of cervix images per birth: ' + str(round((n_train + n_test)/cervix_births),2) + '\n')
+
     #%%Count errors
     f = open(path + 'Data/logs/errors.csv')
     d = csv.reader(f)
@@ -91,23 +167,6 @@ def calc_stats(path):
     for key in counter:
         stats.write('\t- ' + str(key) + ': ' + str(counter[key]) + '\n')       
     
-    #%%Count cervix TBD
-    
-    # f = open(path + 'data/cervix_data.json')
-    # d = json.load(f)
-    
-    # stats['is_cervix'] = len(d)
-    
-    # f.close()
-    
-    # f = open(path + 'data/logs/ga_error.csv')
-    # d = csv.reader(f)
-    
-    # missing = sum(1 for line in d)
-    
-    # stats['missing_GA'] = missing
-    
-    # f.close()
     
     #%%Regional + hospital breakdown
     stats.write('\n')
@@ -172,36 +231,93 @@ def calc_stats(path):
                 n_hos[hos] = 1
             else:
                 n_hos[hos] += 1
-                
+       
+    n_reg_cer = {}
+    n_hos_cer = {}
+    n_reg_cer_SP = {}
+    n_hos_cer_SP = {}
+    
+        
+    for key in all_count:
+        try:
+            hos, reg = translator[key]
+        except:
+            reg = 'No SHAK Code'
+            hos = 'No SHAK Code'        
+        if reg not in n_reg_cer.keys():
+            n_reg_cer[reg] = 1
+        else:
+            n_reg_cer[reg] += 1
+        if hos not in n_hos_cer.keys():
+            n_hos_cer[hos] = 1
+        else:
+            n_reg_cer[hos] += 1
+
+    for key in SP_count:
+        try:
+            hos, reg = translator[key]
+        except:
+            reg = 'No SHAK Code'
+            hos = 'No SHAK Code'        
+        if reg not in n_reg_cer_SP.keys():
+            n_reg_cer_SP[reg] = 1
+        else:
+            n_reg_cer_SP[reg] += 1
+        if hos not in n_hos_cer_SP.keys():
+            n_hos_cer_SP[hos] = 1
+        else:
+            n_reg_cer_SP[hos] += 1
+            
+            
     stats.write('Births with images\n')
-    stats.write('\tRegions:\n')
-    total = 0
+    stats.write('\tRegions (Total/Cervix/Cervix + SP):\n')
+    total = [0,0,0]
     for key in n_reg:
+        count = [0,0,0]
+        count[0] = n_reg[key]
+        total[0] = n_reg[key]
+        if key in n_reg_cer.keys():
+            count[1] = n_reg_cer[key]
+            total[1] += n_reg_cer[key]
+        if key in n_reg_cer_SP.keys():
+            count[2] = n_reg_cer_SP[key]
+            total[2] += n_reg_cer_SP[key]
         if key == 'No SHAK Code':
-            total += n_reg[key]
+            s_shak = str(count[0]) + ' / ' + str(count[1]) + ' / ' + str(count[2]) + '\n'
             continue
         else:
-            stats.write('\t- ' + str(key) + ': ' + str(n_reg[key]) + '\n')
-            total += n_reg[key]
-    stats.write('\t- ' + 'No SHAK Code' + ': ' + str(n_reg['No SHAK Code']) + '\n')
-    stats.write('\t- ' + 'TOTAL' + ': ' + str(total) + '\n')
+            s = str(count[0]) + ' / ' + str(count[1]) + ' / ' + str(count[2]) + '\n'
+            stats.write('\t- ' + str(key) + ': ' + s)
+    stats.write('\t- ' + 'No SHAK Code' + ': ' + s_shak)
+    s_total = str(total[0]) + ' / ' + str(total[1]) + ' / ' + str(total[2]) + '\n'
+    stats.write('\t- ' + 'TOTAL' + ': ' + s_total)
     
     stats.write('\n')
     
-    stats.write('\tHospitals:\n')
-    total = 0
+    stats.write('\tHospitals (Total/Cervix/Cervix + SP):\n')
+    total = [0,0,0]
     for key in n_hos:
+        count = [0,0,0]
+        count[0] = n_hos[key]
+        total[0] = n_hos[key]
+        if key in n_hos_cer.keys():
+            count[1] = n_hos_cer[key]
+            total[1] += n_hos_cer[key]
+        if key in n_hos_cer_SP.keys():
+            count[2] = n_hos_cer_SP[key]
+            total[2] += n_hos_cer_SP[key]
         if key == 'No SHAK Code':
-            total += n_hos[key]
+            s_shak = str(count[0]) + ' / ' + str(count[1]) + ' / ' + str(count[2]) + '\n'
             continue
         else:
-            stats.write('\t- ' + str(key) + ': ' + str(n_hos[key]) + '\n')
-            total += n_hos[key]
+            s = str(count[0]) + ' / ' + str(count[1]) + ' / ' + str(count[2]) + '\n'
+            stats.write('\t- ' + str(key) + ': ' + s)
+    stats.write('\t- ' + 'No SHAK Code' + ': ' + s_shak)
+    s_total = str(total[0]) + ' / ' + str(total[1]) + ' / ' + str(total[2]) + '\n'
+    stats.write('\t- ' + 'TOTAL' + ': ' + s_total)
     
-    stats.write('\t- ' + 'No SHAK Code' + ': ' + str(n_hos['No SHAK Code']) + '\n')
-    stats.write('\t- ' + 'TOTAL' + ': ' + str(total) + '\n')
   
 #%%Make script individual callable
-if __name__ ==  'main':
+if __name__ ==  '__main__':
     path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/'
     calc_stats(path)
