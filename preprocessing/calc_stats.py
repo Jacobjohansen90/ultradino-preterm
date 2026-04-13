@@ -20,8 +20,8 @@ def calc_stats(path):
         headers = next(d)
        
         births = sum(1 for line in d)
-        stats.write("-----Total Births-----\n")
-        stats.write(f"{'Total births in SDS:':<30}{births:>8}\n")
+        stats.write('--Total Births--\n')
+        stats.write('Total births in SDS: ' + str(births) + '\n')
     
     
     #%%Count DB
@@ -30,7 +30,7 @@ def calc_stats(path):
     
     births_in_sql = len(d)
     
-    stats.write(f"{'Total births in SQL db:':<30}{births_in_sql:>8}\n")
+    stats.write('Total births in SQL db: '+ str(births_in_sql) + '\n')
     
     with open(path + 'Data/logs/birth_missing.csv') as f:
         d = csv.reader(f)
@@ -48,12 +48,12 @@ def calc_stats(path):
             else:
                 counter[row[2]] += 1
         
-        stats.write(f"{'Total births missing in SQL db:':<30}{missing:>8}\n")
+        stats.write('Total births missing in SQL db: ' + str(missing) + '\n')
         for key in counter:
-            stats.write(f"{'\t- {key}:':<30}{counter[key]:>8}\n")
+            stats.write('\t- ' + str(key) + ': ' + str(counter[key]) + '\n')
             
         uacc = births - births_in_sql - missing
-        stats.write(f"{'Unaccounted for:':<30}{uacc:>20}\n")
+        stats.write('Unaccounted for: ' + str(uacc) + '\n')
     
     #%%Count births with cervix
     stats.write('\n')
@@ -70,10 +70,10 @@ def calc_stats(path):
         d = json.load(f)
         n_test_SP = len(d)
     cervix_births = n_train + n_test
-    stats.write(f"Total births with cervix scans: {(n_train + n_test):>20}\n")
-    stats.write(f"\t- Train/Test: {n_train:>10} / {n_test}\n")
-    stats.write(f"Total births with cervix scans + SP: {(n_train_SP + n_test_SP):>20}\n")
-    stats.write(f"\t- Train/Test: {n_train_SP:>10} / {n_test_SP}\n")
+    stats.write('Total births with cervix scans: ' + str(n_train + n_test) + '\n')
+    stats.write('\t- Train/Test: ' + str(n_train) + ' / ' + str(n_test) + '\n')
+    stats.write('Total births with cervix scans + SP: ' + str(n_train_SP + n_test_SP) + '\n')
+    stats.write('\t- Train/Test: ' + str(n_train_SP) + ' / ' + str(n_test_SP) + '\n')
 
     #%%Count images
     stats.write('\n')
@@ -137,12 +137,12 @@ def calc_stats(path):
             else:
                 SP_count[d[key]['Hospital']] = 1
     
-    stats.write(f"Total cervix images: {(n_train + n_test):>20}\n")
-    stats.write(f"\t- Train/Test: {n_train:>10} / {n_test}\n")
-    stats.write(f"Total cervix images with SP: {(n_train_SP + n_test_SP):>20}\n")
-    stats.write(f"\t- Train/Test: {n_train_SP:>10} / {n_test_SP}\n")
+    stats.write('Total cervix images: ' + str(n_train + n_test) + '\n')
+    stats.write('\t- Train/Test: ' + str(n_train) + ' / ' + str(n_test) + '\n')
+    stats.write('Total cervix images with SP: ' + str(n_train_SP + n_test_SP) + '\n')
+    stats.write('\t- Train/Test: ' + str(n_train_SP) + ' / ' + str(n_test_SP) + '\n')
     stats.write('\n')  
-    stats.write(f"Max number of cervix images in 1 birth: {n_max:>20) + '\n')
+    stats.write('Max number of cervix images in 1 birth: ' + str(n_max) + '\n')
     stats.write('Avg number of cervix images per birth: ' + str(round((n_train + n_test)/cervix_births,2)) + '\n')
 
     #%%Count errors
