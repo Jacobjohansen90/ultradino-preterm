@@ -235,7 +235,7 @@ def calc_stats(path, exclude_regions=[]):
     stats.write('\t- Train/Test: ' + str(n_train_SP) + ' / ' + str(n_test_SP) + '\n')
     stats.write('\n')  
     stats.write('Max number of cervix images in 1 birth: ' + str(n_max) + '\n')
-    stats.write('Avg number of cervix images per birth: ' + str(round((n_train + n_test)/cervix_births,2)) + '\n')
+    stats.write('Avg number of cervix images when obtained: ' + str(round((n_train + n_test)/cervix_births,2)) + '\n')
 
 
     #%%Regional + hospital breakdown
@@ -384,7 +384,7 @@ def calc_stats(path, exclude_regions=[]):
                 except:
                     scanner = 'Unknown scanner'
                 scanners[scanner][1] += 1
-    with open(path + 'Data/traindata.json') as f:
+    with open(path + 'Data/testdata.json') as f:
         d = json.load(f)
         for key in d.keys():
             for img in d[key]['imgs']:
@@ -403,7 +403,7 @@ def calc_stats(path, exclude_regions=[]):
                 except:
                     scanner = 'Unknown scanner'
                 scanners[scanner][2] += 1
-    with open(path + 'Data/traindata_SP.json') as f:
+    with open(path + 'Data/testdata_SP.json') as f:
         d = json.load(f)
         for key in d.keys():
             for img in d[key]['imgs']:
