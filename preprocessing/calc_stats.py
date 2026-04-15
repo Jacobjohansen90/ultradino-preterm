@@ -412,9 +412,10 @@ def calc_stats(path, exclude_regions=[]):
                 except:
                     scanner = 'Unknown scanner'
                 scanners[scanner][2] += 1
-
-    for k in scanners:
-        s = str(scanners[k][0]) + ' / ' + str(scanners[k][1]) + ' / ' + str(scanners[k][2]) + '\n'
+    keys = list(scanners.keys())
+    keys.sort()
+    for k in keys:
+        s = str(scanners[k][0]) + ' / ' + str(scanners[k][1]) + ' / ' + str(scanners[k][2])
         stats.write(f"\t- '{k}: {s}\n")
 
 
