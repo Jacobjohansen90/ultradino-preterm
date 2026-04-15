@@ -81,7 +81,10 @@ def calc_stats(path):
         for row in d:
             missing += 1
             key = row[2]
-            _, reg = translator[row[shak_i]]
+            try:
+                _, reg = translator[row[shak_i]]
+            except:
+                reg = 'NO SHAK'
             if key not in errors.keys():
                 errors[key] = {}
                 errors[key]['count'] = 1
