@@ -54,7 +54,7 @@ def calc_stats(path):
         headers = next(d)
        
         births = sum(1 for line in d)
-        stats.write('--Total Births--\n')
+        stats.write('----Total Births----\n')
         stats.write('Total births in SDS: ' + str(births) + '\n')
     
     
@@ -103,12 +103,14 @@ def calc_stats(path):
 
                 
         stats.write('Total births missing in SQL db: ' + str(missing) + '\n')
+        regs = list(errors[key]['region'])
+        regs.sort()
         for key in errors:
             stats.write('\t- ' + str(key) + ': ' + str(errors[key]['count']) + '\n')
-            stats.write('\t--Regional breakdown--\n')
-            for reg in errors[key]['region']:
+            stats.write('\t\t--Regional breakdown--\n')
+            for reg in regs:
                 stats.write('\t\t- ' + str(reg) + ': ' + str(errors[key]['region'][reg]) + '\n')
-            stats.write('\t--Yearly breakdown--\n')
+            stats.write('\t\t--Yearly breakdown--\n')
             dates = list(errors[key]['date'].keys())
             dates.sort()
             for date in dates:
@@ -145,7 +147,7 @@ def calc_stats(path):
 
     #%%Count images
     stats.write('\n')
-    stats.write('--Images--\n')
+    stats.write('----Images----\n')
     
     with open(path + 'Data/image_data/misc/image_list.csv') as f:
         d = csv.reader(f)
@@ -154,8 +156,28 @@ def calc_stats(path):
         
         imgs = sum(1 for line in d)
         
-        stats.write('Total images: ' + str(imgs) + '\n')
+        stats.write('Total images on NGC: ' + str(imgs) + '\n')
+        
+
+    #%%Count errors
+    with open(path + 'Data/logs/errors.csv') as f:
+        d = csv.reader(f)
+        headers = next(d)
+        
+        missing = 0
+        counter = {}
+        
+        for row in d:
+            missing += 1
+            if row[1] not in counter.keys():
+                counter[row[1]] = 1
+            else:
+                counter[row[1]] += 1
+        stats.write(f"Images in DB not on NGC: {missing}\n")
+        for key in counter:
+            stats.write('\t- ' + str(key) + ': ' + str(counter[key]) + '\n')       
     
+        
     #%%Count cervix images
     all_count = {}
     SP_count = {}
@@ -213,26 +235,10 @@ def calc_stats(path):
     stats.write('Max number of cervix images in 1 birth: ' + str(n_max) + '\n')
     stats.write('Avg number of cervix images per birth: ' + str(round((n_train + n_test)/cervix_births,2)) + '\n')
 
-    #%%Count errors
-    with open(path + 'Data/logs/errors.csv') as f:
-        d = csv.reader(f)
-        headers = next(d)
-        
-        counter = {}
-        
-        for row in d:
-            if row[1] not in counter.keys():
-                counter[row[1]] = 1
-            else:
-                counter[row[1]] += 1
-                
-        for key in counter:
-            stats.write('\t- ' + str(key) + ': ' + str(counter[key]) + '\n')       
-    
-    
+
     #%%Regional + hospital breakdown
     stats.write('\n')
-    stats.write('--Regional + Hospital breakdown (births)--\n')
+    stats.write('----Regional + Hospital breakdown (births)----\n')
     
     with open(path + 'Data/image_data/img_data.json') as f:
         cprs = json.load(f)
@@ -344,7 +350,7 @@ def calc_stats(path):
     
     #%%Scanner breakdown
     stats.write('\n')
-    stats.write('--Scanner breakdown (images)--\n')
+    stats.write('----Scanner breakdown (images)----\n')
     
 
 #%%Make script individual callable

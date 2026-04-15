@@ -55,10 +55,10 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
         cpr_hashes = list(cur.execute(query))
         
         if len(cpr_hashes) == 0:
-            data_que.put(['not_found', [cpr_mother, cpr_child, 'no_cpr_link_mother', SHAK, birthdate]])
+            data_que.put(['not_found', [cpr_mother, cpr_child, 'Mothers CPR not in DB', SHAK, birthdate]])
         
         elif row[csv_idx['GA_days']] == '.':
-            data_que.put(['not_found', [cpr_mother, cpr_child, 'no_GA', SHAK, birthdate]])
+            data_que.put(['not_found', [cpr_mother, cpr_child, 'No GA registered', SHAK, birthdate]])
             
         else:    
             data_temp = {}
@@ -102,4 +102,4 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
                 data_temp['imgs'] = imgs
                 data_que.put([cpr_child, data_temp])
             else:
-                data_que.put(['not_found', [cpr_mother, cpr_child, 'no_imgs_for_child', SHAK, birthdate]])
+                data_que.put(['not_found', [cpr_mother, cpr_child, 'No images associated with birth', SHAK, birthdate]])
