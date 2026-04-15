@@ -361,7 +361,7 @@ def calc_stats(path, exclude_regions=[]):
     stats.write('----Scanner breakdown (images)----\n')
     scanners = {}
     
-    with open(path + 'Data/iamge_data/img_data.json') as f:
+    with open(path + 'Data/image_data/img_data.json') as f:
         d = json.load(f)
     
     for key in d.keys():
