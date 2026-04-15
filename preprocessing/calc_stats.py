@@ -414,9 +414,14 @@ def calc_stats(path, exclude_regions=[]):
                 scanners[scanner][2] += 1
     keys = list(scanners.keys())
     keys.sort()
+    total = [0,0,0]
     for k in keys:
+        total[0] += scanners[k][0]
+        total[1] += scanners[k][1]
+        total[2] += scanners[k][2]
         s = str(scanners[k][0]) + ' / ' + str(scanners[k][1]) + ' / ' + str(scanners[k][2])
-        stats.write(f"\t- '{k}: {s}\n")
+        stats.write(f"\t- {k}: {s}\n")
+    stats.write(f"\t- TOTAL: {total[0]} / {total[1]} / {total[2]}\n")
 
 
 #%%Make script individual callable
