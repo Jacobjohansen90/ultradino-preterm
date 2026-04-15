@@ -12,6 +12,40 @@ import csv
 #%%Main process
 def calc_stats(path):
     stats = open(path + 'stats.txt', 'w')
+    #%%Make SHAK kode translator
+    
+    with open(path + 'Data/registers/nyfoedte.csv') as f:
+        d = csv.reader(f)
+        
+        headers = next(d)
+        
+        n_reg = {}
+        n_hos = {}
+        
+        for i, header in enumerate(headers):
+            if header == 'AnsvarligRegion_Geo_Tekst':
+                reg_txt = i
+            elif header == 'AnsvarligInstitution_Kode':
+                hos_kode = i
+            elif header == 'AnsvarligInstitution_Tekst':
+                hos_txt = i
+        
+        translator = {'1501': ['Kbh Amts Sygehus i Gentofte', 'Region Hovedstaden'],
+                      '4212': ['OUH Svenborg Sygehus', 'Region Syddanmark'],
+                      '7601': ['Viborg Sygehus', 'Region Midtjylland'],
+                      '7002': ['Silkeborg Centralsygehus', 'Region Midtjylland'],
+                      '1401': ['Frederiksberg Hosdpital', 'Region Hovedstaden'],
+                      '1502': ['Kbh. Amts Sygehus i Glostrup', 'Region Hovedstaden'],
+                      '7026': ['Skejby Sygehus', 'Region Midtjylland'],
+                      '6501': ['Holstebro Centralsygehus', 'Region Midtjylland'],
+                      '5001': ['Sønderborg Sygehus', 'Region Syddanmark'],
+                      '5002': ['Haderslev Sygehus', 'Region Syddanmark'],
+                      '6502': ['Herning Sygehus', 'Region Midtjylland']}
+        
+        for line in d:
+            if line[hos_kode] not in translator.keys():
+                translator[line[hos_kode]] = [line[hos_txt], line[reg_txt]]
+    
     
     #%%Count births
     with open(path + 'Data/registers/combined.csv') as f:
@@ -34,27 +68,58 @@ def calc_stats(path):
     
     with open(path + 'Data/logs/birth_missing.csv') as f:
         d = csv.reader(f)
-    
         headers = next(d)
-    
+        
+        for i, head in enumerate(headers):
+            if head == 'SHAK':
+                shak_i = i
+            elif head == 'birthdate':
+                birth_i = i
+        
+        errors = {}
         missing = 0
-    
-        counter = {}
-    
         for row in d:
             missing += 1
-            if row[2] not in counter.keys():
-                counter[row[2]] = 1
+            key = row[2]
+            _, reg = translator[row[shak_i]]
+            if key not in errors.keys():
+                errors[key] = {}
+                errors[key]['count'] = 1
+                errors[key]['region'] = {}
+                errors[key]['date'] = {}
             else:
-                counter[row[2]] += 1
-        
+                errors[key]['count'] += 1
+            if row[birth_i][0:4] not in errors[key]['date'].keys():
+                errors[key]['date'][row[birth_i][0:4]] = 1
+            else:
+                errors[key]['date'][row[birth_i][0:4]] += 1
+            if reg not in errors[key]['region'].keys():
+                errors[key]['region'][reg] = 1
+            else:
+                errors[key]['region'][reg] += 1
+
+                
         stats.write('Total births missing in SQL db: ' + str(missing) + '\n')
-        for key in counter:
-            stats.write('\t- ' + str(key) + ': ' + str(counter[key]) + '\n')
+        for key in errors:
+            stats.write('\t- ' + str(key) + ': ' + str(errors[key]['count']) + '\n')
+            stats.write('\t--Regional breakdown--\n')
+            for reg in errors[key]['region']:
+                stats.write('\t\t- ' + str(reg) + ': ' + str(errors[key]['region'][reg]) + '\n')
+            stats.write('\t--Yearly breakdown--\n')
+            dates = list(errors[key]['date'].keys())
+            dates.sort()
+            for date in dates:
+                stats.write('\t\t- ' + str(date) + ': ' + str(errors[key]['date'][date]) + '\n')
             
         uacc = births - births_in_sql - missing
         stats.write('Unaccounted for: ' + str(uacc) + '\n')
     
+    #%%Region count for missing imgs
+    with open(path + 'Data/logs/birth_missing.csv') as f:
+        d = csv.reader(f)
+        headers = next(d)
+        
+        
     #%%Count births with cervix
     stats.write('\n')
     with open(path + 'Data/traindata.json') as f:
@@ -164,39 +229,7 @@ def calc_stats(path):
     
     #%%Regional + hospital breakdown
     stats.write('\n')
-    stats.write('--Regional + Hospital breakdown--\n')
-    
-    with open(path + 'Data/registers/nyfoedte.csv') as f:
-        d = csv.reader(f)
-        
-        headers = next(d)
-        
-        n_reg = {}
-        n_hos = {}
-        
-        for i, header in enumerate(headers):
-            if header == 'AnsvarligRegion_Geo_Tekst':
-                reg_txt = i
-            elif header == 'AnsvarligInstitution_Kode':
-                hos_kode = i
-            elif header == 'AnsvarligInstitution_Tekst':
-                hos_txt = i
-        
-        translator = {'1501': ['Kbh Amts Sygehus i Gentofte', 'Region Hovedstaden'],
-                      '4212': ['OUH Svenborg Sygehus', 'Region Syddanmark'],
-                      '7601': ['Viborg Sygehus', 'Region Midtjylland'],
-                      '7002': ['Silkeborg Centralsygehus', 'Region Midtjylland'],
-                      '1401': ['Frederiksberg Hosdpital', 'Region Hovedstaden'],
-                      '1502': ['Kbh. Amts Sygehus i Glostrup', 'Region Hovedstaden'],
-                      '7026': ['Skejby Sygehus', 'Region Midtjylland'],
-                      '6501': ['Holstebro Centralsygehus', 'Region Midtjylland'],
-                      '5001': ['Sønderborg Sygehus', 'Region Syddanmark'],
-                      '5002': ['Haderslev Sygehus', 'Region Syddanmark'],
-                      '6502': ['Herning Sygehus', 'Region Midtjylland']}
-        
-        for line in d:
-            if line[hos_kode] not in translator.keys():
-                translator[line[hos_kode]] = [line[hos_txt], line[reg_txt]]
+    stats.write('--Regional + Hospital breakdown (births)--\n')
     
     with open(path + 'Data/image_data/img_data.json') as f:
         cprs = json.load(f)
@@ -259,9 +292,7 @@ def calc_stats(path):
             n_hos_cer_SP[hos] = SP_count[key]
         else:
             n_hos_cer_SP[hos] += SP_count[key]
-            
-            
-    stats.write('Births with images\n')
+                        
     stats.write('\tRegions (Total/Cervix/Cervix + SP):\n')
     total = [0,0,0]
     for key in n_reg:
@@ -308,7 +339,11 @@ def calc_stats(path):
     s_total = str(total[0]) + ' / ' + str(total[1]) + ' / ' + str(total[2]) + '\n'
     stats.write('\t- ' + 'TOTAL' + ': ' + s_total)
     
-  
+    #%%Scanner breakdown
+    stats.write('\n')
+    stats.write('--Scanner breakdown (images)--\n')
+    
+
 #%%Make script individual callable
 if __name__ ==  '__main__':
     path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/'

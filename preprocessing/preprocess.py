@@ -242,7 +242,6 @@ cervix_data_holdout = {}
 cervix_data_SP = {}
 cervix_data_SP_holdout = {}
 
-no_ga = []
 img_not_in_db = []
 
 for file in d:
@@ -255,40 +254,37 @@ for file in d:
             except:
                 img_not_in_db.append([file[0]])
                 continue
-            if final_data[cpr_child]['GA_days'] == '.':
-                  no_ga.append([cpr_child])
-                  continue
+
             for imgs in final_data[cpr_child]['imgs']:
                 if imgs['file_path'] == file[0]:
                     img_data = imgs
-            
+            SP_date = datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff
+            SP_reg = 'RegionH' in file[0] or 'RegionSjaelland' in file[0]
             if file[0] in holdout_set:
                 if cpr_child in cervix_data_holdout.keys():
                     cervix_data_holdout[cpr_child]['imgs'].append(img_data)
-                    if datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff:
-                        if 'RegionH' in file[0] or 'RegionSjaelland' in file[0]: 
-                            if cpr_child in cervix_data_SP_holdout.keys():
-                                cervix_data_SP_holdout[cpr_child]['imgs'].append(img_data)
-                            else:
-                                cervix_data_SP_holdout[cpr_child] = {}
-                                for key in final_data[cpr_child].keys():
-                                    if key == 'imgs':
-                                        cervix_data_SP_holdout[cpr_child][key] = [img_data]
-                                    else:
-                                        cervix_data_SP_holdout[cpr_child][key] = final_data[cpr_child][key]
-    
-                else:
-                    cervix_data_holdout[cpr_child] = {}
-                    if datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff:
-                        if 'RegionH' in file[0] or 'RegionSjaelland' in file[0]: 
+                    if SP_date and SP_reg:
+                        if cpr_child in cervix_data_SP_holdout.keys():
+                            cervix_data_SP_holdout[cpr_child]['imgs'].append(img_data)
+                        else:
                             cervix_data_SP_holdout[cpr_child] = {}
                             for key in final_data[cpr_child].keys():
                                 if key == 'imgs':
-                                    cervix_data_holdout[cpr_child][key] = [img_data]
                                     cervix_data_SP_holdout[cpr_child][key] = [img_data]
                                 else:
-                                    cervix_data_holdout[cpr_child][key] = final_data[cpr_child][key]
                                     cervix_data_SP_holdout[cpr_child][key] = final_data[cpr_child][key]
+    
+                else:
+                    cervix_data_holdout[cpr_child] = {}
+                    if SP_date and SP_reg:
+                        cervix_data_SP_holdout[cpr_child] = {}
+                        for key in final_data[cpr_child].keys():
+                            if key == 'imgs':
+                                cervix_data_holdout[cpr_child][key] = [img_data]
+                                cervix_data_SP_holdout[cpr_child][key] = [img_data]
+                            else:
+                                cervix_data_holdout[cpr_child][key] = final_data[cpr_child][key]
+                                cervix_data_SP_holdout[cpr_child][key] = final_data[cpr_child][key]
     
                     else:
                         for key in final_data[cpr_child].keys():
@@ -300,30 +296,28 @@ for file in d:
             else:            
                 if cpr_child in cervix_data.keys():
                     cervix_data[cpr_child]['imgs'].append(img_data)
-                    if datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff:
-                        if 'RegionH' in file[0] or 'RegionSjaelland' in file[0]: 
-                            if cpr_child in cervix_data_SP.keys():
-                                cervix_data_SP[cpr_child]['imgs'].append(img_data)
-                            else:
-                                cervix_data_SP[cpr_child] = {}
-                                for key in final_data[cpr_child].keys():
-                                    if key == 'imgs':
-                                        cervix_data_SP[cpr_child][key] = [img_data]
-                                    else:
-                                        cervix_data_SP[cpr_child][key] = final_data[cpr_child][key]
-    
-                else:
-                    cervix_data[cpr_child] = {}
-                    if datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff:
-                        if 'RegionH' in file[0] or 'RegionSjaelland' in file[0]: 
+                    if SP_date and SP_reg:
+                        if cpr_child in cervix_data_SP.keys():
+                            cervix_data_SP[cpr_child]['imgs'].append(img_data)
+                        else:
                             cervix_data_SP[cpr_child] = {}
                             for key in final_data[cpr_child].keys():
                                 if key == 'imgs':
-                                    cervix_data[cpr_child][key] = [img_data]
                                     cervix_data_SP[cpr_child][key] = [img_data]
                                 else:
-                                    cervix_data[cpr_child][key] = final_data[cpr_child][key]
                                     cervix_data_SP[cpr_child][key] = final_data[cpr_child][key]
+    
+                else:
+                    cervix_data[cpr_child] = {}
+                    if SP_date and SP_reg:
+                        cervix_data_SP[cpr_child] = {}
+                        for key in final_data[cpr_child].keys():
+                            if key == 'imgs':
+                                cervix_data[cpr_child][key] = [img_data]
+                                cervix_data_SP[cpr_child][key] = [img_data]
+                            else:
+                                cervix_data[cpr_child][key] = final_data[cpr_child][key]
+                                cervix_data_SP[cpr_child][key] = final_data[cpr_child][key]
     
                     else:
                         for key in final_data[cpr_child].keys():
@@ -349,11 +343,6 @@ with open(path + 'logs/pred_img_missing.csv', 'w') as f:
     writer = csv.writer(f)
     writer.writerow(['filepath_ngc'])
     writer.writerows(missing)
-
-with open(path + 'logs/ga_missing.csv', 'w') as f:
-    writer = csv.writer(f)
-    writer.writerow(['cpr_child'])
-    writer.writerows(no_ga)
 
 with open(path + 'logs/img_not_in_db.csv', 'w') as f:
     writer = csv.writer(f)
