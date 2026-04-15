@@ -102,6 +102,23 @@ class PreTermDataset(Dataset):
                                          A.Normalize(mean=self.norm_mean, std=self.norm_std),
                                          A.ToTensorV2()])        
     
+    def unpack_dict(self, dict, dict_key):
+        #This functions unpacks the image list, making a dict with an
+        #entry for each image. Needed for test/validation
+        result = {}
+    
+        for key, subdict in dict.items():
+            for i, item in enumerate(subdict.get(dict_key, [])):
+                #Enumerate the child CPR hashes
+                new_key = f"{key}_{i}"
+                
+                new_entry = {key: value for key, value in subdict.items() if key != dict_key}
+                new_entry[dict_key] = item
+                
+                result[new_key] = new_entry
+        
+        return result
+    
     def __getitem__(self, idx):
         data = self.df.iloc[idx]
         

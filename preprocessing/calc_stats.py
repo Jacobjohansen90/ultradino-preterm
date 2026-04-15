@@ -10,7 +10,7 @@ import json
 import csv
 
 #%%Main process
-def calc_stats(path):
+def calc_stats(path, exclude_regions=[]):
     stats = open(path + 'stats.txt', 'w')
     #%%Make SHAK kode translator
     
@@ -79,12 +79,14 @@ def calc_stats(path):
         errors = {}
         missing = 0
         for row in d:
-            missing += 1
             key = row[2]
             try:
                 _, reg = translator[row[shak_i]]
             except:
                 reg = 'NO SHAK'
+            if reg in exclude_regions:
+                continue
+            missing += 1
             if key not in errors.keys():
                 errors[key] = {}
                 errors[key]['count'] = 1
@@ -109,12 +111,12 @@ def calc_stats(path):
             stats.write('\t- ' + str(key) + ': ' + str(errors[key]['count']) + '\n')
             stats.write('\t\t--Regional breakdown--\n')
             for reg in regs:
-                stats.write('\t\t- ' + str(reg) + ': ' + str(errors[key]['region'][reg]) + '\n')
+                stats.write('\t\t\t- ' + str(reg) + ': ' + str(errors[key]['region'][reg]) + '\n')
             stats.write('\t\t--Yearly breakdown--\n')
             dates = list(errors[key]['date'].keys())
             dates.sort()
             for date in dates:
-                stats.write('\t\t- ' + str(date) + ': ' + str(errors[key]['date'][date]) + '\n')
+                stats.write('\t\t\t- ' + str(date) + ': ' + str(errors[key]['date'][date]) + '\n')
             
         uacc = births - births_in_sql - missing
         stats.write('Unaccounted for: ' + str(uacc) + '\n')
@@ -257,6 +259,8 @@ def calc_stats(path):
                 except:
                     reg = 'No SHAK Code'
                     hos = 'No SHAK Code'
+                if reg in exclude_regions:
+                    continue
                 if reg not in n_reg.keys():
                     n_reg[reg] = 1
                 else:
@@ -278,6 +282,8 @@ def calc_stats(path):
         except:
             reg = 'No SHAK Code'
             hos = 'No SHAK Code'        
+        if reg in exclude_regions:
+            continue
         if reg not in n_reg_cer.keys():
             n_reg_cer[reg] = all_count[key]
         else:
@@ -292,7 +298,9 @@ def calc_stats(path):
             hos, reg = translator[key]
         except:
             reg = 'No SHAK Code'
-            hos = 'No SHAK Code'        
+            hos = 'No SHAK Code'
+        if reg in exclude_regions:
+            continue
         if reg not in n_reg_cer_SP.keys():
             n_reg_cer_SP[reg] = SP_count[key]
         else:
@@ -351,7 +359,49 @@ def calc_stats(path):
     #%%Scanner breakdown
     stats.write('\n')
     stats.write('----Scanner breakdown (images)----\n')
+    scanners = {}
     
+    with open(path + 'Data/iamge_data/img_data.json') as f:
+        d = json.load(f)
+    
+    for key in d.keys():
+        for img in d[key]['imgs']:
+            scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+            if scanner in scanners.keys():
+                scanners[scanner][0] += 1
+            else:
+                scanners[scanner] = [1,0,0]
+        
+    with open(path + 'Data/traindata.json') as f:
+        d = json.load(f)
+        for key in d.keys():
+            for img in d[key]['imgs']:
+                scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+                scanners[scanner][1] += 1
+    with open(path + 'Data/traindata.json') as f:
+        d = json.load(f)
+        for key in d.keys():
+            for img in d[key]['imgs']:
+                scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+                scanners[scanner][1] += 1
+
+    with open(path + 'Data/traindata_SP.json') as f:
+        d = json.load(f)
+        for key in d.keys():
+            for img in d[key]['imgs']:
+                scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+                scanners[scanner][2] += 1
+    with open(path + 'Data/traindata_SP.json') as f:
+        d = json.load(f)
+        for key in d.keys():
+            for img in d[key]['imgs']:
+                scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+                scanners[scanner][2] += 1
+
+    for k in scanners:
+        s = str(scanners[k][0]) + ' / ' + str(scanners[k][1]) + ' / ' + str(scanners[k][2]) + '\n'
+        stats.write(f"\t- '{k}: {s}\n")
+
 
 #%%Make script individual callable
 if __name__ ==  '__main__':

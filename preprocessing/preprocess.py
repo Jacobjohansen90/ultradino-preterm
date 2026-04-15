@@ -259,7 +259,7 @@ for file in d:
                 if imgs['file_path'] == file[0]:
                     img_data = imgs
             SP_date = datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff
-            SP_reg = 'RegionH' in file[0] or 'RegionSjaelland' in file[0]
+            SP_reg = ('RegionH' in file[0]) or ('RegionSjaelland' in file[0])
             if file[0] in holdout_set:
                 if cpr_child in cervix_data_holdout.keys():
                     cervix_data_holdout[cpr_child]['imgs'].append(img_data)
