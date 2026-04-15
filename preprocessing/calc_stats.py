@@ -366,7 +366,10 @@ def calc_stats(path, exclude_regions=[]):
     
     for key in d.keys():
         for img in d[key]['imgs']:
-            scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+            try:
+                scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+            except:
+                scanner = 'Unknown scanner'
             if scanner in scanners.keys():
                 scanners[scanner][0] += 1
             else:
@@ -376,26 +379,38 @@ def calc_stats(path, exclude_regions=[]):
         d = json.load(f)
         for key in d.keys():
             for img in d[key]['imgs']:
-                scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+                try:
+                    scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+                except:
+                    scanner = 'Unknown scanner'
                 scanners[scanner][1] += 1
     with open(path + 'Data/traindata.json') as f:
         d = json.load(f)
         for key in d.keys():
             for img in d[key]['imgs']:
-                scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+                try:
+                    scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+                except:
+                    scanner = 'Unknown scanner'
                 scanners[scanner][1] += 1
 
     with open(path + 'Data/traindata_SP.json') as f:
         d = json.load(f)
         for key in d.keys():
             for img in d[key]['imgs']:
-                scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+                try:
+                    scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+                except:
+                    scanner = 'Unknown scanner'
                 scanners[scanner][2] += 1
     with open(path + 'Data/traindata_SP.json') as f:
         d = json.load(f)
         for key in d.keys():
             for img in d[key]['imgs']:
-                scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+                try:
+                    scanner = img['manufacturer'] + ' - ' + img['manufacturer_model']
+                except:
+                    scanner = 'Unknown scanner'
                 scanners[scanner][2] += 1
 
     for k in scanners:
