@@ -35,10 +35,24 @@ SP_date_cutoff = datetime.strptime("20151105", "%Y%m%d") #Cutoff date for SP inc
 
 
 #CSV Variables we want from registeres in each file
-headers = ["cpr_child", "cpr_mother", "GA_days", "Birthdate", "Hospital"]
+headers = ["cpr_child", "cpr_mother", "GA_days", "Birthdate", "Hospital", "C_Section", "Induced"]
 
-csvs = [["mfr.csv", ["CPR_BARN", "CPR_MODER", "GESTATIONSALDER_DAGE", "FOEDSELSDATO", "SYGEHUS"]],
-        ["nyfoedte.csv", ["CPRnummer_Barn", "CPRnummer_Mor", "Gestationsalder", "FoedselsDato_Barn", "AnsvarligInstitution_Kode"]]]
+csvs = [["mfr.csv", ["CPR_BARN", 
+                     "CPR_MODER", 
+                     "GESTATIONSALDER_DAGE", 
+                     "FOEDSELSDATO", 
+                     "SYGEHUS",
+                     "MARKOER_KEJSERSNIT",
+                     "MARKOER_IGANGSAETTELSE"]],
+        ["nyfoedte.csv", ["CPRnummer_Barn", 
+                          "CPRnummer_Mor", 
+                          "Gestationsalder", 
+                          "FoedselsDato_Barn", 
+                          "AnsvarligInstitution_Kode",
+                          "Kejsersnit",
+                          ["Igangsaettelse_Ballonkateter", "Ingangsaettelse_HSP", "Ingangsaettelse_Medicinsk"]]]]
+
+
 
 
 #CSV indexes we want in the final output
@@ -70,31 +84,52 @@ with open(path + 'registers/combined.csv', 'w') as file:
     wr.writerow(headers)
 
     for csv_info in csvs:
-        idxs = []
-        csv_file = open(path + 'registers/' + csv_info[0])
-        csv_headers = csv_info[1]
-        csv_temp = csv.reader(csv_file)
-        temp_headers = next(csv_temp)
-        
-        for head in csv_headers:
-            i = 0
-            for temp_head in temp_headers:
-                if temp_head == head:
-                    idxs.append(i)
-                    break
-                else:
-                    i += 1
-                
-        for row in csv_temp:
-            info = []
-            n_births += 1
-            for idx in idxs:
-                info.append(row[idx])
-            wr.writerow(info)
-            if debug and n_births > 10000:
-                break
+        with open(path + 'registers/' + csv_info[0]) as csv_file:
+            csv_headers = csv_info[1]
+            csv_temp = csv.reader(csv_file)
 
-csv_file.close()
+            temp_headers = next(csv_temp)
+            idxs = []
+          
+            for head in csv_headers:
+                if type(head) == list:
+                    i_list = []
+                    for subhead in head:
+                        i = 0
+                        for temp_head in temp_headers:
+                            if temp_head == subhead:
+                                i_list.append(i)
+                                break
+                            else:
+                                i += 1
+                    idxs.append(i_list)
+                else:
+                    i = 0
+                    for temp_head in temp_headers:
+                        if temp_head == head:
+                            idxs.append(i)
+                            break
+                        else:
+                            i += 1
+                    
+            for row in csv_temp:
+                info = []
+                n_births += 1
+                for idx in idxs:
+                    if type(idx) == list:
+                        is_true  = ' '
+                        for i in idx:
+                            if row[i] == 'Ja':
+                                is_true = '1'
+                                break
+                        info.append(is_true)
+                            
+                    else:
+                        info.append(row[idx])
+                wr.writerow(info)
+                if debug and n_births > 10000:
+                    break
+    
 
 #%%Crawl database
 if not crawl_db:
@@ -219,7 +254,7 @@ else:
     del not_found
     del errors
     
-#%%Identify Cervix scans & make train and test sets
+#%%Make training and test data based on conditions
 logger.info("Linking cervix preds with database - " + str(datetime.now().strftime('%H:%M:%S')))
 
 f = open(path + 'image_data/misc/cervix_preds.csv')
@@ -241,6 +276,7 @@ cervix_data = {}
 cervix_data_holdout = {}
 cervix_data_SP = {}
 cervix_data_SP_holdout = {}
+excluded = []
 
 img_not_in_db = []
 
@@ -254,77 +290,84 @@ for file in d:
             except:
                 img_not_in_db.append([file[0]])
                 continue
-
-            for imgs in final_data[cpr_child]['imgs']:
-                if imgs['file_path'] == file[0]:
-                    img_data = imgs
-            SP_date = datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff
-            SP_reg = ('RegionH' in file[0]) or ('RegionSjaelland' in file[0])
-            if file[0] in holdout_set:
-                if cpr_child in cervix_data_holdout.keys():
-                    cervix_data_holdout[cpr_child]['imgs'].append(img_data)
-                    if SP_date and SP_reg:
-                        if cpr_child in cervix_data_SP_holdout.keys():
-                            cervix_data_SP_holdout[cpr_child]['imgs'].append(img_data)
-                        else:
+            
+            if final_data[cpr_child]['Induced'] == '1':
+                excluded.append([cpr_child, 'Induced'])
+            
+            elif final_data[cpr_child]['C_section'] == '1' or 'KMCA' in final_data[cpr_child]['C_section']:
+                excluded.append([cpr_child, 'C Section'])
+            
+            else:
+                for imgs in final_data[cpr_child]['imgs']:
+                    if imgs['file_path'] == file[0]:
+                        img_data = imgs
+                SP_date = datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff
+                SP_reg = ('RegionH' in file[0]) or ('RegionSjaelland' in file[0])
+                if file[0] in holdout_set:
+                    if cpr_child in cervix_data_holdout.keys():
+                        cervix_data_holdout[cpr_child]['imgs'].append(img_data)
+                        if SP_date and SP_reg:
+                            if cpr_child in cervix_data_SP_holdout.keys():
+                                cervix_data_SP_holdout[cpr_child]['imgs'].append(img_data)
+                            else:
+                                cervix_data_SP_holdout[cpr_child] = {}
+                                for key in final_data[cpr_child].keys():
+                                    if key == 'imgs':
+                                        cervix_data_SP_holdout[cpr_child][key] = [img_data]
+                                    else:
+                                        cervix_data_SP_holdout[cpr_child][key] = final_data[cpr_child][key]
+        
+                    else:
+                        cervix_data_holdout[cpr_child] = {}
+                        if SP_date and SP_reg:
                             cervix_data_SP_holdout[cpr_child] = {}
                             for key in final_data[cpr_child].keys():
                                 if key == 'imgs':
+                                    cervix_data_holdout[cpr_child][key] = [img_data]
                                     cervix_data_SP_holdout[cpr_child][key] = [img_data]
                                 else:
+                                    cervix_data_holdout[cpr_child][key] = final_data[cpr_child][key]
                                     cervix_data_SP_holdout[cpr_child][key] = final_data[cpr_child][key]
-    
-                else:
-                    cervix_data_holdout[cpr_child] = {}
-                    if SP_date and SP_reg:
-                        cervix_data_SP_holdout[cpr_child] = {}
-                        for key in final_data[cpr_child].keys():
-                            if key == 'imgs':
-                                cervix_data_holdout[cpr_child][key] = [img_data]
-                                cervix_data_SP_holdout[cpr_child][key] = [img_data]
-                            else:
-                                cervix_data_holdout[cpr_child][key] = final_data[cpr_child][key]
-                                cervix_data_SP_holdout[cpr_child][key] = final_data[cpr_child][key]
-    
-                    else:
-                        for key in final_data[cpr_child].keys():
-                            if key == 'imgs':
-                                cervix_data_holdout[cpr_child][key] = [img_data]
-                            else:
-                                cervix_data_holdout[cpr_child][key] = final_data[cpr_child][key]
-
-            else:            
-                if cpr_child in cervix_data.keys():
-                    cervix_data[cpr_child]['imgs'].append(img_data)
-                    if SP_date and SP_reg:
-                        if cpr_child in cervix_data_SP.keys():
-                            cervix_data_SP[cpr_child]['imgs'].append(img_data)
+        
                         else:
+                            for key in final_data[cpr_child].keys():
+                                if key == 'imgs':
+                                    cervix_data_holdout[cpr_child][key] = [img_data]
+                                else:
+                                    cervix_data_holdout[cpr_child][key] = final_data[cpr_child][key]
+    
+                else:            
+                    if cpr_child in cervix_data.keys():
+                        cervix_data[cpr_child]['imgs'].append(img_data)
+                        if SP_date and SP_reg:
+                            if cpr_child in cervix_data_SP.keys():
+                                cervix_data_SP[cpr_child]['imgs'].append(img_data)
+                            else:
+                                cervix_data_SP[cpr_child] = {}
+                                for key in final_data[cpr_child].keys():
+                                    if key == 'imgs':
+                                        cervix_data_SP[cpr_child][key] = [img_data]
+                                    else:
+                                        cervix_data_SP[cpr_child][key] = final_data[cpr_child][key]
+        
+                    else:
+                        cervix_data[cpr_child] = {}
+                        if SP_date and SP_reg:
                             cervix_data_SP[cpr_child] = {}
                             for key in final_data[cpr_child].keys():
                                 if key == 'imgs':
+                                    cervix_data[cpr_child][key] = [img_data]
                                     cervix_data_SP[cpr_child][key] = [img_data]
                                 else:
+                                    cervix_data[cpr_child][key] = final_data[cpr_child][key]
                                     cervix_data_SP[cpr_child][key] = final_data[cpr_child][key]
-    
-                else:
-                    cervix_data[cpr_child] = {}
-                    if SP_date and SP_reg:
-                        cervix_data_SP[cpr_child] = {}
-                        for key in final_data[cpr_child].keys():
-                            if key == 'imgs':
-                                cervix_data[cpr_child][key] = [img_data]
-                                cervix_data_SP[cpr_child][key] = [img_data]
-                            else:
-                                cervix_data[cpr_child][key] = final_data[cpr_child][key]
-                                cervix_data_SP[cpr_child][key] = final_data[cpr_child][key]
-    
-                    else:
-                        for key in final_data[cpr_child].keys():
-                            if key == 'imgs':
-                                cervix_data[cpr_child][key] = [img_data]
-                            else:
-                                cervix_data[cpr_child][key] = final_data[cpr_child][key]
+        
+                        else:
+                            for key in final_data[cpr_child].keys():
+                                if key == 'imgs':
+                                    cervix_data[cpr_child][key] = [img_data]
+                                else:
+                                    cervix_data[cpr_child][key] = final_data[cpr_child][key]
 
 
 with open(path + 'traindata.json', 'w') as f:
@@ -343,6 +386,12 @@ with open(path + 'logs/pred_img_missing.csv', 'w') as f:
     writer = csv.writer(f)
     writer.writerow(['filepath_ngc'])
     writer.writerows(missing)
+    
+with open(path + 'logs/excluded.csv', 'w') as f:
+    writer = csv.writer(f)
+    writer.writerow(['cpr_child', 'exclusion_criteria'])
+    writer.writerows(excluded)
+    
 
 with open(path + 'logs/img_not_in_db.csv', 'w') as f:
     writer = csv.writer(f)
