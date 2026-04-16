@@ -68,7 +68,7 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
             for key in csv_idx.keys():
                 data_temp[key] = row[csv_idx[key]]
     
-            imgs_temp = []
+            imgs = []
                 
             for cpr_ in cpr_hashes:
                 cpr = cpr_[0]
@@ -101,20 +101,7 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
                                 img_temp = {}
                                 for key in db_idx.keys():
                                     img_temp[key] = entry[db_idx[key]]
-                                imgs_temp.append(img_temp)
-            imgs = []
-            for birth1 in imgs_temp:
-                birth_ok = True
-                date1 = datetime.strptime(birth1['Birthdate'], "%Y-%m-%d")
-                for birth2 in img_temp:
-                    if birth1['cpr_child'] == birth2['cpr_child']:
-                        continue
-                    date2 = datetime.strptime(birth2['Birthdate'], "%Y-%m-%d")
-                    if abs((date1-date2).days) <= 40*7:
-                        birth_ok = False
-                        break
-                if birth_ok:
-                    imgs.append(birth1)
+                                imgs.append(img_temp)
                         
             if len(imgs) > 0:
                 data_temp['imgs'] = imgs
