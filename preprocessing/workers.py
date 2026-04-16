@@ -49,6 +49,7 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
         cpr_mother = row[csv_idx['cpr_mother']]
         cpr_child = row[csv_idx['cpr_child']]
         SHAK = row[csv_idx['Hospital']]
+        GA_days = int(row[csv_idx['GA_days']])
         birthdate = datetime.strptime(str(row[csv_idx['Birthdate']]).replace("-",""), "%Y%m%d").date()
         
         query = f"SELECT xxhash FROM cpr_hashes WHERE phair_hash = '{cpr_mother}'"
@@ -93,7 +94,7 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
                                 continue
                         
                         diff = ((birthdate - study_date).days)
-                        GA_range = int(entry[csv_idx['GA_days']]) - (birthdate - study_date).days
+                        GA_range = GA_days - (birthdate - study_date).days
                         if diff <= 210: #Scan to delivery < 30 weeks
                             if GA_range > 18*7 and GA_range < 39*7: #GA at scan within range
                                 img_temp = {}
