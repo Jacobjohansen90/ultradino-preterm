@@ -49,7 +49,7 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
         cpr_mother = row[csv_idx['cpr_mother']]
         cpr_child = row[csv_idx['cpr_child']]
         SHAK = row[csv_idx['Hospital']]
-        GA_days = int(row[csv_idx['GA_days']])
+        GA_days = row[csv_idx['GA_days']]
         birthdate = datetime.strptime(str(row[csv_idx['Birthdate']]).replace("-",""), "%Y%m%d").date()
         
         query = f"SELECT xxhash FROM cpr_hashes WHERE phair_hash = '{cpr_mother}'"
@@ -58,10 +58,11 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
         if len(cpr_hashes) == 0:
             data_que.put(['not_found', [cpr_mother, cpr_child, 'Mothers CPR not in DB', SHAK, birthdate]])
         
-        elif row[csv_idx['GA_days']] == '.':
+        elif GA_days == '.':
             data_que.put(['not_found', [cpr_mother, cpr_child, 'No GA registered', SHAK, birthdate]])
             
-        else:    
+        else:
+            GA_days = int(GA_days)
             data_temp = {}
             
             for key in csv_idx.keys():
