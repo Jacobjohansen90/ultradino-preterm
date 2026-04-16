@@ -66,7 +66,7 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
             for key in csv_idx.keys():
                 data_temp[key] = row[csv_idx[key]]
     
-            imgs = []
+            imgs_temp = []
                 
             for cpr_ in cpr_hashes:
                 cpr = cpr_[0]
@@ -74,10 +74,10 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
                     query = f"SELECT * FROM metadata_cache WHERE file_hash = '{cpr}'"
                     entries = list(cur.execute(query))
                 except:
-                    data_que.put(['error', [query, 'Query - UTF-8 encoding error']])
+                    data_que.put(['error', [query, 'UTF-8 encoding error in cpr']])
     
                 if len(entries) == 0:
-                    data_que.put(['error', [str(cpr), 'CPR - no_data_for_xxhash']])
+                    data_que.put(['error', [str(cpr), 'Empty entry for cprhash']])
 
                 else:    
                     for entry in entries:
@@ -86,18 +86,34 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
                             study_date = datetime.strptime(str(study_date), "%Y%m%d").date()
                         except:
                             if entry[-1] is not None:
-                                data_que.put(['error', [entry[db_idx['file_path']], 'Img_path - date_not_found_or_wrong_format']])
+                                data_que.put(['error', [entry[db_idx['file_path']], 'No date or wrong format']])
                                 continue
                             else:
-                                data_que.put(['error', [entry[db_idx['file_path']], 'Img_path - image_missing_on_NGC']])
+                                data_que.put(['error', [entry[db_idx['file_path']], 'Image missing on NGC']])
                                 continue
                         
-                        if abs((study_date - birthdate).days) < 280:
-                            img_temp = {}
-                            for key in db_idx.keys():
-                                img_temp[key] = entry[db_idx[key]]
-                            imgs.append(img_temp)
-    
+                        diff = ((birthdate - study_date).days)
+                        GA_range = birthdate.days - diff
+                        if diff <= 210: #Scan to delivery < 30 weeks
+                            if GA_range > 18*7 and GA_range < 39*7: #GA at scan within range
+                                img_temp = {}
+                                for key in db_idx.keys():
+                                    img_temp[key] = entry[db_idx[key]]
+                                imgs_temp.append(img_temp)
+            imgs = []
+            for birth1 in imgs_temp:
+                birth_ok = True
+                date1 = datetime.strptime(birth1['Birthdate'], "%Y-%m-%d")
+                for birth2 in img_temp:
+                    if birth1['cpr_child'] == birth2['cpr_child']:
+                        continue
+                    date2 = datetime.strptime(birth2['Birthdate'], "%Y-%m-%d")
+                    if abs((date1-date2).days) <= 40*7:
+                        birth_ok = False
+                        break
+                if birth_ok:
+                    imgs.append(birth1)
+                        
             if len(imgs) > 0:
                 data_temp['imgs'] = imgs
                 data_que.put([cpr_child, data_temp])
