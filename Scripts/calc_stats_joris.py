@@ -42,7 +42,7 @@ preds = []
 labels = []
 for key in stats.keys():
     avg_pred = []
-    for fold in stats.keys():
+    for fold in stats[key].keys():
         if fold == 'label':
             label = float(stats[key][fold])
         else:
@@ -61,7 +61,7 @@ preds = []
 labels = []
 for key in stats.keys():
     max_pred = []
-    for fold in stats.keys():
+    for fold in stats[key].keys():
         if fold == 'label':
             label = float(stats[key][fold])
         else:
