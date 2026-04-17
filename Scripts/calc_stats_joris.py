@@ -44,9 +44,10 @@ for key in stats.keys():
     avg_pred = []
     for fold in stats.keys():
         if fold == 'label':
-            label = stats[key][fold]
+            label = float(stats[key][fold])
         else:
-            avg_pred.append(sigmoid(np.mean(stats[key][fold])))
+            val = [float(v) for v in stats[key][fold]]
+            avg_pred.append(sigmoid(np.mean(val)))
     pred = np.mean(avg_pred)
     preds.append(pred)
     labels.append(label)
@@ -54,6 +55,25 @@ for key in stats.keys():
 met = BinarySensitivityAtSpecificity(0.8)
 
 print(met(torch.Tensor(preds), torch.Tensor(labels).to(int)))
+
     
+preds = []
+labels = []
+for key in stats.keys():
+    max_pred = []
+    for fold in stats.keys():
+        if fold == 'label':
+            label = float(stats[key][fold])
+        else:
+            val = [float(v) for v in stats[key][fold]]
+            i = np.argmax(np.abs(val-0.5))
+            max_pred.append(sigmoid(np(val[i])))
+    pred = np.mean(max_pred)
+    preds.append(pred)
+    labels.append(label)
+    
+met = BinarySensitivityAtSpecificity(0.85)
+
+print(met(torch.Tensor(preds), torch.Tensor(labels).to(int)))
 
         
