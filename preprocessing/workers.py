@@ -48,21 +48,14 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
         row = csv_que.get()
         cpr_mother = row[csv_idx['cpr_mother']]
         cpr_child = row[csv_idx['cpr_child']]
-        SHAK = row[csv_idx['Hospital']]
-        GA_days = row[csv_idx['GA_days']]
-        birthdate = datetime.strptime(str(row[csv_idx['Birthdate']]).replace("-",""), "%Y%m%d").date()
         
         query = f"SELECT xxhash FROM cpr_hashes WHERE phair_hash = '{cpr_mother}'"
         cpr_hashes = list(cur.execute(query))
         
         if len(cpr_hashes) == 0:
-            data_que.put(['not_found', [cpr_mother, cpr_child, 'Mothers CPR not in DB', SHAK, birthdate]])
+            data_que.put(['not_found', [cpr_child, cpr_mother, 'Mothers CPR not in DB']])
         
-        elif GA_days == '.':
-            data_que.put(['not_found', [cpr_mother, cpr_child, 'No GA registered', SHAK, birthdate]])
-            
         else:
-            GA_days = int(GA_days)
             data_temp = {}
             
             for key in csv_idx.keys():
@@ -79,7 +72,7 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
                     data_que.put(['error', [query, 'UTF-8 encoding error in cpr']])
     
                 if len(entries) == 0:
-                    data_que.put(['error', [str(cpr), 'Empty entry for cprhash']])
+                    data_que.put(['error', [query, 'Empty entry for cprhash']])
 
                 else:    
                     for entry in entries:
@@ -93,18 +86,9 @@ def db_crawler(csv_idx, db_idx, path_to_db, csv_que, data_que, done):
                             else:
                                 data_que.put(['error', [entry[db_idx['file_path']], 'Image missing on NGC']])
                                 continue
-                        
-                        diff = ((birthdate - study_date).days)
-                        GA_range = GA_days - (birthdate - study_date).days
-                        if diff <= 210: #Scan to delivery < 30 weeks
-                            if GA_range > 18*7 and GA_range < 39*7: #GA at scan within range
-                                img_temp = {}
-                                for key in db_idx.keys():
-                                    img_temp[key] = entry[db_idx[key]]
-                                imgs.append(img_temp)
-                        
+                                                
             if len(imgs) > 0:
                 data_temp['imgs'] = imgs
                 data_que.put([cpr_child, data_temp])
             else:
-                data_que.put(['not_found', [cpr_mother, cpr_child, 'No images associated with birth', SHAK, birthdate]])
+                data_que.put(['not_found', [cpr_child, cpr_mother, 'No images associated with birth']])
