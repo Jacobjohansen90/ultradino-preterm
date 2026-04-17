@@ -52,7 +52,7 @@ for key in stats.keys():
     preds.append(pred)
     labels.append(label)
     
-met = BinarySensitivityAtSpecificity(0.8)
+met = BinarySensitivityAtSpecificity(0.85)
 
 print(met(torch.Tensor(preds), torch.Tensor(labels).to(int)))
 
