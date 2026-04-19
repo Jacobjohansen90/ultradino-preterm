@@ -23,9 +23,9 @@ from utils.documentation import setup, Logger
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
 
-conf = OmegaConf.load("./confs/append_tokens_vitb16.yaml")
+cfg = OmegaConf.load("./training_confs/append_tokens_vitb16.yaml")
 
-save_path = setup(conf)
+save_path = setup(cfg)
 
 logger = Logger(save_path)
 
@@ -34,12 +34,12 @@ logger = Logger(save_path)
 #TrainData = DummySet(train=True)
 #ValData = DummySet(train=False)
 
-TrainData = PreTermDataset(conf, train=True)
-ValData = PreTermDataset(conf, train=False)
+TrainData = PreTermDataset(cfg, train=True)
+ValData = PreTermDataset(cfg, train=False)
 
 
 train_split, val_split = train_test_split(np.arange(len(TrainData)), 
-                                          test_size=conf.data.val_frac)
+                                          test_size=cfg.data.val_frac)
 
 TrainData = Subset(TrainData, train_split)
 ValData = Subset(ValData, val_split)
@@ -47,46 +47,46 @@ ValData = Subset(ValData, val_split)
 
 
 TrainLoader = DataLoader(TrainData,
-                         conf.data.batch_size,
+                         cfg.data.batch_size,
                          shuffle=True,
                          pin_memory=True,
                          drop_last=True,
-                         num_workers=conf.data.workers,
+                         num_workers=cfg.data.workers,
                          collate_fn=collate_fn)
 
 ValLoader = DataLoader(ValData,
-                       conf.data.batch_size,
+                       cfg.data.batch_size,
                        shuffle=False,
                        pin_memory=False,
                        drop_last=False,
-                       num_workers=conf.data.workers,
+                       num_workers=cfg.data.workers,
                        collate_fn=collate_fn)
 
 
-model = model_from_conf(conf)
+model = model_from_conf(cfg)
 model.freeze_model(model.vit_model)
 model.freeze_model(model.ehr_model)
 
 #%% Setup finetuning
 
-optimizer = get_optimizer(model, conf)
-scheduler = get_cosine_schedule_with_warmup(optimizer, conf, len(TrainLoader))
-loss_fn = get_loss(conf)
-metrics = get_metrics(conf)
+optimizer = get_optimizer(model, cfg)
+scheduler = get_cosine_schedule_with_warmup(optimizer, cfg, len(TrainLoader))
+loss_fn = get_loss(cfg)
+metrics = get_metrics(cfg)
 
-for epoch in range(conf.training.epochs):
-    if epoch == conf.training.vit_frozen_until:
+for epoch in range(cfg.training.epochs):
+    if epoch == cfg.training.vit_frozen_until:
         model.unfreeze_model(model.vit_model)
         
-    if epoch == conf.training.ehr_frozen_until:
+    if epoch == cfg.training.ehr_frozen_until:
         model.unfreeze_model(model.ehr_model)
 
     model.train(True)
     train_loss = 0
     for i, data in enumerate(tqdm(TrainLoader)):
         optimizer.zero_grad()
-        outputs = model(data['img'].to(conf.device.type), data['ehr_data'].to(conf.device.type))
-        loss = loss_fn(outputs, data['label'].to(conf.device.type))
+        outputs = model(data['img'].to(cfg.device.type), data['ehr_data'].to(cfg.device.type))
+        loss = loss_fn(outputs, data['label'].to(cfg.device.type))
         loss.backward()
 
         train_loss += loss.item() / len(TrainLoader)
@@ -97,8 +97,8 @@ for epoch in range(conf.training.epochs):
     val_loss = 0
     with torch.no_grad():
         for val_data in iter(ValLoader):
-            preds = model(data['img'].to(conf.device.type), data['ehr_data'].to(conf.device.type))
-            labels = data['label'].to(conf.device.type)
+            preds = model(data['img'].to(cfg.device.type), data['ehr_data'].to(cfg.device.type))
+            labels = data['label'].to(cfg.device.type)
             loss = loss_fn(outputs, labels)
             val_loss += loss.item() / len(ValLoader)
             

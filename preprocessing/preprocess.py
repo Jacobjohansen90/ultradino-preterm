@@ -3,7 +3,7 @@
 """
 Created on Thu Mar 19 14:29:55 2026
 
-@author: jacob
+@author: jj@di.ku.dk
 """
 #%%Imports
 import csv
@@ -14,191 +14,107 @@ import multiprocessing as mp
 from pathlib import Path
 import sqlite3
 from datetime import datetime
+from omegaconf import OmegaConf
 
 from workers import csv_extracter, db_crawler
 from calc_stats import calc_stats
-#%%Variables
-
-#Path to Data folder and holdout test set
-path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/"
-holdout_path = "/projects/users/data/UCPH/DeepFetal/projects/ultrasound_preprocessing/splits/PRETERM_RCT_PT_V2/holdout_test_5pct.csv"
-
-#Path to images
-path_imgs = '/projects/users/data/UCPH/DeepFetal/ultrasound/PNG_pretrain/'
-
-debug = False #Run on a small sample for debugging purposes
-crawl_db = True #Recrawl database
-
-#Variables
-num_workers = 60 #Number of MP workers
-SP_date_cutoff = datetime.strptime("20151105", "%Y%m%d") #Cutoff date for SP inclusion
-
-
-#CSV Variables we want from registeres in each file
-headers = ["cpr_child", "cpr_mother", "GA_days", "Birthdate", "Hospital", "C_Section", "Induced"]
-
-csvs = [["mfr.csv", ["CPR_BARN", 
-                     "CPR_MODER", 
-                     "GESTATIONSALDER_DAGE", 
-                     "FOEDSELSDATO", 
-                     "SYGEHUS",
-                     "MARKOER_KEJSERSNIT",
-                     "MARKOER_IGANGSAETTELSE"]],
-        ["nyfoedte.csv", ["CPRnummer_Barn", 
-                          "CPRnummer_Mor", 
-                          "Gestationsalder", 
-                          "FoedselsDato_Barn", 
-                          "AnsvarligInstitution_Kode",
-                          "Kejsersnit",
-                          ["Igangsaettelse_Ballonkateter", "Ingangsaettelse_HSP", "Ingangsaettelse_Medicinsk"]]]]
-
-
-
-
-#CSV indexes we want in the final output
-variables_from_csv = ['GA_days',
-                      'cpr_child',
-                      'cpr_mother',
-                      'Birthdate',
-                      'Hospital',]
-
-#Sqlite database indexes we want in the final output
-variables_from_db = ['file_path',
-                     'manufacturer',
-                     'manufacturer_model',
-                     'study_date',
-                     'physical_delta_x',
-                     'physical_delta_y']
+from EHR_extract.extract import extract_from_cfg
+from utils.utils import unpack_dict_to_DF
+#%%Load variable YAML
+cfg = OmegaConf.load("../confs/Preprocessing.yaml")
 
 #Setup logger
-logging.basicConfig(filename=path + 'preprocess.log', filemode='w')
-logger = logging.getLogger('')
+logging.basicConfig(filename=cfg.data_dir + 'preprocess.log', filemode='w')
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-#%%Combine CSVs
+#Setup dirs
+Path(cfg.data_dir + 'logs/').mkdir(exist_ok=True)
+Path(cfg.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=True)
 
-n_births = 0
-logger.info("Combining CSVs - " + str(datetime.now().strftime('%H:%M:%S')))
-with open(path + 'registers/combined.csv', 'w') as file:
-    wr = csv.writer(file, quoting=csv.QUOTE_ALL)
-    wr.writerow(headers)
+#%%Build population CSV
+cfg_population = OmegaConf.load(cfg.paths.population_yaml)
 
-    for csv_info in csvs:
-        with open(path + 'registers/' + csv_info[0]) as csv_file:
-            csv_headers = csv_info[1]
-            csv_temp = csv.reader(csv_file)
+population, discards, metadata = extract_from_cfg(cfg_population)
 
-            temp_headers = next(csv_temp)
-            idxs = []
-          
-            for head in csv_headers:
-                if type(head) == list:
-                    i_list = []
-                    for subhead in head:
-                        i = 0
-                        for temp_head in temp_headers:
-                            if temp_head == subhead:
-                                i_list.append(i)
-                                break
-                            else:
-                                i += 1
-                    idxs.append(i_list)
-                else:
-                    i = 0
-                    for temp_head in temp_headers:
-                        if temp_head == head:
-                            idxs.append(i)
-                            break
-                        else:
-                            i += 1
-                    
-            for row in csv_temp:
-                info = []
-                n_births += 1
-                for idx in idxs:
-                    if type(idx) == list:
-                        is_true  = ' '
-                        for i in idx:
-                            if row[i] == 'Ja':
-                                is_true = '1'
-                                break
-                        info.append(is_true)
-                            
-                    else:
-                        info.append(row[idx])
-                wr.writerow(info)
-                if debug and n_births > 10000:
-                    break
+if cfg.debug:
+    population = population[:5000]
+
+population.write_csv(cfg.data_dir + 'data_dump/population.csv')
+
+n_births = mp.Value('i', population.shape[0])
+
+logger.info(f"Found {n_births} births - " + str(datetime.now().strftime('%H:%M:%S')))
     
 
 #%%Crawl database
-if not crawl_db:
+if not cfg.crawl_db:
     logger.info("Using existing database - " + str(datetime.now().strftime('%H:%M:%S')))
-    with open(path + 'image_data/img_data.json') as f:
+    with open(cfg.data_dir + 'data_dump/img_data.json') as f:
         final_data = json.load(f)
-    with open(path + 'image_data/img_cpr_link.json') as f:
+    with open(cfg.data_dir + 'data_dump/img_cpr_link.json') as f:
         img_cpr_link = json.load(f)
         
 else:
     #Setup ques, loggers and start processes
-    csv_que = mp.Queue()
-    data_que = mp.Queue()
+    in_que = mp.Queue()
+    out_que = mp.Queue()
     done = mp.Value('b', False)
-    csv_size = mp.Value('i', n_births)
-    path_to_db = path + 'registers/ultrasound_metadata_db.sqlite'
-    csv_idx = {}
     db_idx = {}
+    pop_idx = {}
     
+    #Find population indexes
+    variables = population.columns
+    if not 'CPR_CHILD' in variables and 'CPR_MOTHER' in variables:
+        raise Exception("CPR_CHILD and CPR_MOTHER must be present in population variables")
+    for i, variable in enumerate(variables):
+        pop_idx[variable] = i
     
-    for i in range(len(csv_headers)):
-        for variable in variables_from_csv:
-            if headers[i] == variable:
-                csv_idx[variable] = i
-    
-    if len(variables_from_csv) != len(csv_idx):
-        found = list(csv_idx.keys())
-        diff = list(set(variables_from_csv) - set(found))
-        raise Exception(f"Did not find variables {diff} in CSV")
-    
-    #Crawl DB for variables indexes
-    with sqlite3.connect(path_to_db) as con:
+            
+    #Crawl DB for variables indexes and test we got all
+    with sqlite3.connect(cfg.sql_db) as con:
         cur = con.cursor()
         cur.execute("SELECT * FROM metadata_cache LIMIT 0")
         db_headers = [desc[0] for desc in cur.description]
     
     for i in range(len(db_headers)):
-        for variable in variables_from_db:
+        for variable in cfg.variables_from_db:
             if db_headers[i] == variable:
                 db_idx[variable] = i
-    
-    num_workers = min(num_workers, mp.cpu_count()-4)
+    if len(db_idx) != len(cfg.variables_from_db):
+        found = list(db_idx.keys())
+        diff = list(set(cfg.variables_from_db) - set(found))
+        raise Exception(f"Did not find {diff} in database")
+        
+    num_workers = min(cfg.num_workers, mp.cpu_count()-4)
     
     logger.info(f"Starting {num_workers} workers - " + str(datetime.now().strftime('%H:%M:%S')))
     
+    #Start crawler workers
     processes = []
-    p = mp.Process(target=csv_extracter, args=(path + 'registers/combined.csv', csv_que, done))
+    p = mp.Process(target=csv_extracter, args=(population, in_que, done))
     p.start()
     processes.append(p)
     
     for i in range(num_workers):
-        p = mp.Process(target=db_crawler, args=(csv_idx, db_idx, path_to_db, csv_que, data_que, done))
+        p = mp.Process(target=db_crawler, args=(pop_idx, db_idx, cfg.SQL_DB, 
+                                                in_que, out_que, done))
         p.start()
         processes.append(p)
     
     not_found = []
-    errors = []
+    errors_db = []
+    errors_img = []
     final_data = {}
-    img_cpr_link = {}
     invalid_counter = 0
     n = 1
-    images = []
     
-    while n <= csv_size.value:
-    
-        data = data_que.get()
-    
-        if data[0] == 'error':
-            errors.append(data[1])
+    while n <= n_births.value:
+        data = out_que.get()
+        if data[0] == 'DB_error':
+            errors_db.append([data[1], data[2]])
+        elif data[0] == 'img_error':
+            errors_img.append([data[1], data[2]])
         elif data[0] == 'not_found':
             n += 1
             not_found.append(data[1])
@@ -206,7 +122,7 @@ else:
                 logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))
         else:
             if data[0] == 'INVALID':
-                final_data['child_' + str(invalid_counter)] = data[1]
+                final_data['INVALID_' + str(invalid_counter)] = data[1]
                 invalid_counter += 1
             else:
                 final_data[data[0]] = data[1]
@@ -218,39 +134,37 @@ else:
     for p in processes:
         p.terminate()
     
-    Path(path + 'logs/').mkdir(exist_ok=True)
-    Path(path + 'image_data/misc/').mkdir(parents=True, exist_ok=True)
-    
-    
-    
-    with open(path + 'logs/birth_missing.csv', 'w', newline='') as file:
-        wr = csv.writer(file, quoting=csv.QUOTE_ALL)
-        wr.writerow(["cpr_phair_mother", "cpr_phair_child", "error", "SHAK", "birthdate"])
-        for row in not_found:
-            wr.writerow(row)
-    
-    with open(path + 'logs/errors.csv', 'w', newline='') as file:
-        wr = csv.writer(file, quoting=csv.QUOTE_ALL)
-        wr.writerow(["info", "error"])
-        for row in errors:
-            wr.writerow(row)
-    
-    with open(path + 'image_data/img_data.json', 'w') as file:
-        json.dump(final_data, file)
-        
-    with open(path + 'image_data/misc/image_list.csv', 'w') as file:
+    #%%Dump data into files
+    with open(cfg.data_dir + 'logs/db_errors.csv', 'w', newline='') as file:
         wr = csv.writer(file)
-        wr.writerow(["filename"])
-        for key in final_data.keys():
-            for img_info in final_data[key]['imgs']:
-                img_path = img_info['file_path']
-                images.append(img_path)
-                wr.writerow([img_path])
-                img_cpr_link[img_path] = key
-            
-    with open(path + 'image_data/img_cpr_link.json', 'w') as file:
+        wr.writerow(["Error", "DB Query"])
+        wr.writerows(errors_db)
+
+    with open(cfg.data_dir + 'logs/img_errors.csv', 'w', newline='') as file:
+        wr = csv.writer(file)
+        wr.writerow(["Error", "Image Path"])
+        wr.writerows(errors_img)
+
+    with open(cfg.data_dir + 'data_dump/img_data.json', 'w') as file:
+        json.dump(final_data, file)   
+       
+    with open(cfg.data_dir + 'logs/birth_missing.csv', 'w', newline='') as file:
+        wr = csv.writer(file)
+        header = []
+        for key in pop_idx.keys():
+            header.append(key)
+        wr.writerow([header])
+        for row in not_found:
+            wr.writerow(list(row.values()))
+    
+    df = unpack_dict_to_DF(final_data, 'imgs')
+    img_cpr_link = dict(zip(df['CPR_CHILD'], df['file_path']))
+    
+    with open(cfg.data_dir + 'data_dump/img_cpr_link.json', 'w') as file:
         json.dump(img_cpr_link, file)
         
+    df.to_csv(cfg.data_dir + 'data_dump/img_data.csv', index=False)
+            
     del not_found
     del errors
     

@@ -1,0 +1,25 @@
+paths:
+  input_dir: /home/jacob/Desktop/NAS/Work/PreTerm/csv_builder
+  output_dir: /home/jacob/Desktop/NAS/Work/PreTerm/csv_builder/outputs
+
+population: 
+  population_key: CPR_CHILD
+  tables: 
+    - table: ${paths.input_dir}/mfr.csv
+      columns:
+        CPR_CHILD: CPR_BARN
+        CPR_MOTHER: CPR_MODER
+        GA: GESTATIONSALDER_DAGE
+        Birthday: FOEDSELSDATO
+        Hospital: SYGEHUS
+    - table: ${paths.test_dir}/nyfoedte.csv
+      columns:
+        CPR_CHILD: CPRnummer_Barn
+        CPR_MOTHER: CPRnummer_Mor
+        GA: Gestationsalder
+        Birthday: FoedselsDato_Barn
+        Hospital: SHAK_Sygehus 
+    
+
+ 
+
