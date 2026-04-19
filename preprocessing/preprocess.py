@@ -181,8 +181,8 @@ for i in range(len(discards)):
                    "n_population_post_discard": all_discards[i][3] - all_discards[i][2],
                    "discards": all_discards[i][1]}
 
-    with open(cfg.paths.data_dir + 'logs/discards.json', "w") as file:
-        json.dump(discards, file)
+with open(cfg.paths.data_dir + 'logs/discards.json', "w") as file:
+    json.dump(discards, file)
 
 final_population.write_csv(cfg.paths.data_dir + 'data_dump/final_population.csv')
 
