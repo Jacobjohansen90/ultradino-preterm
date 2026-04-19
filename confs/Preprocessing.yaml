@@ -5,7 +5,7 @@ num_workers: 60
 paths:
   data_dir: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/
   holdout_csv: /projects/users/data/UCPH/DeepFetal/projects/ultrasound_preprocessing/splits/PRETERM_RCT_PT_V2/holdout_test_5pct.csv
-  SQL_DB: /projects/users/data/UCPH/DeepFetal/ultrasound/ultrasound_metadata.sqlite
+  SQL_DB: /projects/users/data/UCPH/DeepFetal/ultrasound/ultrasound_metadata_db.sqlite
   img_dir: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_pretrain/
   population_yaml: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/population_confs/Population.yaml
   incl_excl_yaml: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/population_confs/Incl_Excl.yaml
