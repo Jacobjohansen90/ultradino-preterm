@@ -44,7 +44,7 @@ population.write_csv(cfg.paths.data_dir + 'data_dump/population.csv')
 
 n_births = mp.Value('i', population.shape[0])
 
-logger.info(f"Found {n_births} births - " + str(datetime.now().strftime('%H:%M:%S')))
+logger.info(f"Found {n_births.value} births - " + str(datetime.now().strftime('%H:%M:%S')))
     
 
 #%%Crawl database
@@ -72,7 +72,7 @@ else:
     
             
     #Crawl DB for variables indexes and test we got all
-    with sqlite3.connect(cfg.sql_db) as con:
+    with sqlite3.connect(cfg.paths.SQL_DB) as con:
         cur = con.cursor()
         cur.execute("SELECT * FROM metadata_cache LIMIT 0")
         db_headers = [desc[0] for desc in cur.description]
