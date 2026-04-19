@@ -95,6 +95,7 @@ def inclusion_exclusion(cfg, population, logger):
     
     logger.info("\n ### Applying imaging matching criteria ### \n")
     if 'imaging_matching_criteria' in cfg.keys():
+        imaging_metadata = 
         for custom_cfg in cfg.get("imaging_matching_criteria", {}):
             fn = custom_functions[custom_cfg.function]
             args = custom_cfg.args

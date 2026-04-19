@@ -1,11 +1,6 @@
 paths:
   input_dir_SDS: /storage/archive/UCPH/DeepFetal/SDS/registers_pseudonymized
   input_dir_SP:  /storage/archive/UCPH/DeepFetal/SP/tables
-  output_dir: /home/jacob/Desktop/NAS/Work/PreTerm/csv_builder/outputs
-  population_save_path: ${paths.output_dir}/population_${hydra:job.config_name}.csv
-  discards_save_path: ${paths.output_dir}/discards_${hydra:job.config_name}.json
-  distribution_save_path: ${paths.output_dir}/distribution_${hydra:job.config_name}.json
-  imaging_metadata_save_path: ${paths.output_dir}/imaging_metadata_${hydra:job.config_name}
   imaging_metadata_output_formats: ["csv",]
 strict: True
     
@@ -116,9 +111,31 @@ custom_criteria:
   #    birth_id_column: FOEDSELSLOEBENUMMER
   #  action: exclude
 
+imaging_matching_criteria:
+  # Scan-to-delivery interval
+  - function: find_images_and_timedeltas
+    args: 
+      table: /users/people/seblla/test.csv
+      child_id_column: cpr_child 
+      scan_date_column: study_date
+      image_path_column: "file_path"
+      min_diff_days_scan_to_delivery: 0 #0
+      max_diff_days_scan_to_delivery: 210 #210
+      min_ga_in_days_at_scan: 126 # 126
+      max_ga_in_days_at_scan: 237 # 237
+       # check that diff is  correct to account for scan < bday
+    action: include
+  - function: find_images_with_predicted_classes
+    # requires that "find_images_and_timedeltas" is run first to generate imaging metadata dataframe
+    args:
+      table: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/image_data/misc/cervix_preds.csv
+      classes: [14]
+      image_path_column: filename
+      imaging_metadata_image_path_column: file_path 
+      class_column: pred
+      child_id_column: cpr_child
+    action: include
  
  
- #  ONLY in SP
- # Account for only RegionH/Sjælland so we know they have SP data
  
 
