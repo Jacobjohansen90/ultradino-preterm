@@ -7,8 +7,8 @@ paths:
   holdout_csv: /projects/users/data/UCPH/DeepFetal/projects/ultrasound_preprocessing/splits/PRETERM_RCT_PT_V2/holdout_test_5pct.csv
   SQL_DB: /projects/users/data/ucph/deepfetal/ultrasound/ultrasound_metadata.sqlite
   img_dir: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_pretrain/
-  population_yaml: /projects/users/data/UCPH/DeepFetal/projects/preterm/confs/population_confs/Population.yaml
-  incl_excl_yaml: /projects/users/data/UCPH/DeepFetal/projects/preterm/confs/population_confs/Incl_Excl.yaml
+  population_yaml: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/population_confs/Population.yaml
+  incl_excl_yaml: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/population_confs/Incl_Excl.yaml
 
 
 variables_from_db: ['file_path', 'manufacturer', 'manufacturer_model', 'study_date', 'physical_delta_x', 'physical_delta_y']
