@@ -1,4 +1,4 @@
-debug: False
+debug: True
 crawl_db: True
 num_workers: 60
 
