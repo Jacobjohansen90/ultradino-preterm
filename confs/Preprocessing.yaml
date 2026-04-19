@@ -8,7 +8,7 @@ paths:
   SQL_DB: /projects/users/data/UCPH/DeepFetal/ultrasound/ultrasound_metadata_db.sqlite
   img_dir: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_pretrain/
   population_yaml: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/population_confs/Population.yaml
-  incl_excl_yaml: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/population_confs/Incl_Excl.yaml
+  incl_excl_yaml: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/population_confs/Inclusion_Exclusion.yaml
 
 
 variables_from_db: ['file_path', 'manufacturer', 'manufacturer_model', 'study_date', 'physical_delta_x', 'physical_delta_y']
