@@ -21,7 +21,7 @@ from calc_stats import calc_stats
 from EHR_extract.extract import merge_tables, inclusion_exclusion
 from utils.utils import unpack_dict_to_DF
 #%%Load variable YAML
-cfg = OmegaConf.load("../confs/Preprocessing.yaml")
+cfg = OmegaConf.load("/confs/Preprocessing.yaml")
 
 #Setup logger
 logging.basicConfig(filename=cfg.paths.data_dir + 'preprocess.log', filemode='w')
@@ -167,7 +167,8 @@ else:
             
     del not_found
     del errors
-    
+ 
+"""
 #%%Make training and test data based on conditions
 logger.info("Linking cervix preds with database - " + str(datetime.now().strftime('%H:%M:%S')))
 
@@ -317,3 +318,4 @@ logger.info("Calculating stats - " + str(datetime.now().strftime('%H:%M:%S')))
 calc_stats('/'.join(path.split('/')[:-2]) + '/')
 
 logger.info("Preprocessing done - " + str(datetime.now().strftime('%H:%M:%S')))
+"""
