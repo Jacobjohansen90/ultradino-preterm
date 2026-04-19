@@ -18,29 +18,29 @@ from omegaconf import OmegaConf
 
 from workers import csv_extracter, db_crawler
 from calc_stats import calc_stats
-from EHR_extract.extract import extract_from_cfg
+from EHR_extract.extract import merge_tables, inclusion_exclusion
 from utils.utils import unpack_dict_to_DF
 #%%Load variable YAML
 cfg = OmegaConf.load("../confs/Preprocessing.yaml")
 
 #Setup logger
-logging.basicConfig(filename=cfg.data_dir + 'preprocess.log', filemode='w')
+logging.basicConfig(filename=cfg.paths.data_dir + 'preprocess.log', filemode='w')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 #Setup dirs
-Path(cfg.data_dir + 'logs/').mkdir(exist_ok=True)
-Path(cfg.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=True)
+Path(cfg.paths.data_dir + 'logs/').mkdir(exist_ok=True)
+Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=True)
 
 #%%Build population CSV
 cfg_population = OmegaConf.load(cfg.paths.population_yaml)
 
-population, discards, metadata = extract_from_cfg(cfg_population)
+population = merge_tables(cfg_population)
 
 if cfg.debug:
     population = population[:5000]
 
-population.write_csv(cfg.data_dir + 'data_dump/population.csv')
+population.write_csv(cfg.paths.data_dir + 'data_dump/population.csv')
 
 n_births = mp.Value('i', population.shape[0])
 
@@ -50,9 +50,9 @@ logger.info(f"Found {n_births} births - " + str(datetime.now().strftime('%H:%M:%
 #%%Crawl database
 if not cfg.crawl_db:
     logger.info("Using existing database - " + str(datetime.now().strftime('%H:%M:%S')))
-    with open(cfg.data_dir + 'data_dump/img_data.json') as f:
+    with open(cfg.paths.data_dir + 'data_dump/img_data.json') as f:
         final_data = json.load(f)
-    with open(cfg.data_dir + 'data_dump/img_cpr_link.json') as f:
+    with open(cfg.paths.data_dir + 'data_dump/img_cpr_link.json') as f:
         img_cpr_link = json.load(f)
         
 else:
@@ -135,20 +135,20 @@ else:
         p.terminate()
     
     #%%Dump data into files
-    with open(cfg.data_dir + 'logs/db_errors.csv', 'w', newline='') as file:
+    with open(cfg.paths.data_dir + 'logs/db_errors.csv', 'w', newline='') as file:
         wr = csv.writer(file)
         wr.writerow(["Error", "DB Query"])
         wr.writerows(errors_db)
 
-    with open(cfg.data_dir + 'logs/img_errors.csv', 'w', newline='') as file:
+    with open(cfg.paths.data_dir + 'logs/img_errors.csv', 'w', newline='') as file:
         wr = csv.writer(file)
         wr.writerow(["Error", "Image Path"])
         wr.writerows(errors_img)
 
-    with open(cfg.data_dir + 'data_dump/img_data.json', 'w') as file:
+    with open(cfg.paths.data_dir + 'data_dump/img_data.json', 'w') as file:
         json.dump(final_data, file)   
        
-    with open(cfg.data_dir + 'logs/birth_missing.csv', 'w', newline='') as file:
+    with open(cfg.paths.data_dir + 'logs/birth_missing.csv', 'w', newline='') as file:
         wr = csv.writer(file)
         header = []
         for key in pop_idx.keys():
@@ -160,10 +160,10 @@ else:
     df = unpack_dict_to_DF(final_data, 'imgs')
     img_cpr_link = dict(zip(df['CPR_CHILD'], df['file_path']))
     
-    with open(cfg.data_dir + 'data_dump/img_cpr_link.json', 'w') as file:
+    with open(cfg.paths.data_dir + 'data_dump/img_cpr_link.json', 'w') as file:
         json.dump(img_cpr_link, file)
         
-    df.to_csv(cfg.data_dir + 'data_dump/img_data.csv', index=False)
+    df.to_csv(cfg.paths.data_dir + 'data_dump/img_data.csv', index=False)
             
     del not_found
     del errors
