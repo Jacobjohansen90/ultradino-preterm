@@ -33,13 +33,14 @@ Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=True)
 
 #%%Build population data
 cfg_population = OmegaConf.load(cfg.paths.population_yaml)
+cfg_population.paths.data_dir = cfg.paths.data_dir
 
 population = merge_tables(cfg_population)
 
 if cfg.debug:
     population = population[:1000]
 
-population.write_csv(cfg.paths.data_dir + 'data_dump/population.csv')
+population.write_csv(cfg_population.paths.data_dir + 'data_dump/population.csv')
 
 n_births = mp.Value('i', population.shape[0])
 
@@ -170,6 +171,7 @@ else:
  
 #%%Apply inclusion/exclusion criteria
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_yaml)
+cfg_incl_excl.paths.data_dir = cfg.paths.data_dir
 
 final_population, all_discards, img_metadata = inclusion_exclusion(cfg_incl_excl, population, logger)
 
