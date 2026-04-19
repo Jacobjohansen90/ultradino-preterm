@@ -19,7 +19,7 @@ from workers import csv_extracter, db_crawler
 from calc_stats import calc_stats
 from EHR_extract.extract import merge_tables, inclusion_exclusion
 from utils.utils import unpack_dict_to_DF
-#%%Load variable YAML
+#%%Load variable YAML and setup logger and dirs
 cfg = OmegaConf.load('./confs/Preprocessing.yaml')
 
 #Setup logger
@@ -31,13 +31,13 @@ logger.setLevel(logging.INFO)
 Path(cfg.paths.data_dir + 'logs/').mkdir(exist_ok=True)
 Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=True)
 
-#%%Build population CSV
+#%%Build population data
 cfg_population = OmegaConf.load(cfg.paths.population_yaml)
 
 population = merge_tables(cfg_population)
 
 if cfg.debug:
-    population = population[:5000]
+    population = population[:1000]
 
 population.write_csv(cfg.paths.data_dir + 'data_dump/population.csv')
 
@@ -70,7 +70,7 @@ else:
         pop_idx[variable] = i
     
             
-    #Crawl DB for variables indexes and test we got all
+    #Crawl DB for variables indexes and check we found all of them
     with sqlite3.connect(cfg.paths.SQL_DB) as con:
         cur = con.cursor()
         cur.execute("SELECT * FROM metadata_cache LIMIT 0")
@@ -152,9 +152,9 @@ else:
         header = ['Error']
         for key in pop_idx.keys():
             header.append(key)
-        wr.writerow([header])
-        for row in not_found[1]:
-            wr.writerow(not_found[0] + list(row.values()))
+        wr.writerow(header)
+        for row in not_found:
+            wr.writerow([row[0]] + list(row[1].values()))
     
     df = unpack_dict_to_DF(final_data, 'imgs')
     img_cpr_link = dict(zip(df['CPR_CHILD'], df['file_path']))
@@ -167,7 +167,7 @@ else:
     del not_found
     del errors 
  
-#%%Apply Inclusion Exclusion Criteria
+#%%Apply inclusion/exclusion criteria
 cfg_incl_exl = OmegaConf.load(cfg.paths.incl_excl_yaml)
 
 final_population, all_discards, img_metadata = inclusion_exclusion(population, cfg_incl_exl)
