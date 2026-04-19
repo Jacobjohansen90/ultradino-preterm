@@ -166,7 +166,7 @@ else:
     df.to_csv(cfg.paths.data_dir + 'data_dump/img_data.csv', index=False)
             
     del not_found
-    del errors
+    del errors 
  
 """
 #%%Make training and test data based on conditions
