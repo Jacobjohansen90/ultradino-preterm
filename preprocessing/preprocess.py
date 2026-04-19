@@ -97,7 +97,7 @@ else:
     processes.append(p)
     
     for i in range(num_workers):
-        p = mp.Process(target=db_crawler, args=(pop_idx, db_idx, cfg.SQL_DB, 
+        p = mp.Process(target=db_crawler, args=(pop_idx, db_idx, cfg.paths.SQL_DB, 
                                                 in_que, out_que, done))
         p.start()
         processes.append(p)
