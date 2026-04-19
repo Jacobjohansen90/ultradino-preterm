@@ -25,7 +25,7 @@ def csv_extracter(dataframe, in_que, done):
         shared memory across processes telling the crawlers the csv_extractor is done
     """
 
-    for i in len(dataframe):
+    for i in range(len(dataframe)):
         variables = dataframe[i].rows()
         in_que.put(variables)
         #Avoid flooding the queue. Not strictly necessary, but preserves memory
