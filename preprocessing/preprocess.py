@@ -21,7 +21,7 @@ from calc_stats import calc_stats
 from EHR_extract.extract import merge_tables, inclusion_exclusion
 from utils.utils import unpack_dict_to_DF
 #%%Load variable YAML
-cfg = OmegaConf.load('/confs/Preprocessing.yaml')
+cfg = OmegaConf.load('./confs/Preprocessing.yaml')
 
 #Setup logger
 logging.basicConfig(filename=cfg.paths.data_dir + 'preprocess.log', filemode='w')
