@@ -173,6 +173,19 @@ cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_yaml)
 
 final_population, all_discards, img_metadata = inclusion_exclusion(cfg_incl_excl, population)
 
+discards = {}
+for i in range(len(discards)):
+    d[i] = {"criteria": all_discards[i][0],
+            "n_discards": all_discards[i][2],
+            "n_population_pre_discard": all_discards[i][3],
+            "n_population_post_discard": all_discards[i][3] - all_discards[i][2],
+            "discards": all_discards[i][1]}
+
+    with open(cfg.paths.data_dir + 'logs/discards.json', "w") as file:
+        json.dump(discards, file)
+
+final_population.write_csv(cfg.data_dir + 'data_dump/final_population.csv')
+
 
 
 """
