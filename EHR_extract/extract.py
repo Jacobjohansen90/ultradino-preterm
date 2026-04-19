@@ -41,20 +41,20 @@ def inclusion_exclusion(cfg, population, logger):
             criterion_population = set()
             for condition in criterion.conditions:
                 table = load_table(condition.table, strict=cfg.strict)
-                logger.info(f"Table rows / unique IDs total: {len(table)} / \
-                            {table[condition.match_on].n_unique()} for table: {condition.table}")
+                logger.info(f"Table rows / unique IDs total: {len(table)} / "\
+                            "{table[condition.match_on].n_unique()} for table: {condition.table}")
     
                 table = table.filter(pl.col(condition.match_on).is_in(population[cfg.population.population_key]))
-                logger.info(f"Table rows / unique IDs matching population IDs: {len(table)} / \
-                            {table[condition.match_on].n_unique()} after filtering on {condition.match_on}")
+                logger.info(f"Table rows / unique IDs matching population IDs: {len(table)} / "\
+                            "{table[condition.match_on].n_unique()} after filtering on {condition.match_on}")
     
                 py_operator = get_python_operator(condition.operator)
                 if condition.operator in [">", "<", ">=", "<="]:
                     table = filter_numeric_rows(table, condition.column)
                 table = table.filter(py_operator(pl.col(condition.column), condition.value))
-                logger.info(f"Table rows / unique IDs matching population IDs: {len(table)} / \
-                            {table[condition.match_on].n_unique()} after filtering on \
-                            {condition.column} {condition.operator} {condition.value}")
+                logger.info(f"Table rows / unique IDs matching population IDs: {len(table)} / "\
+                            "{table[condition.match_on].n_unique()} after filtering on "\
+                            "{condition.column} {condition.operator} {condition.value}")
     
                 if condition.condition is None:
                     last_condition_population = set(table[condition.match_on])
@@ -95,7 +95,6 @@ def inclusion_exclusion(cfg, population, logger):
     
     logger.info("\n ### Applying imaging matching criteria ### \n")
     if 'imaging_matching_criteria' in cfg.keys():
-        imaging_metadata = 
         for custom_cfg in cfg.get("imaging_matching_criteria", {}):
             fn = custom_functions[custom_cfg.function]
             args = custom_cfg.args

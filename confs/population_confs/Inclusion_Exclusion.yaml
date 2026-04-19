@@ -1,9 +1,13 @@
 paths:
   input_dir_SDS: /storage/archive/UCPH/DeepFetal/SDS/registers_pseudonymized
   input_dir_SP:  /storage/archive/UCPH/DeepFetal/SP/tables
+  data_dir: "/" #This argument comes from Population.yaml
   imaging_metadata_output_formats: ["csv",]
 strict: True
-    
+
+population: 
+  population_key: CPR_CHILD
+  
 conditional_criteria:
   # GA available at birth
   - action: include
@@ -115,8 +119,8 @@ imaging_matching_criteria:
   # Scan-to-delivery interval
   - function: find_images_and_timedeltas
     args: 
-      table: /users/people/seblla/test.csv
-      child_id_column: cpr_child 
+      table: ${paths.data_dir}$/data_dump/img_data.csv
+      child_id_column: CPR_CHILD 
       scan_date_column: study_date
       image_path_column: "file_path"
       min_diff_days_scan_to_delivery: 0 #0
@@ -128,7 +132,7 @@ imaging_matching_criteria:
   - function: find_images_with_predicted_classes
     # requires that "find_images_and_timedeltas" is run first to generate imaging metadata dataframe
     args:
-      table: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/image_data/misc/cervix_preds.csv
+      table: ${paths.data_dir}$/cervix_preds.csv
       classes: [14]
       image_path_column: filename
       imaging_metadata_image_path_column: file_path 
