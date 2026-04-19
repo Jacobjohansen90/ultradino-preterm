@@ -174,7 +174,7 @@ cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_yaml)
 final_population, all_discards, img_metadata = inclusion_exclusion(cfg_incl_excl, population)
 
 discards = {}
-for i in range(len(discards)):
+for i in range(len(all_discards)):
     discards[i] = {"criteria": all_discards[i][0],
                    "n_discards": all_discards[i][2],
                    "n_population_pre_discard": all_discards[i][3],
