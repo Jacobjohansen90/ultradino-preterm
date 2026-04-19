@@ -1,6 +1,5 @@
 paths:
-  #input_dir_SDS: /storage/archive/UCPH/DeepFetal/SDS/registers_pseudonymized
-  input_dir_SDS: /home/jacob/Desktop/NAS/Work/PreTerm/csv_builder
+  input_dir_SDS: /storage/archive/UCPH/DeepFetal/SDS/registers_pseudonymized
   input_dir_SP:  /storage/archive/UCPH/DeepFetal/SP/tables
   output_dir: /home/jacob/Desktop/NAS/Work/PreTerm/csv_builder/outputs
   population_save_path: ${paths.output_dir}/population_${hydra:job.config_name}.csv
@@ -8,7 +7,7 @@ paths:
   distribution_save_path: ${paths.output_dir}/distribution_${hydra:job.config_name}.json
   imaging_metadata_save_path: ${paths.output_dir}/imaging_metadata_${hydra:job.config_name}
   imaging_metadata_output_formats: ["csv",]
-strict: True 
+strict: True
     
 conditional_criteria:
   # GA available at birth

@@ -116,7 +116,7 @@ else:
             errors_img.append([data[1], data[2]])
         elif data[0] == 'birth_not_found':
             n += 1
-            not_found.append(data[1])
+            not_found.append([data[1], data[2]])
             if n % 100000 == 0:
                 logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))
         else:
@@ -149,12 +149,12 @@ else:
        
     with open(cfg.paths.data_dir + 'logs/birth_missing.csv', 'w', newline='') as file:
         wr = csv.writer(file)
-        header = []
+        header = ['Error']
         for key in pop_idx.keys():
             header.append(key)
         wr.writerow([header])
-        for row in not_found:
-            wr.writerow(list(row.values()))
+        for row in not_found[1]:
+            wr.writerow(not_found[0] + list(row.values()))
     
     df = unpack_dict_to_DF(final_data, 'imgs')
     img_cpr_link = dict(zip(df['CPR_CHILD'], df['file_path']))
@@ -168,7 +168,9 @@ else:
     del errors 
  
 #%%Apply Inclusion Exclusion Criteria
+cfg_incl_exl = OmegaConf.load(cfg.paths.incl_excl_yaml)
 
+final_population, all_discards, img_metadata = inclusion_exclusion(population, cfg_incl_exl)
 
 
 
