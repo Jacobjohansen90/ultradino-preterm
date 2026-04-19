@@ -173,7 +173,7 @@ else:
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_yaml)
 cfg_incl_excl.paths.data_dir = cfg.paths.data_dir
 
-final_population, all_discards, img_metadata = inclusion_exclusion(cfg_incl_excl, population, logger)
+final_population, all_discards = inclusion_exclusion(cfg_incl_excl, population, logger)
 
 discards = {}
 for i in range(len(all_discards)):
@@ -191,151 +191,8 @@ final_population.write_csv(cfg.paths.data_dir + 'data_dump/final_population.csv'
 
 
 
+
 """
-#%%Make training and test data based on conditions
-logger.info("Linking cervix preds with database - " + str(datetime.now().strftime('%H:%M:%S')))
-
-f = open(path + 'image_data/misc/cervix_preds.csv')
-d = csv.reader(f)
-_ = next(d)
-
-holdout_set = []
-
-with open(holdout_path) as f:  
-    holdout_csv = csv.reader(f)  
-
-    for holdout_img in holdout_csv:
-        holdout_set.append(holdout_img[0].split('PNG_processed_no_OCR/')[1])
-
-holdout_set = set(holdout_set)
-
-missing = []
-cervix_data = {}
-cervix_data_holdout = {}
-cervix_data_SP = {}
-cervix_data_SP_holdout = {}
-excluded = []
-
-img_not_in_db = []
-
-for file in d:
-    if file[1] == '14':
-        if not os.path.isfile(path_imgs + file[0]):
-            missing.append([path_imgs + file[0]])
-        else:
-            try:
-                cpr_child = img_cpr_link[file[0]]
-            except:
-                img_not_in_db.append([file[0]])
-                continue
-            
-            if final_data[cpr_child]['Induced'] == '1':
-                excluded.append([cpr_child, 'Induced'])
-            
-            elif final_data[cpr_child]['C_section'] == '1' or 'KMCA' in final_data[cpr_child]['C_section']:
-                excluded.append([cpr_child, 'C Section'])
-            
-            else:
-                for imgs in final_data[cpr_child]['imgs']:
-                    if imgs['file_path'] == file[0]:
-                        img_data = imgs
-                SP_date = datetime.strptime(img_data['study_date'], '%Y%m%d') >= SP_date_cutoff
-                SP_reg = ('RegionH' in file[0]) or ('RegionSjaelland' in file[0])
-                if file[0] in holdout_set:
-                    if cpr_child in cervix_data_holdout.keys():
-                        cervix_data_holdout[cpr_child]['imgs'].append(img_data)
-                        if SP_date and SP_reg:
-                            if cpr_child in cervix_data_SP_holdout.keys():
-                                cervix_data_SP_holdout[cpr_child]['imgs'].append(img_data)
-                            else:
-                                cervix_data_SP_holdout[cpr_child] = {}
-                                for key in final_data[cpr_child].keys():
-                                    if key == 'imgs':
-                                        cervix_data_SP_holdout[cpr_child][key] = [img_data]
-                                    else:
-                                        cervix_data_SP_holdout[cpr_child][key] = final_data[cpr_child][key]
-        
-                    else:
-                        cervix_data_holdout[cpr_child] = {}
-                        if SP_date and SP_reg:
-                            cervix_data_SP_holdout[cpr_child] = {}
-                            for key in final_data[cpr_child].keys():
-                                if key == 'imgs':
-                                    cervix_data_holdout[cpr_child][key] = [img_data]
-                                    cervix_data_SP_holdout[cpr_child][key] = [img_data]
-                                else:
-                                    cervix_data_holdout[cpr_child][key] = final_data[cpr_child][key]
-                                    cervix_data_SP_holdout[cpr_child][key] = final_data[cpr_child][key]
-        
-                        else:
-                            for key in final_data[cpr_child].keys():
-                                if key == 'imgs':
-                                    cervix_data_holdout[cpr_child][key] = [img_data]
-                                else:
-                                    cervix_data_holdout[cpr_child][key] = final_data[cpr_child][key]
-    
-                else:            
-                    if cpr_child in cervix_data.keys():
-                        cervix_data[cpr_child]['imgs'].append(img_data)
-                        if SP_date and SP_reg:
-                            if cpr_child in cervix_data_SP.keys():
-                                cervix_data_SP[cpr_child]['imgs'].append(img_data)
-                            else:
-                                cervix_data_SP[cpr_child] = {}
-                                for key in final_data[cpr_child].keys():
-                                    if key == 'imgs':
-                                        cervix_data_SP[cpr_child][key] = [img_data]
-                                    else:
-                                        cervix_data_SP[cpr_child][key] = final_data[cpr_child][key]
-        
-                    else:
-                        cervix_data[cpr_child] = {}
-                        if SP_date and SP_reg:
-                            cervix_data_SP[cpr_child] = {}
-                            for key in final_data[cpr_child].keys():
-                                if key == 'imgs':
-                                    cervix_data[cpr_child][key] = [img_data]
-                                    cervix_data_SP[cpr_child][key] = [img_data]
-                                else:
-                                    cervix_data[cpr_child][key] = final_data[cpr_child][key]
-                                    cervix_data_SP[cpr_child][key] = final_data[cpr_child][key]
-        
-                        else:
-                            for key in final_data[cpr_child].keys():
-                                if key == 'imgs':
-                                    cervix_data[cpr_child][key] = [img_data]
-                                else:
-                                    cervix_data[cpr_child][key] = final_data[cpr_child][key]
-
-
-with open(path + 'traindata.json', 'w') as f:
-    json.dump(cervix_data, f)
-
-with open(path + 'traindata_SP.json', 'w') as f:
-    json.dump(cervix_data_SP, f)
-
-with open(path + 'testdata.json', 'w') as f:
-    json.dump(cervix_data_holdout, f)
-
-with open(path + 'testdata_SP.json', 'w') as f:
-    json.dump(cervix_data_SP_holdout, f)
-
-with open(path + 'logs/pred_img_missing.csv', 'w') as f:
-    writer = csv.writer(f)
-    writer.writerow(['filepath_ngc'])
-    writer.writerows(missing)
-    
-with open(path + 'logs/excluded.csv', 'w') as f:
-    writer = csv.writer(f)
-    writer.writerow(['cpr_child', 'exclusion_criteria'])
-    writer.writerows(excluded)
-    
-
-with open(path + 'logs/img_not_in_db.csv', 'w') as f:
-    writer = csv.writer(f)
-    writer.writerow(['img_path'])
-    writer.writerows(img_not_in_db)
-
 #%% Calculate stats
 logger.info("Calculating stats - " + str(datetime.now().strftime('%H:%M:%S')))
 calc_stats('/'.join(path.split('/')[:-2]) + '/')

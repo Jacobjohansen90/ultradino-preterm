@@ -81,7 +81,7 @@ def db_crawler(pop_idx, db_idx, path_to_db, in_que, out_que, done):
                         img_temp = {}
                         for key in db_idx.keys():
                             img_temp[key] = entry[db_idx[key]]
-                            imgs.append(img_temp) 
+                        imgs.append(img_temp) 
                                                 
             if len(imgs) > 0:
                 temp_dict['imgs'] = imgs

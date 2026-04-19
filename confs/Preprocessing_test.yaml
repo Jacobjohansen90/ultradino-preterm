@@ -1,0 +1,16 @@
+debug: True
+crawl_db: False
+num_workers: 60
+
+paths:
+  data_dir: /home/jacob/Desktop/Data/
+  holdout_csv: /projects/users/data/UCPH/DeepFetal/projects/ultrasound_preprocessing/splits/PRETERM_RCT_PT_V2/holdout_test_5pct.csv
+  SQL_DB: /projects/users/data/UCPH/DeepFetal/ultrasound/ultrasound_metadata_db.sqlite
+  img_dir: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_pretrain/
+  population_yaml: /home/jacob/Desktop/NAS/Work/PreTerm/ultradino-preterm/confs/population_confs/Population.yaml
+  incl_excl_yaml: /home/jacob/Desktop/NAS/Work/PreTerm/ultradino-preterm/confs/population_confs/Inclusion_Exclusion_test.yaml
+
+
+variables_from_db: ['file_path', 'manufacturer', 'manufacturer_model', 'study_date', 'physical_delta_x', 'physical_delta_y']
+
+

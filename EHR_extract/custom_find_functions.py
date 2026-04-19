@@ -54,15 +54,16 @@ def find_images_and_timedeltas(
     max_diff_days_scan_to_delivery,
     min_ga_in_days_at_scan,
     max_ga_in_days_at_scan,
-    imaging_metadata,
+    population_with_img_data,
     population,
     population_key_column,
-    delivery_date_column="Birthday",
-    ga_in_days_at_delivery_column="GA",
-):
-    table_path = table
+    delivery_date_column,
+    ga_in_days_at_delivery_column):
+    
     table = load_table(table)
+    """    
     print(f"Table rows total: {len(table)} for table: {table_path}")
+    #True by default?
     table = table.filter(pl.col(child_id_column).is_in(population.get_column(population_key_column)))
     print(
         f"Table rows / unique IDs matching population IDs: {len(table)} /  {table[child_id_column].n_unique()} after filtering on {child_id_column}"
@@ -70,7 +71,10 @@ def find_images_and_timedeltas(
 
     table = table.join(population, left_on=child_id_column, right_on=population_key_column)
     print(table.head())
+    """
     # Calculate absolute difference in days
+    print(table.head())
+
     table = table.with_columns(
         diff_in_days_scan_to_delivery=(
             (
@@ -79,17 +83,18 @@ def find_images_and_timedeltas(
             ).dt.total_days()
         )
     )
-
     matching = table.filter(
         (min_diff_days_scan_to_delivery < pl.col("diff_in_days_scan_to_delivery"))
         & (pl.col("diff_in_days_scan_to_delivery") < max_diff_days_scan_to_delivery)
     )
-
+    
     matching = filter_numeric_rows(matching, ga_in_days_at_delivery_column)
+    
     matching = matching.with_columns(
         GA_in_days_at_scantime=(pl.col(ga_in_days_at_delivery_column)).cast(pl.Float64)
         - pl.col("diff_in_days_scan_to_delivery")
     )
+
     matching = matching.filter(
         (min_ga_in_days_at_scan < pl.col("GA_in_days_at_scantime"))
         & (pl.col("GA_in_days_at_scantime") < max_ga_in_days_at_scan)
@@ -98,41 +103,26 @@ def find_images_and_timedeltas(
     return matching_ids, matching
 
 
-def find_images_with_predicted_classes(
-    table,
-    classes,
-    child_id_column,
-    class_column,
-    image_path_column,
-    imaging_metadata,
-    imaging_metadata_image_path_column,
-    population,
-    population_key_column,
-):
-    table_path = table
+def find_images_with_predicted_classes(table,
+                                       population,
+                                       population_with_img_data,
+                                       classes_to_include,
+                                       class_column,
+                                       image_path_column,
+                                       population_key_column):
+    
     table = load_table(table)
-    print(f"Table rows total: {len(table)} for table: {table_path}")
-    matching = table.filter(pl.col(image_path_column).is_in(imaging_metadata[imaging_metadata_image_path_column]))
-    print(f"Table rows matching imaging metadata: {len(matching)}")
-
-    # Filter to find images with predicted class in the provided classes
-    matching = matching.filter(pl.col(class_column).is_in(classes))
-    print(f"Table rows matching predicted classes: {len(matching)}")
-
-    imaging_metadata = imaging_metadata.filter(pl.col(imaging_metadata_image_path_column).is_in(matching[image_path_column]))
-    matching_ids = set(imaging_metadata[child_id_column])
-    return matching_ids, imaging_metadata
+    preds = table.filter(pl.col(class_column).is_in(classes_to_include))[image_path_column]
+    result = population_with_img_data.filter(pl.col(image_path_column).is_in(preds))
+    matching_ids = set(result[population_key_column])
+    return matching_ids, result
 
 
 def find_close_births(table, match_on, mom_column, birth_id_column, delivery_date_column, threshold_days, population):
     # Sort by mother and birth date
-    table_path = table
     table = load_table(table)
-    print(f"Table rows total: {len(table)} for table: {table_path}")
     table = table.filter(pl.col(match_on).is_in(population))
-    print(
-        f"Table rows / unique IDs matching population IDs: {len(table)} / {table[match_on].n_unique()} after filtering on {match_on}"
-    )
+
 
     table = table.with_columns(pl.col(delivery_date_column).str.to_date())
     table = table.sort([mom_column, delivery_date_column])

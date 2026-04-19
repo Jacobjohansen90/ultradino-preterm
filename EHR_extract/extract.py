@@ -34,7 +34,7 @@ def merge_tables(cfg):
 
 def inclusion_exclusion(cfg, population, logger):
     all_discards = []
-    imaging_metadata = None
+    population_with_img_data = None
 
     if 'conditional_criteria' in cfg.keys():
         for criterion in cfg.conditional_criteria:
@@ -92,19 +92,17 @@ def inclusion_exclusion(cfg, population, logger):
     
             logger.info(f"Population size: {len(population)} after filtering on custom criteria {custom_cfg.function}")
             logger.info("---")
-    
     logger.info("\n ### Applying imaging matching criteria ### \n")
     if 'imaging_matching_criteria' in cfg.keys():
         for custom_cfg in cfg.get("imaging_matching_criteria", {}):
             fn = custom_functions[custom_cfg.function]
             args = custom_cfg.args
-            set_of_ID_matches, imaging_metadata = fn(
+            set_of_ID_matches, population_with_img_data = fn(
                 **args,
-                imaging_metadata=imaging_metadata,
                 population=population,
-                population_key_column=cfg.population.population_key,
-            )
-    
+                population_with_img_data=population_with_img_data,
+                population_key_column=cfg.population.population_key)
+            print(population_with_img_data.head())
             population, discards, n_discards, n_population_before_discard = update_population(
                 population=population,
                 key=cfg.population.population_key,
@@ -115,7 +113,7 @@ def inclusion_exclusion(cfg, population, logger):
     
             logger.info(f"Population size: {len(population)} after filtering on custom criteria {custom_cfg.function}")
             logger.info("---")
-    return population, all_discards, imaging_metadata
+    return population_with_img_data, all_discards
 
 
 @hydra.main(

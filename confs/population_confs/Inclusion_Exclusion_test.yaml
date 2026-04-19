@@ -1,5 +1,5 @@
 paths:
-  input_dir_SDS: /storage/archive/UCPH/DeepFetal/SDS/registers_pseudonymized
+  input_dir_SDS: /home/jacob/Desktop/Data
   input_dir_SP:  /storage/archive/UCPH/DeepFetal/SP/tables
   data_dir: "/" #This argument comes from Population.yaml
   imaging_metadata_output_formats: ["csv",]
@@ -124,7 +124,7 @@ imaging_matching_criteria:
       delivery_date_column: Birthday
       ga_in_days_at_delivery_column: GA
       scan_date_column: study_date
-      image_path_column: "file_path"
+      image_path_column: file_path
       min_diff_days_scan_to_delivery: 0 #0
       max_diff_days_scan_to_delivery: 210 #210
       min_ga_in_days_at_scan: 126 # 126
