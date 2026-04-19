@@ -165,7 +165,8 @@ else:
     df.to_csv(cfg.paths.data_dir + 'data_dump/img_data.csv', index=False)
             
     del not_found
-    del errors 
+    del errors_db
+    del errors_img
  
 #%%Apply inclusion/exclusion criteria
 cfg_incl_exl = OmegaConf.load(cfg.paths.incl_excl_yaml)
