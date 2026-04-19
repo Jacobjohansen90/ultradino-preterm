@@ -40,7 +40,7 @@ def db_crawler(pop_idx, db_idx, path_to_db, in_que, out_que, done):
     con = sqlite3.connect(path_to_db)
     cur = con.cursor()
     while not done.value or in_que.qsize() > 0:
-        variables = in_que.get()
+        variables = in_que.get()[0]
         temp_dict = {}
         for key in pop_idx.keys():
             temp_dict[key] = variables[pop_idx[key]]

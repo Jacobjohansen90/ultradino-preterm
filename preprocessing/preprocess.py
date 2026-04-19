@@ -7,7 +7,6 @@ Created on Thu Mar 19 14:29:55 2026
 """
 #%%Imports
 import csv
-import os
 import json 
 import logging
 import multiprocessing as mp
@@ -115,7 +114,7 @@ else:
             errors_db.append([data[1], data[2]])
         elif data[0] == 'img_error':
             errors_img.append([data[1], data[2]])
-        elif data[0] == 'not_found':
+        elif data[0] == 'birth_not_found':
             n += 1
             not_found.append(data[1])
             if n % 100000 == 0:
@@ -134,7 +133,7 @@ else:
     for p in processes:
         p.terminate()
     
-    #%%Dump data into files
+    #Dump data into files
     with open(cfg.paths.data_dir + 'logs/db_errors.csv', 'w', newline='') as file:
         wr = csv.writer(file)
         wr.writerow(["Error", "DB Query"])
@@ -168,6 +167,11 @@ else:
     del not_found
     del errors 
  
+#%%Apply Inclusion Exclusion Criteria
+
+
+
+
 """
 #%%Make training and test data based on conditions
 logger.info("Linking cervix preds with database - " + str(datetime.now().strftime('%H:%M:%S')))
