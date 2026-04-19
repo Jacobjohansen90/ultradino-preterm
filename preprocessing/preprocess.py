@@ -169,9 +169,9 @@ else:
     del errors_img
  
 #%%Apply inclusion/exclusion criteria
-cfg_incl_exl = OmegaConf.load(cfg.paths.incl_excl_yaml)
+cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_yaml)
 
-final_population, all_discards, img_metadata = inclusion_exclusion(population, cfg_incl_exl)
+final_population, all_discards, img_metadata = inclusion_exclusion(cfg_incl_excl, population)
 
 
 
