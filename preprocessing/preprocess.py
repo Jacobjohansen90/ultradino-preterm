@@ -157,7 +157,7 @@ else:
             wr.writerow([row[0]] + list(row[1].values()))
     
     df = unpack_dict_to_DF(final_data, 'imgs')
-    img_cpr_link = dict(zip(df['CPR_CHILD'], df['file_path']))
+    img_cpr_link = dict(zip(df['file_path'], df['CPR_CHILD']))
     
     with open(cfg.paths.data_dir + 'data_dump/img_cpr_link.json', 'w') as file:
         json.dump(img_cpr_link, file)
@@ -171,7 +171,7 @@ else:
 #%%Apply inclusion/exclusion criteria
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_yaml)
 
-final_population, all_discards, img_metadata = inclusion_exclusion(cfg_incl_excl, population)
+final_population, all_discards, img_metadata = inclusion_exclusion(cfg_incl_excl, population, logger)
 
 discards = {}
 for i in range(len(all_discards)):
@@ -185,6 +185,7 @@ with open(cfg.paths.data_dir + 'logs/discards.json', "w") as file:
     json.dump(discards, file)
 
 final_population.write_csv(cfg.paths.data_dir + 'data_dump/final_population.csv')
+
 
 
 

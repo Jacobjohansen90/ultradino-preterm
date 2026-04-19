@@ -28,12 +28,11 @@ custom_functions = {"find_close_births": find_close_births,
                     "find_multiple_pregnancies": find_multiple_pregnancies,
                     "find_images_with_predicted_classes": find_images_with_predicted_classes}
 
-logger = logging.getLogger(__name__)
 
 def merge_tables(cfg):
     return merge_population_tables(cfg.population.tables)
 
-def inclusion_exclusion(cfg, population):
+def inclusion_exclusion(cfg, population, logger):
     all_discards = []
     imaging_metadata = None
 
