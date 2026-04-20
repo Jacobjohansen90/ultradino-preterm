@@ -17,8 +17,8 @@ from omegaconf import OmegaConf
 
 from workers import csv_extracter, db_crawler
 from calc_stats import calc_stats
-from EHR_extract.extract import merge_tables, inclusion_exclusion
-from utils.utils import unpack_dict_to_DF
+from EHR_extract.extract import merge_tables, inclusion_exclusion, make_train_test_split
+from utils.utils import unpack_dict_to_DF, pack_df_to_dict
 #%%Load variable YAML and setup logger and dirs
 cfg = OmegaConf.load('./confs/Preprocessing.yaml')
 
@@ -164,7 +164,7 @@ else:
         json.dump(img_cpr_link, file)
         
     df.to_csv(cfg.paths.data_dir + 'data_dump/img_data.csv', index=False)
-            
+    
     del not_found
     del errors_db
     del errors_img
@@ -188,8 +188,24 @@ with open(cfg.paths.data_dir + 'logs/discards.json', "w") as file:
 
 final_population.write_csv(cfg.paths.data_dir + 'data_dump/final_population.csv')
 
+train_pop, test_pop = make_train_test_split(cfg.paths.holdout_csv, 
+                                            final_population, 
+                                            cfg_incl_excl.imaging_matching_criteria.population_key,
+                                            cfg.paths.prefix)
 
+train_pop.write_csv(cfg.paths.data_dir + 'train.csv')
+test_pop.write_csv(cfg.paths.data_dir + 'test.csv')
 
+population_columns = list(cfg_population.population.tables[0]['columns'].keys())
+
+train_pop_dict = pack_df_to_dict(train_pop, population_columns, cfg_population.population.population_key)
+test_pop_dict = pack_df_to_dict(test_pop, population_columns, cfg_population.population.population_key)
+
+with open(cfg.paths.data_dir + 'train.json', "w") as file:
+    json.dump(train_pop_dict, file)
+
+with open(cfg.paths.data_dir + 'test.json', "w") as file:
+    json.dump(test_pop_dict, file)
 
 
 """

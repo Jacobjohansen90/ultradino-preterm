@@ -10,6 +10,8 @@ paths:
   population_yaml: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/population_confs/Population.yaml
   incl_excl_yaml: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/population_confs/Inclusion_Exclusion.yaml
 
+#This prefix is removed from the holdout csv in order to make the file_paths preprocessing and placement agnostic
+SQL_prefix: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_processed_no_OCR/
 
 variables_from_db: ['file_path', 'manufacturer', 'manufacturer_model', 'study_date', 'physical_delta_x', 'physical_delta_y']
 

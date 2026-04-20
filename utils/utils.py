@@ -7,6 +7,7 @@ Created on Sun Apr 19 11:30:20 2026
 """
 
 import pandas as pd
+import polars as pl
 
 def unpack_dict_to_list(dict, dict_key):
     # This function unpacks the list under dict_key
@@ -28,3 +29,13 @@ def unpack_dict_to_DF(dict, dict_key):
     df = pd.DataFrame(temp_list[1:], columns=temp_list[0])
     return df
 
+def pack_df_to_dict(df, meta_columns, population_key):
+    img_cols = [c for c in df.columns if c not in meta_columns]
+    grouped = (df.group_by(population_key).agg([pl.first(col).alias(col) for col in meta_columns if col != "CPR_CHILD"]
+                                               +
+                                               [pl.struct(img_cols).alias("imgs")]))
+ 
+    final_dict =  {row[population_key]: {**{col: row[col] for col in meta_columns},
+                                         "imgs": row["imgs"]} for row in grouped.to_dicts()}
+    
+    return final_dict

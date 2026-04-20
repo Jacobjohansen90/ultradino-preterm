@@ -102,7 +102,6 @@ def inclusion_exclusion(cfg, population, logger):
                 population=population,
                 population_with_img_data=population_with_img_data,
                 population_key_column=cfg.population.population_key)
-            print(population_with_img_data.head())
             population, discards, n_discards, n_population_before_discard = update_population(
                 population=population,
                 key=cfg.population.population_key,
@@ -115,6 +114,13 @@ def inclusion_exclusion(cfg, population, logger):
             logger.info("---")
     return population_with_img_data, all_discards
 
+def make_train_test_split(holdout_csv_path, population, file_path_key, prefix):
+    holdout = load_table(holdout_csv_path)
+    holdout = holdout.with_columns(pl.col('column_1').str.replace_all(prefix, '')).alias('column_1')
+    train = population.filter(pl.col(file_path_key).is_in(holdout['column_1']).not_())
+    test = population.filter(pl.col(file_path_key).is_in(holdout['column_1']))
+    return train, test
+    
 
 @hydra.main(
     config_path=get_config_path(),

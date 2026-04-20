@@ -1,5 +1,5 @@
 paths:
-  SDS_dir: /home/jacob/Desktop/Data
+  SDS_dir: /storage/archive/UCPH/DeepFetal/SDS/registers_pseudonymized
 
 population: 
   population_key: CPR_CHILD

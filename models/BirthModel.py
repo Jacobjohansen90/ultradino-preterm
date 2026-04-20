@@ -26,7 +26,7 @@ class BirthModel(nn.Module):
         
         if self.aux_method == 'append':
             """
-            Early fusion, where EHR info is appended to the patch embeddings
+            Early fusion, where EHR info is appended to the opatch embeddings
             """
             self.forward_ = self.forward_append
         
