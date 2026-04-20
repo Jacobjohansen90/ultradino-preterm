@@ -116,6 +116,7 @@ def inclusion_exclusion(cfg, population, logger):
 def make_train_test_split(holdout_csv_path, population, file_path_key, prefix, has_header=False):
     holdout = load_table(holdout_csv_path, has_header=has_header)
     holdout = holdout.with_columns(pl.col('column_1').str.replace_all(prefix, ''))
+    print(holdout.head()[0])
     train = population.filter(pl.col(file_path_key).is_in(holdout['column_1']).not_())
     test = population.filter(pl.col(file_path_key).is_in(holdout['column_1']))
     return train, test

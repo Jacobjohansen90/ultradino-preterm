@@ -23,7 +23,7 @@ from utils.documentation import setup, Logger
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
 
-cfg = OmegaConf.load("./training_confs/append_tokens_vitb16.yaml")
+cfg = OmegaConf.load("./confs/training_confs/append_tokens_vitb16.yaml")
 
 save_path = setup(cfg)
 
