@@ -7,6 +7,7 @@ strict: True
 
 population: 
   population_key: CPR_CHILD
+  img_path_key: file_path
   
 conditional_criteria:
   # GA available at birth
@@ -137,7 +138,7 @@ imaging_matching_criteria:
       table: ${paths.data_dir}/cervix_preds.csv
       classes_to_include: [14]
       class_column: pred
-      image_path_column: file_path
+      image_path_column: ${population.img_path_key}
     action: include
  
  
