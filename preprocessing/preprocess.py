@@ -190,7 +190,7 @@ final_population.write_csv(cfg.paths.data_dir + 'data_dump/final_population.csv'
 
 train_pop, test_pop = make_train_test_split(cfg.paths.holdout_csv, 
                                             final_population, 
-                                            cfg_incl_excl.imaging_matching_criteria.population_key,
+                                            cfg_incl_excl.population.population_key,
                                             cfg.paths.prefix)
 
 train_pop.write_csv(cfg.paths.data_dir + 'train.csv')
