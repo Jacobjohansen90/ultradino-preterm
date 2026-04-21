@@ -24,7 +24,7 @@ auxiliary:
 model:
   vit:
     type: vitb16
-    weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/weights/model_final.rank_0.pth
+    weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/model_final.rank_0.pth
   
   ehr:
     weights_path: 
