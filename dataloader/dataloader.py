@@ -127,7 +127,7 @@ class PreTermDataset(Dataset):
             img = self.transforms(image=img)['image']
         except:
             print(self.prefix + data['file_path'])
-            img = torch.Tensor(np.zeros((224,224)))
+            img = torch.Tensor(np.zeros((1,224,224)))
             label = torch.Tensor([0])
         img_data = torch.Tensor([data['physical_delta_x'], data['physical_delta_y']])
 
