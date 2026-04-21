@@ -12,6 +12,7 @@ data:
   ga_cutoff_weeks: 37
   ehr_data: []
   size: [224, 224]
+  prefix: '/projects/users/data/UCPH/DeepFetal/ultrasound/PNG_processed_no_OCR/
 
 training:
   epochs: 15

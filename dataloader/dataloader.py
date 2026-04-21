@@ -75,7 +75,7 @@ class PreTermDataset(Dataset):
         self.img_size = conf.data.size
         self.ehr_data = conf.data.ehr_data
         self.ga_cutoff = conf.data.ga_cutoff_weeks
-
+        self.prefix = conf.img_prefix
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424        
 
@@ -106,7 +106,7 @@ class PreTermDataset(Dataset):
     def __getitem__(self, idx):
         data = self.df.iloc[idx]
         
-        img = Image.open(data['file_path'])
+        img = Image.open(self.prefix + data['file_path'])
         img = np.asarray(img)
         img = self.transforms(image=img)['image']
         
