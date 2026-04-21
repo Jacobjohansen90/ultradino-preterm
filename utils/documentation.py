@@ -46,8 +46,11 @@ class Logger():
         metrics = [round(train_loss, 3), round(val_loss, 3)]
         
         for key in metrics_dict.keys():
-            print(metrics_dict[key].compute())
-            metrics.append(round(metrics_dict[key].compute().item(), 3))
+            if key == 'SensAtSpec':
+                metrics.append(round(metrics_dict[key].compute()[0].item(), 3))
+            else:
+                metrics.append(round(metrics_dict[key].compute().item(), 3))
+            
         with open(self.save_path + 'metrics.csv', 'a') as file:
             writer = csv.writer(file)
             writer.writerow(metrics)
