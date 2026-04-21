@@ -29,8 +29,8 @@ linker = {}
 
 for i, path in enumerate(sample['file_path']):
     path = prefix + path
-    shutil.copy(path, save_path + str(i+1).zfill(4))
-    linker[str(i+1).zfill(4)] = path
+    shutil.copy(path, save_path + str(i+1).zfill(4) + '.png')
+    linker[str(i+1).zfill(4) + '.png'] = path
     
 with open(save_path + 'linker.json', 'w') as file:
     json.dump(linker, file)
