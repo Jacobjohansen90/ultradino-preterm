@@ -105,15 +105,7 @@ class PreTermDataset(Dataset):
     
     def __getitem__(self, idx):
         data = self.df.iloc[idx]
-        
-        img = Image.open(self.prefix + data['file_path'])
-        img = np.asarray(img)
-        try:
-            img = self.transforms(image=img)['image']
-        except:
-            print(self.prefix + data['file_path'])
-        img_data = torch.Tensor([data['physical_delta_x'], data['physical_delta_y']])
-        
+                
         ehr_data = []
         
         for key in self.ehr_data:
@@ -128,6 +120,17 @@ class PreTermDataset(Dataset):
         label = ga_weeks <= self.ga_cutoff
                 
         label = torch.Tensor([label*1.])
+        
+        img = Image.open(self.prefix + data['file_path'])
+        img = np.asarray(img)
+        try:
+            img = self.transforms(image=img)['image']
+        except:
+            print(self.prefix + data['file_path'])
+            img = torch.Tensor(np.zeros((224,224)))
+            label = torch.Tensor([0])
+        img_data = torch.Tensor([data['physical_delta_x'], data['physical_delta_y']])
+
         
         return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'label': label}
     
