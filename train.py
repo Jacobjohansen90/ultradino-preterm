@@ -103,7 +103,7 @@ for epoch in range(cfg.training.epochs):
             val_loss += loss.item() / len(ValLoader)
             
             for key in metrics.keys():
-                metrics[key](preds, labels)
+                metrics[key](preds, labels.to(torch.int))
     
 
     torch.save(model.state_dict(), save_path + '/weights/' + str(epoch).zfill(3) + '.pth')        
