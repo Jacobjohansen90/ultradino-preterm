@@ -5,12 +5,12 @@ defaults:
   - _self_
 
 data:
-  path: /projects/users/data/UCPH/DeepFetal/projects/preterm/data/cervix_data.json
-  batch_size: 64
+  path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/train.json
+  batch_size: 128
   val_frac: 0.05
-  workers: 32
-  ga_cutoff_weeks: 34
-  ehr_data: ['Age_mother']
+  workers: 64
+  ga_cutoff_weeks: 37
+  ehr_data: []
   size: [224, 224]
 
 training:
@@ -24,7 +24,7 @@ auxiliary:
 model:
   vit:
     type: vitb16
-    weights_path: # /projects/users/data/UCPH/DeepFetal/projects/preterm/weights/model_final.rank_0.pth
+    weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/weights/model_final.rank_0.pth
   
   ehr:
     weights_path: 
