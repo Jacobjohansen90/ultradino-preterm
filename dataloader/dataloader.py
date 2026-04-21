@@ -14,6 +14,7 @@ from PIL import Image
 import albumentations as A
 import json
 
+from utils.utils import unpack_dict_to_DF
 
 FUS13M_MEAN = 0.1842924807
 FUS13M_STD = 0.2187705424
@@ -68,10 +69,9 @@ class PreTermDataset(Dataset):
     def __init__(self, conf, train):
 
         super().__init__()
-        f = open(conf.data.path)
-        d = json.load(f)
-        df = pd.DataFrame.from_dict(d)
-        self.df = df.T
+        with open(conf.data.path) as f:
+            d = json.load(f)
+        self.df = unpack_dict_to_DF(d, 'imgs')
         self.img_size = conf.data.size
         self.ehr_data = conf.data.ehr_data
         self.ga_cutoff = conf.data.ga_cutoff_weeks
@@ -102,27 +102,11 @@ class PreTermDataset(Dataset):
                                          A.Normalize(mean=self.norm_mean, std=self.norm_std),
                                          A.ToTensorV2()])        
     
-    def unpack_dict(self, dict, dict_key):
-        #This functions unpacks the image list, making a dict with an
-        #entry for each image. Needed for test/validation
-        result = {}
-    
-        for key, subdict in dict.items():
-            for i, item in enumerate(subdict.get(dict_key, [])):
-                #Enumerate the child CPR hashes
-                new_key = f"{key}_{i}"
-                
-                new_entry = {key: value for key, value in subdict.items() if key != dict_key}
-                new_entry[dict_key] = item
-                
-                result[new_key] = new_entry
-        
-        return result
     
     def __getitem__(self, idx):
         data = self.df.iloc[idx]
         
-        img = Image.open(data['img_path'])
+        img = Image.open(data['file_path'])
         img = np.asarray(img)
         img = self.transforms(image=img)['image']
         
