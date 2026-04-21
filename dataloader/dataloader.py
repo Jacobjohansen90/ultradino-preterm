@@ -108,8 +108,10 @@ class PreTermDataset(Dataset):
         
         img = Image.open(self.prefix + data['file_path'])
         img = np.asarray(img)
-        img = self.transforms(image=img)['image']
-        
+        try:
+            img = self.transforms(image=img)['image']
+        except:
+            print(self.prefix + data['file_path'])
         img_data = torch.Tensor([data['physical_delta_x'], data['physical_delta_y']])
         
         ehr_data = []
