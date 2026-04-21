@@ -23,7 +23,7 @@ cv_data = pl.read_csv(path_to_train_data)
 cv_data = cv_data[['file_path']].unique()
 
 cv_imgs = cv_data
-other_imgs = img_data.filter(pl.col('file_path').is_in(cv_data['file_path']))
+other_imgs = img_data.filter(pl.col('file_path').is_in(cv_data['file_path']).not_())
 
 cv_sampled = cv_imgs.sample(n=2500000, with_replacement=True, seed=seed)
 other_imgs = other_imgs.sample(n=2500000, seed=seed)
