@@ -66,16 +66,16 @@ class DummySet(Dataset):
         return {'img': img, 'pixel_spacing': pixel_spacing, 'ehr_data': ehr_data, 'label': label}
         
 class PreTermDataset(Dataset):
-    def __init__(self, conf, train):
+    def __init__(self, cfg, train):
 
         super().__init__()
-        with open(conf.data.path) as f:
+        with open(cfg.data.path) as f:
             d = json.load(f)
         self.df = unpack_dict_to_DF(d, 'imgs')
-        self.img_size = conf.data.size
-        self.ehr_data = conf.data.ehr_data
-        self.ga_cutoff = conf.data.ga_cutoff_weeks
-        self.prefix = conf.img_prefix
+        self.img_size = cfg.data.size
+        self.ehr_data = cfg.data.ehr_data
+        self.ga_cutoff = cfg.data.ga_cutoff_weeks
+        self.prefix = cfg.data.prefix
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424        
 
