@@ -44,8 +44,9 @@ class Logger():
             self.first_log = False
 
         metrics = [round(train_loss, 3), round(val_loss, 3)]
-        print(metrics_dict['AUC'].compute())
+        
         for key in metrics_dict.keys():
+            print(metrics_dict[key].compute())
             metrics.append(round(metrics_dict[key].compute().item(), 3))
         with open(self.save_path + 'metrics.csv', 'a') as file:
             writer = csv.writer(file)
