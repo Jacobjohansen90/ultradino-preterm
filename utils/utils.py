@@ -6,7 +6,6 @@ Created on Sun Apr 19 11:30:20 2026
 @author: jacob
 """
 
-import pandas as pd
 import polars as pl
 
 def unpack_dict_to_list(dict, dict_key):
@@ -26,7 +25,7 @@ def unpack_dict_to_list(dict, dict_key):
 
 def unpack_dict_to_DF(dict, dict_key):
     temp_list = unpack_dict_to_list(dict, dict_key)
-    df = pl.DataFrame(temp_list[1:], columns=temp_list[0])
+    df = pl.DataFrame(temp_list[1:], schema=temp_list[0])
     return df
 
 def pack_df_to_dict(df, meta_columns, population_key):
