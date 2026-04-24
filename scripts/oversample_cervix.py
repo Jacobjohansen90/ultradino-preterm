@@ -36,4 +36,6 @@ final_data = cv_sampled.vstack(other_imgs)
 
 final_data = final_data.filter(pl.col('file_path').map_elements(os.path.isfile))
 
+print(f"Writing {final_data.height} filepaths to csv")
+
 final_data.write_csv(save_path, include_header=False)
