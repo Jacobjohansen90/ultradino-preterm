@@ -26,7 +26,7 @@ cfg = OmegaConf.load('./confs/Preprocessing.yaml')
 #Setup logger
 logging.basicConfig(filename=cfg.paths.data_dir + 'preprocess.log', filemode='w')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 #Setup dirs
 Path(cfg.paths.data_dir + 'logs/').mkdir(exist_ok=True)
