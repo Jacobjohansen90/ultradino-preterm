@@ -35,7 +35,7 @@ Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=True)
 cfg_population = OmegaConf.load(cfg.paths.population_yaml)
 cfg_population.paths.data_dir = cfg.paths.data_dir
 
-population = merge_population_tables(cfg_population)
+population = merge_population_tables(cfg_population.tables)
 
 if cfg.debug:
     population = population[:1000]
