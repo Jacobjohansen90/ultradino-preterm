@@ -14,6 +14,7 @@ from pathlib import Path
 import sqlite3
 from datetime import datetime
 from omegaconf import OmegaConf
+import polars as pl
 
 from workers import csv_extracter, db_crawler
 from calc_stats import calc_stats
@@ -50,9 +51,7 @@ logger.info(f"Found {n_births.value} births - " + str(datetime.now().strftime('%
 #%%Crawl database
 if not cfg.crawl_db:
     logger.info("Using existing database - " + str(datetime.now().strftime('%H:%M:%S')))
-    with open(cfg.paths.data_dir + 'data_dump/img_data.json') as f:
-        final_data = json.load(f)
-    df = unpack_dict_to_DF(final_data, 'imgs')
+    df = pl.read_csv(cfg.paths.data_dir + 'data_dump/img_data.csv', ignore_errors=True)
 
 else:
     #Setup ques, loggers and start processes
