@@ -7,6 +7,7 @@ Created on Tue Apr 21 11:15:57 2026
 """
 
 import polars as pl
+import os
 
 seed=12
 
@@ -32,5 +33,7 @@ cv_sampled = cv_sampled.with_columns((pl.lit(prefix) + pl.col('file_path')).alia
 other_imgs = other_imgs.with_columns((pl.lit(prefix) + pl.col('file_path')).alias('file_path'))
 
 final_data = cv_sampled.vstack(other_imgs)
+
+final_data = final_data.filter(pl.col('file_path').map_elements(os.path.isfile))
 
 final_data.write_csv(save_path, include_header=False)

@@ -17,7 +17,7 @@ from omegaconf import OmegaConf
 
 from workers import csv_extracter, db_crawler
 from calc_stats import calc_stats
-from EHR_extract.extract import merge_tables, inclusion_exclusion, make_train_test_split
+from EHR_extract.extract import merge_population_tables, extract_from_cfg, make_train_test_split
 from utils.utils import unpack_dict_to_DF, pack_df_to_dict
 #%%Load variable YAML and setup logger and dirs
 cfg = OmegaConf.load('./confs/Preprocessing.yaml')
@@ -35,7 +35,7 @@ Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=True)
 cfg_population = OmegaConf.load(cfg.paths.population_yaml)
 cfg_population.paths.data_dir = cfg.paths.data_dir
 
-population = merge_tables(cfg_population)
+population = merge_population_tables(cfg_population)
 
 if cfg.debug:
     population = population[:1000]
@@ -173,7 +173,7 @@ else:
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_yaml)
 cfg_incl_excl.paths.data_dir = cfg.paths.data_dir
 
-final_population, all_discards = inclusion_exclusion(cfg_incl_excl, population, logger)
+final_population, all_discards = extract_from_cfg(cfg_incl_excl, population, logger)
 
 discards = {}
 for i in range(len(all_discards)):
