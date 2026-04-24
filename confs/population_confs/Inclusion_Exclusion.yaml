@@ -120,10 +120,9 @@ imaging_matching_criteria:
   # Scan-to-delivery interval
   - function: find_images_and_timedeltas
     args: 
-      table: ${paths.data_dir}/data_dump/img_data.csv
-      child_id_column: CPR_CHILD 
-      delivery_date_column: Birthday
-      ga_in_days_at_delivery_column: GA
+      #child_id_column: CPR_CHILD 
+      population_delivery_date_column: Birthday
+      population_ga_in_days_at_delivery_column: GA
       scan_date_column: study_date
       image_path_column: "file_path"
       min_diff_days_scan_to_delivery: 0 #0
