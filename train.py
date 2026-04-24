@@ -12,6 +12,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import torch
 from tqdm import tqdm
+import os
 
 from dataloader.dataloader import PreTermDataset, DummySet, collate_fn
 from utils.model_loader import model_from_conf
@@ -23,7 +24,10 @@ from utils.documentation import setup, Logger
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
 
-cfg = OmegaConf.load("./confs/training_confs/append_tokens_vitb16.yaml")
+if 'Jacob' in os.uname[1]:
+    cfg = OmegaConf.load("./confs/training_confs/debug.yaml")
+else:
+    cfg = OmegaConf.load("./confs/training_confs/append_tokens_vitb16.yaml")
 
 save_path = setup(cfg)
 
@@ -31,11 +35,12 @@ logger = Logger(save_path)
 
 #%% Setup dataloaders and models
 
-#TrainData = DummySet(train=True)
-#ValData = DummySet(train=False)
-
-TrainData = PreTermDataset(cfg, train=True)
-ValData = PreTermDataset(cfg, train=False)
+if 'Jacob' in os.uname[1]:
+    TrainData = DummySet(train=True, scans=500)
+    ValData = DummySet(train=False, scans=500)
+else:
+    TrainData = PreTermDataset(cfg, train=True)
+    ValData = PreTermDataset(cfg, train=False)
 
 
 train_split, val_split = train_test_split(np.arange(len(TrainData)), 
@@ -70,7 +75,7 @@ model.freeze_model(model.ehr_model)
 #%% Setup finetuning
 
 optimizer = get_optimizer(model, cfg)
-scheduler = get_cosine_schedule_with_warmup(optimizer, cfg, len(TrainLoader))
+scheduler = get_cosine_schedule_with_warmup(optimizer, cfg, cfg.training.epochs)
 loss_fn = get_loss(cfg)
 metrics = get_metrics(cfg)
 
@@ -92,15 +97,15 @@ for epoch in range(cfg.training.epochs):
         train_loss += loss.item() / len(TrainLoader)
         
         optimizer.step()
-        
+    scheduler.step()
     model.eval()
     val_loss = 0
     with torch.no_grad():
-        for val_data in iter(ValLoader):
+        for val_data in iter(TrainLoader):
             preds = model(data['img'].to(cfg.device.type), data['ehr_data'].to(cfg.device.type))
             labels = data['label'].to(cfg.device.type)
             loss = loss_fn(outputs, labels)
-            val_loss += loss.item() / len(ValLoader)
+            val_loss += loss.item() / len(TrainLoader)
             
             for key in metrics.keys():
                 metrics[key](preds, labels.to(torch.int))

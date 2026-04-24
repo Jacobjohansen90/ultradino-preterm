@@ -29,6 +29,10 @@ class DummySet(Dataset):
 
         self.setup_transforms(train)
         
+        self.imgs = np.abs(np.random.randn(scans, self.img_size[0], self.img_size[1]))
+        self.pixel_spacings = torch.randn(scans, 2, dtype=torch.float32)
+        self.ehr_data = torch.randint(14, 60, (scans,1,1), dtype=torch.float32)
+        self.labels = torch.round(torch.rand(((500,1)), dtype=torch.float32))
     
     def __len__(self):
         return self.scans
@@ -53,16 +57,15 @@ class DummySet(Dataset):
 
     
     def __getitem__(self, idx):
-        img = np.abs(np.random.randn(self.img_size[0], self.img_size[1]))
+        img = self.imgs[idx]
         img = img.astype(np.float32)
         img = self.transforms(image=img)['image']
-        pixel_spacing = torch.randn(2, dtype=torch.float32)
+        pixel_spacing = self.pixel_spacings[idx]
         
-        ehr_data = torch.randint(14, 60, (1,1), dtype=torch.float32)
+        ehr_data = self.ehr_data[idx]
+        label = self.labels[idx]
         
-        label = torch.round(torch.rand((1,), dtype=torch.float32))
-        
-        return {'img': img, 'pixel_spacing': pixel_spacing, 'ehr_data': ehr_data, 'label': label}
+        return {'img': img, 'img_data': pixel_spacing, 'ehr_data': ehr_data, 'label': label}
         
 class PreTermDataset(Dataset):
     def __init__(self, cfg, train):
@@ -125,7 +128,6 @@ class PreTermDataset(Dataset):
         try:
             img = self.transforms(image=img)['image']
         except:
-            print(self.prefix + data['file_path'])
             img = torch.Tensor(np.zeros((1,224,224)))
             label = torch.Tensor([0])
         img_data = torch.Tensor([data['physical_delta_x'], data['physical_delta_y']])
