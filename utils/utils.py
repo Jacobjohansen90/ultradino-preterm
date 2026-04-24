@@ -25,7 +25,7 @@ def unpack_dict_to_list(dict, dict_key):
 
 def unpack_dict_to_DF(dict, dict_key):
     temp_list = unpack_dict_to_list(dict, dict_key)
-    df = pl.DataFrame(temp_list[1:], schema=temp_list[0])
+    df = pl.DataFrame(temp_list[1:], schema=temp_list[0], orient='row')
     return df
 
 def pack_df_to_dict(df, meta_columns, population_key):

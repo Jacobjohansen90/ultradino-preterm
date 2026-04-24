@@ -52,9 +52,8 @@ if not cfg.crawl_db:
     logger.info("Using existing database - " + str(datetime.now().strftime('%H:%M:%S')))
     with open(cfg.paths.data_dir + 'data_dump/img_data.json') as f:
         final_data = json.load(f)
-    with open(cfg.paths.data_dir + 'data_dump/img_cpr_link.json') as f:
-        img_cpr_link = json.load(f)
-        
+    df = unpack_dict_to_DF(final_data, 'imgs')
+
 else:
     #Setup ques, loggers and start processes
     in_que = mp.Queue()
@@ -173,7 +172,7 @@ else:
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_yaml)
 cfg_incl_excl.paths.data_dir = cfg.paths.data_dir
 
-final_population, all_discards = extract_from_cfg(cfg_incl_excl, population)
+final_population, all_discards = extract_from_cfg(cfg_incl_excl, df)
 
 discards = {}
 for i in range(len(all_discards)):
