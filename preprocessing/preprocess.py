@@ -35,7 +35,7 @@ Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=True)
 cfg_population = OmegaConf.load(cfg.paths.population_yaml)
 cfg_population.paths.data_dir = cfg.paths.data_dir
 
-population = merge_population_tables(cfg_population.tables)
+population = merge_population_tables(cfg_population.population.tables)
 
 if cfg.debug:
     population = population[:1000]
@@ -173,7 +173,7 @@ else:
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_yaml)
 cfg_incl_excl.paths.data_dir = cfg.paths.data_dir
 
-final_population, all_discards = extract_from_cfg(cfg_incl_excl, population, logger)
+final_population, all_discards = extract_from_cfg(cfg_incl_excl, population)
 
 discards = {}
 for i in range(len(all_discards)):
