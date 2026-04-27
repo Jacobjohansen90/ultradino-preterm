@@ -165,12 +165,7 @@ else:
 #Merge the img df with the EHR df
 df = df_img.join(population, on='CPR_MOTHER', how='inner')
 
-cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_yaml)
-cfg_incl_excl.paths.data_dir = cfg.paths.data_dir
-cfg_incl_excl.population.population_key = cfg.population.population_key
-cfg_incl_excl.population.file_path_key = 'file_path'
-
-final_population, all_discards = extract_from_cfg(cfg_incl_excl, df)
+final_population, all_discards = extract_from_cfg(cfg_population, df)
 
 discards = {}
 for i in range(len(all_discards)):
@@ -187,7 +182,7 @@ final_population.write_csv(cfg.paths.data_dir + 'data_dump/final_population.csv'
 
 train_pop, test_pop = make_train_test_split(cfg.paths.holdout_csv, 
                                             final_population, 
-                                            cfg_incl_excl.population.img_path_key,
+                                            'file_path',
                                             cfg.SQL_prefix,
                                             has_header=False)
 
