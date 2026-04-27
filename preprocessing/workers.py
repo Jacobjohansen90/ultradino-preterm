@@ -18,16 +18,15 @@ def csv_extracter(dataframe, in_que, done):
     Parameters
     ----------
     dataframe : Polars dataframe
-        Polars dataframe with CPRs
+        Polars dataframe with mothers CPRs
     csv_que : mp.Queue()
         mp.Queue where we put the extracted csv rows
     done : mp.Value
         shared memory across processes telling the crawlers the csv_extractor is done
     """
-
+    dataframe = dataframe['CPR_MOTHER'].unique()
     for i in range(len(dataframe)):
-        variables = dataframe[i].rows()
-        in_que.put(variables)
+        in_que.put(dataframe[0])
         #Avoid flooding the queue. Not strictly necessary, but preserves memory
         if in_que.qsize() > 5000:
             time.sleep(1)         
@@ -35,22 +34,18 @@ def csv_extracter(dataframe, in_que, done):
     done.value = True
 
 
-def db_crawler(pop_idx, db_idx, path_to_db, in_que, out_que, done):
+def db_crawler(db_idx, path_to_db, in_que, out_que, done):
 
     con = sqlite3.connect(path_to_db)
     cur = con.cursor()
     while not done.value or in_que.qsize() > 0:
-        variables = in_que.get()[0]
-        temp_dict = {}
-        for key in pop_idx.keys():
-            temp_dict[key] = variables[pop_idx[key]]
-        cpr_mother = temp_dict['CPR_MOTHER']
-        cpr_child = temp_dict['CPR_CHILD']
+        cpr_mother = in_que.get()[0]
+        temp_dict = {'CPR_MOTHER': cpr_mother}
         query = f"SELECT xxhash FROM cpr_hashes WHERE phair_hash = '{cpr_mother}'"
         cpr_hashes = list(cur.execute(query))
         
         if len(cpr_hashes) == 0:
-            out_que.put(['birth_not_found', 'Mothers CPR not in DB', temp_dict])
+            out_que.put(['CPR_error', 'Mothers CPR not in DB', cpr_mother])
         
         else:                
             imgs = []
@@ -85,6 +80,6 @@ def db_crawler(pop_idx, db_idx, path_to_db, in_que, out_que, done):
                                                 
             if len(imgs) > 0:
                 temp_dict['imgs'] = imgs
-                out_que.put([cpr_child, temp_dict])
+                out_que.put([cpr_mother, temp_dict])
             else:
-                out_que.put(['birth_not_found', 'No images associated with birth', temp_dict])
+                out_que.put(['CPR_error', 'No images associated with CPR', cpr_mother])

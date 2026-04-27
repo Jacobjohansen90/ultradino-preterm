@@ -58,16 +58,13 @@ else:
     out_que = mp.Queue()
     done = mp.Value('b', False)
     db_idx = {}
-    pop_idx = {}
     
     #Find population indexes
     variables = population.columns
-    if not 'CPR_CHILD' in variables and 'CPR_MOTHER' in variables:
-        raise Exception("CPR_CHILD and CPR_MOTHER must be present in population variables")
-    for i, variable in enumerate(variables):
-        pop_idx[variable] = i
+    if not 'CPR_MOTHER' in variables:
+        raise Exception("CPR_MOTHER must be present in population variables")
+
     
-            
     #Crawl DB for variables indexes and check we found all of them
     with sqlite3.connect(cfg.paths.SQL_DB) as con:
         cur = con.cursor()
@@ -94,7 +91,7 @@ else:
     processes.append(p)
     
     for i in range(num_workers):
-        p = mp.Process(target=db_crawler, args=(pop_idx, db_idx, cfg.paths.SQL_DB, 
+        p = mp.Process(target=db_crawler, args=(db_idx, cfg.paths.SQL_DB, 
                                                 in_que, out_que, done))
         p.start()
         processes.append(p)
@@ -112,7 +109,7 @@ else:
             errors_db.append([data[1], data[2]])
         elif data[0] == 'img_error':
             errors_img.append([data[1], data[2]])
-        elif data[0] == 'birth_not_found':
+        elif data[0] == 'CPR_error':
             n += 1
             not_found.append([data[1], data[2]])
             if n % 100000 == 0:
@@ -145,20 +142,17 @@ else:
     with open(cfg.paths.data_dir + 'data_dump/img_data.json', 'w') as file:
         json.dump(final_data, file)   
        
-    with open(cfg.paths.data_dir + 'logs/birth_missing.csv', 'w', newline='') as file:
+    with open(cfg.paths.data_dir + 'logs/cpr_errors.csv', 'w', newline='') as file:
         wr = csv.writer(file)
-        header = ['Error']
-        for key in pop_idx.keys():
-            header.append(key)
-        wr.writerow(header)
-        for row in not_found:
-            wr.writerow([row[0]] + list(row[1].values()))
+        wr.writerow(['Error', 'CPR_MOTHER'])
+        wr.writerows(not_found)
     
     df = unpack_dict_to_DF(final_data, 'imgs')
-    img_cpr_link = dict(zip(df['file_path'], df['CPR_CHILD']))
     
-    with open(cfg.paths.data_dir + 'data_dump/img_cpr_link.json', 'w') as file:
-        json.dump(img_cpr_link, file)
+    #img_cpr_link = dict(zip(df['file_path'], df['CPR_CHILD']))
+    
+    # with open(cfg.paths.data_dir + 'data_dump/img_cpr_link.json', 'w') as file:
+        # json.dump(img_cpr_link, file)
         
     df.to_csv(cfg.paths.data_dir + 'data_dump/img_data.csv', index=False)
     
