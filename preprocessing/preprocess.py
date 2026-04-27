@@ -154,7 +154,7 @@ else:
     # with open(cfg.paths.data_dir + 'data_dump/img_cpr_link.json', 'w') as file:
         # json.dump(img_cpr_link, file)
         
-    df.to_csv(cfg.paths.data_dir + 'data_dump/img_data.csv', index=False)
+    df.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv', index=False)
     
     del not_found
     del errors_db
