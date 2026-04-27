@@ -24,7 +24,7 @@ from utils.utils import unpack_dict_to_DF, pack_df_to_dict
 cfg = OmegaConf.load('./confs/Preprocessing_test.yaml')
 
 #Setup logger
-logging.basicConfig(filename=cfg.paths.data_dir + 'preprocess.log', filemode='w', level=logging.DEBUG)
+logging.basicConfig(filename=cfg.paths.data_dir + 'preprocess.log', filemode='w', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 #Setup dirs
@@ -164,6 +164,24 @@ else:
 
 #Merge the img df with the EHR df
 df = df_img.join(population, on='CPR_MOTHER', how='inner')
+
+birthday_key = 'BIRTHDAY'
+study_date_key = 'study_date'
+ga_key = 'GA'
+
+df = df.with_columns(pl.col(birthday_key).str.to_date()) 
+df = df.with_columns(pl.col(study_date_key).cast(pl.String).str.to_date("%Y%m%d"))
+df = df.with_columns(pl.col(ga_key).str.to_integer(strict=False))
+print("pre unique len", len(df))
+df = df.unique()
+print("post unique len", len(df))
+df = df.with_columns( 
+    image_during_pregnancy=pl.col(study_date_key).is_between(
+        pl.col(birthday_key) - pl.duration(days=pl.col(ga_key)), pl.col(birthday_key)
+        )
+    )
+df = df.filter(pl.col("image_during_pregnancy"))
+logging.info(f"Valid images: {len(df)} after matching image + EHR matching.  \n")
 
 final_population, all_discards = extract_from_cfg(cfg_population, df)
 
