@@ -56,7 +56,7 @@ def pack_df_to_dict(df, EHR_columns, population_key):
     img_cols = [c for c in df.columns if c not in EHR_columns + [population_key]]
 
     grouped = (df.group_by(population_key).agg(
-                [pl.first(col).alias(col) for col in EHR_columns]
+                [pl.first(col).alias(col) for col in EHR_columns if col!= population_key]
                 +
                 [pl.struct(img_cols).alias("imgs")]))
 
@@ -72,9 +72,7 @@ def match_images_with_child(df, date_args):
     df = df.with_columns(pl.col(birthday_key).str.to_date())
     df = df.with_columns(pl.col(study_date_key).cast(pl.String).str.to_date("%Y%m%d"))
     df = df.with_columns(pl.col(ga_key).str.to_integer(strict=False))
-    print("pre unique len", len(df))
     df = df.unique()
-    print("post unique len", len(df))
     df = df.with_columns(
         image_during_pregnancy=pl.col(study_date_key).is_between(
             pl.col(birthday_key) - pl.duration(days=pl.col(ga_key)), pl.col(birthday_key)

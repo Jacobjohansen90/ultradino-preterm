@@ -166,7 +166,7 @@ else:
 df = df_img.join(population, on='CPR_MOTHER', how='inner')
 
 #Convert date columns to dates and link children and images
-df = match_images_with_child(df, cfg_population.imaging_matching_criteria.args)
+df = match_images_with_child(df, cfg_population.imaging_matching_criteria[0].args)
 
 
 logging.info(f"Valid images: {len(df)} after matching image + EHR matching.  \n")
