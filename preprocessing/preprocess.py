@@ -183,7 +183,7 @@ final_population.write_csv(cfg.paths.data_dir + 'data_dump/final_population.csv'
 train_pop, test_pop = make_train_test_split(cfg.paths.holdout_csv, 
                                             final_population, 
                                             'file_path',
-                                            cfg.SQL_prefix,
+                                            cfg.prefix,
                                             has_header=False)
 
 train_pop.write_csv(cfg.paths.data_dir + 'train.csv')
