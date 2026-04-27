@@ -24,7 +24,7 @@ from utils.documentation import setup, Logger
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
 
-if 'Jacob' in os.uname[1]:
+if 'Jacob' in os.uname()[1]:
     cfg = OmegaConf.load("./confs/training_confs/debug.yaml")
 else:
     cfg = OmegaConf.load("./confs/training_confs/append_tokens_vitb16.yaml")

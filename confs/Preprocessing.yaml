@@ -7,8 +7,8 @@ paths:
   holdout_csv: /projects/users/data/UCPH/DeepFetal/projects/ultrasound_preprocessing/splits/PRETERM_RCT_PT_V2/holdout_test_5pct.csv
   SQL_DB: /projects/users/data/UCPH/DeepFetal/ultrasound/ultrasound_metadata_db.sqlite
   img_dir: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_pretrain/
-  population_yaml: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/population_confs/Population.yaml
-  incl_excl_yaml: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/population_confs/Inclusion_Exclusion.yaml
+  population_yaml: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/population_confs/Population_img_april27.yaml
+
 
 #This prefix is removed from the holdout csv in order to make the file_paths preprocessing and placement agnostic
 SQL_prefix: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_processed_no_OCR/
