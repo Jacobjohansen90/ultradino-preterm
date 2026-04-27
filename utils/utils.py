@@ -28,30 +28,13 @@ def unpack_dict_to_DF(dict, dict_key):
     df = pl.DataFrame(temp_list[1:], schema=temp_list[0], orient='row')
     return df
 
-def pack_df_to_dict(df, meta_columns, population_key):
-    img_cols = [c for c in df.columns if c not in meta_columns]
-    grouped = (df.group_by(population_key).agg([pl.first(col).alias(col) for col in meta_columns if col != "CPR_CHILD"]
-                                               +
-                                               [pl.struct(img_cols).alias("imgs")]))
- 
-    final_dict =  {row[population_key]: {**{col: row[col] for col in meta_columns},
-                                         "imgs": row["imgs"]} for row in grouped.to_dicts()}
-    
-    return final_dict
-
 
 
 def pack_df_to_dict(df, EHR_columns, population_key):
-    exprs = []
-    for c, dtype in df.schema.items():
-        if dtype == pl.Date:
-            exprs.append(pl.col(c).dt.strftime("%Y-%m-%d").alias(c))
-        elif dtype == pl.Datetime:
-            exprs.append(pl.col(c).dt.strftime("%Y-%m-%d").alias(c))
-        else:
-            exprs.append(pl.col(c))
-
-    df = df.with_columns(exprs)
+    df = df.with_columns([pl.col(c).dt.date().cast(pl.Utf8).alias(c)
+                          if df.schema[c] in (pl.Date, pl.Datetime)
+                          else pl.col(c)
+                          for c in df.columns])
 
     img_cols = [c for c in df.columns if c not in EHR_columns + [population_key]]
 
@@ -60,7 +43,7 @@ def pack_df_to_dict(df, EHR_columns, population_key):
                 +
                 [pl.struct(img_cols).alias("imgs")]))
 
-    final_dict = {row[population_key]: {**{col: row[col] for col in EHR_columns},
+    final_dict = {row[population_key]: {**{col: row[col] for col in EHR_columns if col != population_key},
                                         "imgs": row["imgs"]} for row in grouped.to_dicts()}
 
     return final_dict
