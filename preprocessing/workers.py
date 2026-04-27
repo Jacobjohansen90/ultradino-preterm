@@ -26,7 +26,7 @@ def csv_extracter(dataframe, in_que, done):
     """
     dataframe = dataframe['CPR_MOTHER'].unique()
     for i in range(len(dataframe)):
-        in_que.put(dataframe[0])
+        in_que.put(dataframe[i])
         #Avoid flooding the queue. Not strictly necessary, but preserves memory
         if in_que.qsize() > 5000:
             time.sleep(1)         
@@ -39,7 +39,7 @@ def db_crawler(db_idx, path_to_db, in_que, out_que, done):
     con = sqlite3.connect(path_to_db)
     cur = con.cursor()
     while not done.value or in_que.qsize() > 0:
-        cpr_mother = in_que.get()[0]
+        cpr_mother = in_que.get()
         temp_dict = {'CPR_MOTHER': cpr_mother}
         query = f"SELECT xxhash FROM cpr_hashes WHERE phair_hash = '{cpr_mother}'"
         cpr_hashes = list(cur.execute(query))
