@@ -124,6 +124,7 @@ class PreTermDataset(Dataset):
         img = np.asarray(img)
         try:
             img = self.transforms(image=img)['image']
+            print('img ok')
         except:
             img = torch.Tensor(np.zeros((1,224,224)))
             label = torch.Tensor([0])

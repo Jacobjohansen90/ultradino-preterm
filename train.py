@@ -101,11 +101,11 @@ for epoch in range(cfg.training.epochs):
     model.eval()
     val_loss = 0
     with torch.no_grad():
-        for val_data in iter(TrainLoader):
+        for val_data in iter(ValLoader):
             preds = model(data['img'].to(cfg.device.type), data['ehr_data'].to(cfg.device.type))
             labels = data['label'].to(cfg.device.type)
             loss = loss_fn(outputs, labels)
-            val_loss += loss.item() / len(TrainLoader)
+            val_loss += loss.item() / len(ValLoader)
             
             for key in metrics.keys():
                 metrics[key](preds, labels.to(torch.int))
