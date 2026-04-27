@@ -106,7 +106,7 @@ class PreTermDataset(Dataset):
     
     
     def __getitem__(self, idx):
-        data = self.df[idx]
+        data = self.df[int(idx)]
                 
         ehr_data = []
         
