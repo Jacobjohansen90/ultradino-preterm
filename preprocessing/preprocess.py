@@ -176,14 +176,14 @@ for i in range(len(all_discards)):
                    "discards": all_discards[i][1]}
 
 with open(cfg.paths.data_dir + 'logs/discards.json', "w") as file:
-    json.dump(discards, file) 
+    json.dump(discards, file)
 
 final_population.write_csv(cfg.paths.data_dir + 'data_dump/final_population.csv')
 
 train_pop, test_pop = make_train_test_split(cfg.paths.holdout_csv, 
                                             final_population, 
                                             'file_path',
-                                            cfg.prefix,
+                                            cfg.SQL_prefix,
                                             has_header=False)
 
 train_pop.write_csv(cfg.paths.data_dir + 'train.csv')
