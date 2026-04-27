@@ -19,7 +19,7 @@ import polars as pl
 from workers import csv_extracter, db_crawler
 from calc_stats import calc_stats
 from EHR_extract.extract import merge_population_tables, extract_from_cfg, make_train_test_split
-from utils.utils import unpack_dict_to_DF, pack_df_to_dict
+from utils.utils import unpack_dict_to_DF, pack_df_to_dict, match_images_with_child
 #%%Load variable YAML and setup logger and dirs
 cfg = OmegaConf.load('./confs/Preprocessing_test.yaml')
 
@@ -165,22 +165,10 @@ else:
 #Merge the img df with the EHR df
 df = df_img.join(population, on='CPR_MOTHER', how='inner')
 
-birthday_key = 'BIRTHDAY'
-study_date_key = 'study_date'
-ga_key = 'GA'
+#Convert date columns to dates and link children and images
+df = match_images_with_child(df, cfg_population.imaging_matching_criteria.args)
 
-df = df.with_columns(pl.col(birthday_key).str.to_date()) 
-df = df.with_columns(pl.col(study_date_key).cast(pl.String).str.to_date("%Y%m%d"))
-df = df.with_columns(pl.col(ga_key).str.to_integer(strict=False))
-print("pre unique len", len(df))
-df = df.unique()
-print("post unique len", len(df))
-df = df.with_columns( 
-    image_during_pregnancy=pl.col(study_date_key).is_between(
-        pl.col(birthday_key) - pl.duration(days=pl.col(ga_key)), pl.col(birthday_key)
-        )
-    )
-df = df.filter(pl.col("image_during_pregnancy"))
+
 logging.info(f"Valid images: {len(df)} after matching image + EHR matching.  \n")
 
 final_population, all_discards = extract_from_cfg(cfg_population, df)
@@ -201,8 +189,7 @@ final_population.write_csv(cfg.paths.data_dir + 'data_dump/final_population.csv'
 train_pop, test_pop = make_train_test_split(cfg.paths.holdout_csv, 
                                             final_population, 
                                             'file_path',
-                                            cfg.SQL_prefix,
-                                            has_header=False)
+                                            cfg.SQL_prefix)
 
 train_pop.write_csv(cfg.paths.data_dir + 'train.csv')
 test_pop.write_csv(cfg.paths.data_dir + 'test.csv')

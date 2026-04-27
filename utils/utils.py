@@ -38,3 +38,29 @@ def pack_df_to_dict(df, meta_columns, population_key):
                                          "imgs": row["imgs"]} for row in grouped.to_dicts()}
     
     return final_dict
+
+
+
+def pack_df_to_dict(df, EHR_columns, population_key):
+    exprs = []
+    for c, dtype in df.schema.items():
+        if dtype == pl.Date:
+            exprs.append(pl.col(c).dt.strftime("%Y-%m-%d").alias(c))
+        elif dtype == pl.Datetime:
+            exprs.append(pl.col(c).dt.strftime("%Y-%m-%d").alias(c))
+        else:
+            exprs.append(pl.col(c))
+
+    df = df.with_columns(exprs)
+
+    img_cols = [c for c in df.columns if c not in EHR_columns + [population_key]]
+
+    grouped = (df.group_by(population_key).agg(
+                [pl.first(col).alias(col) for col in EHR_columns]
+                +
+                [pl.struct(img_cols).alias("imgs")]))
+
+    final_dict = {row[population_key]: {**{col: row[col] for col in EHR_columns},
+                                        "imgs": row["imgs"]} for row in grouped.to_dicts()}
+
+    return final_dict
