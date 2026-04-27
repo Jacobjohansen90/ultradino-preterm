@@ -68,7 +68,7 @@ def pack_df_to_dict(df, EHR_columns, population_key):
 def match_images_with_child(df, date_args):
     birthday_key = date_args.population_delivery_date_column
     study_date_key = date_args.scan_date_column
-    ga_key = date_args.population_ga_in_dats_at_dlivery_column
+    ga_key = date_args.population_ga_in_days_at_delivery_column
     df = df.with_columns(pl.col(birthday_key).str.to_date())
     df = df.with_columns(pl.col(study_date_key).cast(pl.String).str.to_date("%Y%m%d"))
     df = df.with_columns(pl.col(ga_key).str.to_integer(strict=False))
