@@ -167,6 +167,8 @@ df = df_img.join(population, on='CPR_MOTHER', how='inner')
 
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_yaml)
 cfg_incl_excl.paths.data_dir = cfg.paths.data_dir
+cfg_incl_excl.population.population_key = cfg.population.population_key
+cfg_incl_excl.population.file_path_key = 'file_path'
 
 final_population, all_discards = extract_from_cfg(cfg_incl_excl, df)
 
