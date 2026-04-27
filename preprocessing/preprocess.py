@@ -21,7 +21,7 @@ from calc_stats import calc_stats
 from EHR_extract.extract import merge_population_tables, extract_from_cfg, make_train_test_split
 from utils.utils import unpack_dict_to_DF, pack_df_to_dict
 #%%Load variable YAML and setup logger and dirs
-cfg = OmegaConf.load('./confs/Preprocessing.yaml')
+cfg = OmegaConf.load('./confs/Preprocessing_test.yaml')
 
 #Setup logger
 logging.basicConfig(filename=cfg.paths.data_dir + 'preprocess.log', filemode='w', level=logging.DEBUG)
@@ -50,7 +50,7 @@ logger.info(f"Found {n_births.value} births - " + str(datetime.now().strftime('%
 #%%Crawl database
 if not cfg.crawl_db:
     logger.info("Using existing database - " + str(datetime.now().strftime('%H:%M:%S')))
-    df = pl.read_csv(cfg.paths.data_dir + 'data_dump/img_data.csv', ignore_errors=True)
+    df_img = pl.read_csv(cfg.paths.data_dir + 'data_dump/img_data.csv', ignore_errors=True)
 
 else:
     #Setup ques, loggers and start processes
@@ -147,20 +147,24 @@ else:
         wr.writerow(['Error', 'CPR_MOTHER'])
         wr.writerows(not_found)
     
-    df = unpack_dict_to_DF(final_data, 'imgs')
+    df_img = unpack_dict_to_DF(final_data, 'imgs')
     
     #img_cpr_link = dict(zip(df['file_path'], df['CPR_CHILD']))
     
     # with open(cfg.paths.data_dir + 'data_dump/img_cpr_link.json', 'w') as file:
         # json.dump(img_cpr_link, file)
         
-    df.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv', index=False)
+    df_img.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
     
     del not_found
     del errors_db
     del errors_img
  
 #%%Apply inclusion/exclusion criteria
+
+#Merge the img df with the EHR df
+df = df_img.join(population, on='CPR_MOTHER', how='inner')
+
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_yaml)
 cfg_incl_excl.paths.data_dir = cfg.paths.data_dir
 
