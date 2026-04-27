@@ -120,7 +120,7 @@ class PreTermDataset(Dataset):
                 
         label = torch.Tensor([label*1.])
         
-        img = Image.open(self.prefix + data['file_path'])
+        img = Image.open(self.prefix + data['file_path'].item())
         img = np.asarray(img)
         try:
             img = self.transforms(image=img)['image']
