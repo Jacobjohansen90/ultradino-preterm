@@ -106,7 +106,7 @@ class PreTermDataset(Dataset):
     
     
     def __getitem__(self, idx):
-        data = self.df.iloc[idx]
+        data = self.df[idx]
                 
         ehr_data = []
         
