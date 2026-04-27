@@ -35,7 +35,7 @@ logger = Logger(save_path)
 
 #%% Setup dataloaders and models
 
-if 'Jacob' in os.uname[1]:
+if 'Jacob' in os.uname()[1]:
     TrainData = DummySet(train=True, scans=500)
     ValData = DummySet(train=False, scans=500)
 else:
