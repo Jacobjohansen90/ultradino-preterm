@@ -42,9 +42,9 @@ if cfg.debug:
 
 population.write_csv(cfg_population.paths.data_dir + 'data_dump/population.csv')
 
-n_births = mp.Value('i', population['CPR_MOTHER'].n_unique())
+n_mothers = mp.Value('i', population['CPR_MOTHER'].n_unique())
 
-logger.info(f"Found {n_births.value} births - " + str(datetime.now().strftime('%H:%M:%S')))
+logger.info(f"Found {n_mothers.value} births - " + str(datetime.now().strftime('%H:%M:%S')))
     
 
 #%%Crawl database
@@ -103,7 +103,7 @@ else:
     invalid_counter = 0
     n = 1
     
-    while n <= n_births.value:
+    while n <= n_mothers.value:
         data = out_que.get()
         if data[0] == 'DB_error':
             errors_db.append([data[1], data[2]])
