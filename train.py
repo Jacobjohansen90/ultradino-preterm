@@ -95,10 +95,8 @@ for epoch in range(cfg.training.epochs):
         loss.backward()
 
         train_loss += loss.item() / len(TrainLoader)
-        
         optimizer.step()
-        print(optimizer.param_groups[0]['weight_decay'])
-        print(optimizer.param_groups[0]['lr'])
+        
     scheduler.step()
     model.eval()
     val_loss = 0

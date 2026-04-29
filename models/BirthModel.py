@@ -41,8 +41,8 @@ class BirthModel(nn.Module):
             # ehr_embeddings.append(embedding.unsqueeze(1))
         # vision_features = self.vit_model(img, append_tokens=ehr_embeddings)
         vision_features = self.vit_model(img)
-        pred = self.predictor(vision_features)
-        return pred
+        logits, pred = self.predictor(vision_features)
+        return logits, pred
             
     def freeze_model(self, model):
         for n, p in model.named_parameters():
