@@ -31,7 +31,7 @@ class FCPredictor(nn.Module):
         
     def forward(self, x):
         x = self.fc(x)
-        x = self.pred(x)
-        pred = self.act(x)
+        logits = self.pred(x)
+        #pred = self.act(x)
 
-        return pred    
+        return logits    
