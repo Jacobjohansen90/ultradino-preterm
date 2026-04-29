@@ -42,7 +42,7 @@ if cfg.debug:
 
 population.write_csv(cfg_population.paths.data_dir + 'data_dump/population.csv')
 
-n_births = mp.Value('i', population['CPR_mother'].n_unique())
+n_births = mp.Value('i', population['CPR_MOTHER'].n_unique())
 
 logger.info(f"Found {n_births.value} births - " + str(datetime.now().strftime('%H:%M:%S')))
     
