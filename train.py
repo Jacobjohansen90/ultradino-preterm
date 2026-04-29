@@ -106,8 +106,6 @@ for epoch in range(cfg.training.epochs):
             labels = data['label'].to(cfg.device.type)
             loss = loss_fn(logits, labels)
             val_loss += loss.item() / len(ValLoader)
-            print(preds)
-            print(labels)
             for key in metrics.keys():
                 metrics[key](preds, labels.to(torch.int))
     
