@@ -33,14 +33,16 @@ class Logger():
         if self.first_log:
             f = open(self.save_path + 'metrics.csv', 'w')
             f.close()
-            headers = ['train_loss', 'val_loss']
             for key in metrics_dict.keys():
-                headers.append(key)
-                self.headers.append(key)
+                if key == 'SensAtSpec' or key == 'SpecAtSens':
+                    self.headers.append(key)
+                    self.headers.append(key + '_cutoff')
+                else:
+                    self.headers.append(key)
 
             with open(self.save_path + 'metrics.csv', 'a') as file:
                 writer = csv.writer(file)
-                writer.writerow(headers)
+                writer.writerow(self.headers)
             self.first_log = False
 
         metrics = [round(train_loss, 3), round(val_loss, 3)]
@@ -48,6 +50,7 @@ class Logger():
         for key in metrics_dict.keys():
             if key == 'SensAtSpec' or key == 'SpecAtSens':
                 metrics.append(round(metrics_dict[key].compute()[0].item(), 3))
+                metrics.append(round(metrics_dict[key].compute()[1].item(), 3))
             else:
                 metrics.append(round(metrics_dict[key].compute().item(), 3))
             
