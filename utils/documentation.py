@@ -31,8 +31,6 @@ class Logger():
 
     def log_metrics(self, metrics_dict, train_loss, val_loss):
         if self.first_log:
-            f = open(self.save_path + 'metrics.csv', 'w')
-            f.close()
             for key in metrics_dict.keys():
                 if key == 'SensAtSpec' or key == 'SpecAtSens':
                     self.headers.append(key)
@@ -40,7 +38,7 @@ class Logger():
                 else:
                     self.headers.append(key)
 
-            with open(self.save_path + 'metrics.csv', 'a') as file:
+            with open(self.save_path + 'metrics.csv', 'w') as file:
                 writer = csv.writer(file)
                 writer.writerow(self.headers)
             self.first_log = False
