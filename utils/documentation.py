@@ -51,11 +51,13 @@ class Logger():
                 metrics.append(round(metrics_dict[key].compute()[1].item(), 3))
             else:
                 metrics.append(round(metrics_dict[key].compute().item(), 3))
+            metrics_dict[key].reset()
             
         with open(self.save_path + 'metrics.csv', 'a') as file:
             writer = csv.writer(file)
             writer.writerow(metrics)
         self.metrics.append(metrics)    
+        
     
     def plot_metrics(self):
         plt.plot(self.metrics, label=self.headers)
