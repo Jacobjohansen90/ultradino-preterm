@@ -6,7 +6,7 @@ Created on Mon Mar 16 12:03:57 2026
 @author: jacob
 """
 
-from torchmetrics.classification import AUROC, Recall, Precision, Specificity, Accuracy, SensitivityAtSpecificity
+from torchmetrics.classification import AUROC, Recall, Precision, Specificity, Accuracy, SensitivityAtSpecificity, SpecificityAtSensitivity
 
 def get_metrics(conf):
     metrics = {'AUC': AUROC(task='binary').to(conf.device.type),
@@ -14,7 +14,8 @@ def get_metrics(conf):
                'Precision': Precision(task='binary').to(conf.device.type),
                'Specificity': Specificity(task='binary').to(conf.device.type),
                'Accuracy': Accuracy(task='binary').to(conf.device.type),
-               'SensAtSpec': SensitivityAtSpecificity(min_specificity=0.85, task='binary').to(conf.device.type)}
+               'SensAtSpec': SensitivityAtSpecificity(min_specificity=0.85, task='binary').to(conf.device.type),
+               'SpecAtSens': SpecificityAtSensitivity(min_sensitivity=0.7, task='binary').to(conf.device.type)}
     
     return metrics
     

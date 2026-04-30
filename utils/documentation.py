@@ -46,7 +46,7 @@ class Logger():
         metrics = [round(train_loss, 3), round(val_loss, 3)]
         
         for key in metrics_dict.keys():
-            if key == 'SensAtSpec':
+            if key == 'SensAtSpec' or key == 'SpecAtSens':
                 metrics.append(round(metrics_dict[key].compute()[0].item(), 3))
             else:
                 metrics.append(round(metrics_dict[key].compute().item(), 3))
