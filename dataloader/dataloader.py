@@ -142,9 +142,13 @@ def collate_fn(batch):
             'label': torch.stack([x['label'] for x in batch])}
 
 
-def make_train_val_split(cfg):
+def load_data(cfg):
     with open(cfg.data.path) as file:
         d = json.load(file)
+    return d
+
+def make_train_val_split(cfg):
+    d = load_data(cfg)
     keys = list(d.keys())
     random.shuffle(keys)
     
