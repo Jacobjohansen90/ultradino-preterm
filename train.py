@@ -97,7 +97,10 @@ for epoch in range(cfg.training.epochs):
     val_loss = 0
     with torch.no_grad():
         for val_data in iter(ValLoader):
-            logits, preds = model(data['img'].to(cfg.device.type), data['ehr_data'].to(cfg.device.type))
+            logits, preds = model(data['img'].to(cfg.device.type), 
+                                  data['img_data'].to(cfg.device.type), 
+                                  data['ehr_data'].to(cfg.device.type))
+            
             labels = data['label'].to(cfg.device.type)
             loss = loss_fn(logits, labels)
             val_loss += loss.item() / len(ValLoader)

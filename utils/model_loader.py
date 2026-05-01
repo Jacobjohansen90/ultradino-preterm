@@ -70,7 +70,7 @@ def model_from_conf(conf, **kwargs):
     model = BirthModel(vit_model,
                        ehr_model,
                        ehr_transform,
-                       #img_data_transform,
+                       img_data_transform,
                        predictor,
                        aux_method=conf.auxiliary.method)
     

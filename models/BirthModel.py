@@ -41,9 +41,8 @@ class BirthModel(nn.Module):
         # for i in range(ehr_embedding.shape[1]):
             # embedding = self.ehr_transform(ehr_embedding[:,i,:])
             # ehr_embeddings.append(embedding.unsqueeze(1))
-        #embeddings = [self.img_data_transform]
-        # vision_features = self.vit_model(img, append_tokens=embeddings)
-        vision_features = self.vit_model(img)
+        embeddings = [self.img_data_transform]
+        vision_features = self.vit_model(img, append_tokens=embeddings)
         logits, pred = self.predictor(vision_features)
         return logits, pred
             
