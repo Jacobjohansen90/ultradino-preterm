@@ -55,5 +55,5 @@ class BirthModel(nn.Module):
         for n, p in model.named_parameters():
             p.requires_grad = True
 
-    def forward(self, img, ehr):
-        return self.forward_(img, ehr)
+    def forward(self, img, img_data, ehr):
+        return self.forward_(img, img_data, ehr)
