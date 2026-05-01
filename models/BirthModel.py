@@ -13,7 +13,7 @@ class BirthModel(nn.Module):
                  vit_model, 
                  ehr_model, 
                  ehr_transform,
-                 # img_data_transform,
+                 img_data_transform,
                  predictor,
                  aux_method='append'):
         
@@ -21,7 +21,7 @@ class BirthModel(nn.Module):
         
         self.ehr_model = ehr_model
         self.ehr_transform = ehr_transform
-        # self.img_data_transform = img_data_transform
+        self.img_data_transform = img_data_transform
         self.vit_model = vit_model
         self.predictor = predictor
         self.aux_method = aux_method
@@ -41,7 +41,7 @@ class BirthModel(nn.Module):
         # for i in range(ehr_embedding.shape[1]):
             # embedding = self.ehr_transform(ehr_embedding[:,i,:])
             # ehr_embeddings.append(embedding.unsqueeze(1))
-        embeddings = [self.img_data_transform]
+        embeddings = [self.img_data_transform(img_data)]
         vision_features = self.vit_model(img, append_tokens=embeddings)
         logits, pred = self.predictor(vision_features)
         return logits, pred
