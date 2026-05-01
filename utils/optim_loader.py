@@ -27,36 +27,54 @@ def get_optimizer(model, conf):
     
     return optim
 
-
 def get_cosine_schedule_with_warmup(optimizer, conf, num_training_steps, last_epoch=-1):
-    """
-    Create a schedule with a learning rate that decreases following the values of the cosine function between the
-    initial lr set in the optimizer to 0, after a warmup period during which it increases linearly between 0 and the
-    initial lr set in the optimizer.
-
-    Args:
-        optimizer:
-            The optimizer for which to schedule the learning rate.
-        conf:
-            Conf class from the yaml configuration file
-        num_training_steps:
-            The number of training steps per epoch
-        last_epoch:
-            The index of the last epoch when resuming training. (Defaults to -1)
-
-    Return:
-        LambdaLR function with the appropriate LR schedule.
-    """
-    num_warmup_steps = conf.scheduler.num_warmup_steps
-    cycles = conf.scheduler.num_cycles
+    n_warmup_steps = conf.scheduler.num_warmup_steps
+    vit_frozen = conf.training.vit_frozen_until
+    num_cycles = conf.scheduler.num_cycles 
+    epochs = conf.training.epochs
 
     def lr_lambda(current_step):
-        if current_step < num_warmup_steps:
-            return float(current_step) / float(max(1, num_warmup_steps))
+        if current_step < vit_frozen:
+            x = float(current_step/vit_frozen)
+            return abs(math.cos(math.pi*x))
+        elif current_step < vit_frozen + n_warmup_steps:
+            return float(current_step-vit_frozen) / float(n_warmup_steps)
+        else:
+            x = float((current_step-vit_frozen-n_warmup_steps)/epochs)*num_cycles
+            return abs(math.cos(math.pi*x))
+    return LambdaLR(optimizer, lr_lambda, last_epoch)
+
+# def get_cosine_schedule_with_warmup(optimizer, conf, num_training_steps, last_epoch=-1):
+#     """
+#     Create a schedule with a learning rate that decreases following the values of the cosine function between the
+#     initial lr set in the optimizer to 0, after a warmup period during which it increases linearly between 0 and the
+#     initial lr set in the optimizer.
+
+#     Args:
+#         optimizer:
+#             The optimizer for which to schedule the learning rate.
+#         conf:
+#             Conf class from the yaml configuration file
+#         num_training_steps:
+#             The number of training steps per epoch
+#         last_epoch:
+#             The index of the last epoch when resuming training. (Defaults to -1)
+
+#     Return:
+#         LambdaLR function with the appropriate LR schedule.
+#     """
+#     num_warmup_steps = conf.scheduler.num_warmup_steps
+#     cycles = conf.scheduler.num_cycles
+
+#     def lr_lambda(current_step):
+#         if current_step < num_warmup_steps:
+#             return float(current_step) / float(max(1, num_warmup_steps))
         
-        x = float((current_step-num_warmup_steps)/num_training_steps)
         
-        return abs(math.cos(math.pi*x*cycles))
+        
+#         x = float((current_step-num_warmup_steps)/num_training_steps)
+        
+#         return abs(math.cos(math.pi*x*cycles))
         
 
-    return LambdaLR(optimizer, lr_lambda, last_epoch)
+#     return LambdaLR(optimizer, lr_lambda, last_epoch)

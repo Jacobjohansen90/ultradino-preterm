@@ -7,14 +7,12 @@ Created on Wed Mar  4 09:41:00 2026
 """
 
 from omegaconf import OmegaConf
-from torch.utils.data import Subset, DataLoader
-import numpy as np
-from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader
 import torch
 from tqdm import tqdm
 import os
 
-from dataloader.dataloader import PreTermDataset, DummySet, collate_fn
+from dataloader.dataloader import PreTermDataset, DummySet, collate_fn, make_train_val_split
 from utils.model_loader import model_from_conf
 from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
 from utils.loss_loader import get_loss
@@ -39,17 +37,10 @@ if 'Jacob' in os.uname()[1]:
     TrainData = DummySet(train=True, scans=500)
     ValData = DummySet(train=False, scans=500)
 else:
-    TrainData = PreTermDataset(cfg, train=True)
-    ValData = PreTermDataset(cfg, train=False)
-
-
-train_split, val_split = train_test_split(np.arange(len(TrainData)), 
-                                          test_size=cfg.data.val_frac)
-
-TrainData = Subset(TrainData, train_split)
-ValData = Subset(ValData, val_split)
-
-
+    train_dict, val_dict = make_train_val_split(cfg)
+    TrainData = PreTermDataset(train_dict, cfg, train=True)
+    ValData = PreTermDataset(val_dict, cfg, train=True)
+        
 
 TrainLoader = DataLoader(TrainData,
                          cfg.data.batch_size,
