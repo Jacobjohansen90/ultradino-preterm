@@ -81,8 +81,12 @@ for epoch in range(cfg.training.epochs):
     train_loss = 0
     for i, data in enumerate(tqdm(TrainLoader)):
         optimizer.zero_grad()
-        logits, preds = model(data['img'].to(cfg.device.type), data['ehr_data'].to(cfg.device.type))
+        logits, preds = model(data['img'].to(cfg.device.type), 
+                              data['img_data'].to(cfg.device.type), 
+                              data['ehr_data'].to(cfg.device.type))
+        
         loss = loss_fn(logits, data['label'].to(cfg.device.type))
+        
         loss.backward()
 
         train_loss += loss.item() / len(TrainLoader)

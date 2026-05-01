@@ -10,7 +10,7 @@ from torch import nn
 
 from models.layers.FCLayer import FCLayer
         
-class EHRTransform(nn.Module):
+class Transform(nn.Module):
     def __init__(self, num_inputs, num_outputs, layer_dims=[]):
         super().__init__()
         

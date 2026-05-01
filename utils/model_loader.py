@@ -8,7 +8,7 @@ Created on Mon Feb 23 10:17:10 2026
 
 import ultradino_finetune.models.dinov2.load as vit_load
 import logging
-from models.EHRTransform import EHRTransform
+from models.Transform import Transform
 from models.Predictor import FCPredictor
 from models.BirthModel import BirthModel
 
@@ -57,9 +57,12 @@ def model_from_conf(conf, **kwargs):
     vit_model = vit_from_conf(conf.model.vit, **vit_kwargs)
     ehr_model = ehr_from_conf(conf.model.ehr, **ehr_kwargs)
     
-    ehr_transform = EHRTransform(ehr_model.embed_dim, 
-                                 vit_model.embed_dim,
-                                 layer_dims=conf.model.ehr_transform.layer_dims)
+    img_data_transform = Transform(2, 
+                                   vit_model.embed_dim)
+    
+    ehr_transform = Transform(ehr_model.embed_dim, 
+                              vit_model.embed_dim,
+                              layer_dims=conf.model.ehr_transform.layer_dims)
 
     predictor = FCPredictor(vit_model.embed_dim,
                             conf.model.predictor.layer_dims)
@@ -67,6 +70,7 @@ def model_from_conf(conf, **kwargs):
     model = BirthModel(vit_model,
                        ehr_model,
                        ehr_transform,
+                       img_data_transform,
                        predictor,
                        aux_method=conf.auxiliary.method)
     
