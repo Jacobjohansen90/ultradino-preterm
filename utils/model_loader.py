@@ -62,7 +62,7 @@ def model_from_conf(conf, **kwargs):
     
     ehr_transform = Transform(ehr_model.embed_dim, 
                               vit_model.embed_dim,
-                              layer_dims=conf.model.ehr_transform.layer_dims)
+                              layer_dims=conf.model.transform.layer_dims)
 
     predictor = FCPredictor(vit_model.embed_dim,
                             conf.model.predictor.layer_dims)
