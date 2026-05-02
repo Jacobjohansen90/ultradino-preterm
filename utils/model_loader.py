@@ -29,8 +29,7 @@ def vit_from_conf(conf, **kwargs):
     return model
 
 def ehr_from_conf(conf, **kwargs):
-    #Currently dummy loader
-    
+    #Currently dummy model    
     from torch import nn
     class PassThrough(nn.Module):
         def __init__(self):
@@ -58,7 +57,8 @@ def model_from_conf(conf, **kwargs):
     ehr_model = ehr_from_conf(conf.model.ehr, **ehr_kwargs)
     
     img_data_transform = Transform(2, 
-                                   vit_model.embed_dim)
+                                   vit_model.embed_dim,
+                                   layer_dims=conf.model.transform.layer_dims)
     
     ehr_transform = Transform(ehr_model.embed_dim, 
                               vit_model.embed_dim,
