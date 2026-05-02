@@ -70,7 +70,7 @@ class DummySet(Dataset):
         return {'img': img, 'img_data': pixel_spacing, 'ehr_data': ehr_data, 'label': label}
         
 class PreTermDataset(Dataset):
-    def __init__(self, data_dict, cfg, train):
+    def __init__(self, data_df, cfg, train):
 
         super().__init__()
         self.img_size = cfg.data.size
@@ -79,23 +79,7 @@ class PreTermDataset(Dataset):
         self.prefix = cfg.data.prefix
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424       
-
-        df = unpack_dict_to_DF(data_dict, 'imgs')
-        if cfg.data.oversample:
-            df_1 = df.filter(pl.col('GA')*7 < self.ga_cutoff)
-            df_0 = df.filter(pl.col('GA')*7 >= self.ga_cutoff)
-            n1 = df_1.height
-            n0 = df_0.height
-            if n1 > n0:
-                df_0 = df_0.sample(n=n1*cfg.dataa.oversample_ratio, with_replacement=True)
-            else:
-                df_1 = df_1.sample(n=n0*cfg.data.oversample_ratio, with_replacement=True)
-            df = pl.concat([df_1, df_0])
-            self.df = df.sample(fraction=1.0, shuffle=True)
-                
-        else:
-            self.df = df
-
+        self.df = data_df
 
         self.setup_transforms(train)
         
@@ -164,17 +148,34 @@ def load_data(path):
         d = json.load(file)
     return d
 
-def make_train_val_split(cfg):
+
+def make_train_val_split(cfg, unique_column='CPR_MOTHER'):
     d = load_data(cfg.data.path)
-    keys = list(d.keys())
-    random.shuffle(keys)
-    
-    split_idx = int(len(keys) * (1-cfg.data.val_frac))
-    
+    df = unpack_dict_to_DF(d, 'imgs')
+
+    unique_keys = df.select(unique_column).unique()
+
+    rng = np.random.default_rng()
+    keys = unique_keys.to_series().to_list()
+    rng.shuffle(keys)
+
+    split_idx = int(len(keys) * (1 - cfg.data.val_frac))
     train_keys = keys[:split_idx]
     val_keys = keys[split_idx:]
+
+    train_df = df.filter(pl.col(unique_column).is_in(train_keys))
+    val_df = df.filter(pl.col(unique_column).is_in(val_keys))
     
-    train_dict = {k: d[k] for k in train_keys}
-    val_dict = {k: d[k] for k in val_keys}
-    
-    return train_dict, val_dict
+    if cfg.data.oversample:
+        df_1 = train_df.filter(pl.col('GA')*7 < cfg.data.ga_cutoff_weeks)
+        df_0 = train_df.filter(pl.col('GA')*7 >= cfg.data.ga_cutoff_weeks)
+        n1 = df_1.height
+        n0 = df_0.height
+        if n1 > n0:
+            df_0 = df_0.sample(n=n1*cfg.dataa.oversample_ratio, with_replacement=True)
+        else:
+            df_1 = df_1.sample(n=n0*cfg.data.oversample_ratio, with_replacement=True)
+        train_df = pl.concat([df_1, df_0])
+        train_df = train_df.sample(fraction=1.0, shuffle=True)
+            
+    return train_df, val_df

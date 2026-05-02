@@ -16,10 +16,10 @@ def unpack_dict_to_list(dict, dict_key):
     for key, subdict in dict.items():
         for item in subdict.get(dict_key):
             if first_iter:
-                headers = [k for k in subdict.keys() if k != dict_key] + list(item.keys())
+                headers =  ['CPR_CHILD'] + [k for k in subdict.keys() if k != dict_key] + list(item.keys())
                 result.append(headers)
                 first_iter = False
-            new_list = [v for k, v in subdict.items() if k != dict_key] + list(item.values())
+            new_list = [key] +  [v for k, v in subdict.items() if k != dict_key] + list(item.values())
             result.append(new_list)
     return result
 

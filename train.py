@@ -37,10 +37,10 @@ if 'Jacob' in os.uname()[1]:
     TrainData = DummySet(train=True, scans=500)
     ValData = DummySet(train=False, scans=500)
 else:
-    train_dict, val_dict = make_train_val_split(cfg)
-    TrainData = PreTermDataset(train_dict, cfg, train=True)
-    ValData = PreTermDataset(val_dict, cfg, train=True)
-        
+    train_df, val_df = make_train_val_split(cfg, unique_column='CPR_MOTHER')
+    TrainData = PreTermDataset(train_df, cfg, train=True)
+    ValData = PreTermDataset(val_df, cfg, train=True)
+    
 
 TrainLoader = DataLoader(TrainData,
                          cfg.data.batch_size,

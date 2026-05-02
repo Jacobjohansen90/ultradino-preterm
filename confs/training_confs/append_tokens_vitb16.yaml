@@ -9,7 +9,7 @@ data:
   batch_size: 128
   val_frac: 0.05
   workers: 64
-  ga_cutoff_weeks: 37
+  ga_cutoff_weeks: 37 # Is sharp (GA < GA_cutoff) cutoff
   ehr_data: []
   size: [224, 224]
   prefix: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_processed_no_OCR/
