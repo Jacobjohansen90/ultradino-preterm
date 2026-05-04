@@ -12,7 +12,6 @@ import numpy as np
 from PIL import Image
 import albumentations as A
 import json
-import random
 import polars as pl
 
 from utils.utils import unpack_dict_to_DF
@@ -167,8 +166,8 @@ def make_train_val_split(cfg, unique_column='CPR_MOTHER'):
     val_df = df.filter(pl.col(unique_column).is_in(val_keys))
     
     if cfg.data.oversample:
-        df_1 = train_df.filter(pl.col('GA')*7 < cfg.data.ga_cutoff_weeks)
-        df_0 = train_df.filter(pl.col('GA')*7 >= cfg.data.ga_cutoff_weeks)
+        df_1 = train_df.filter(pl.col('GA')//7 < cfg.data.ga_cutoff_weeks)
+        df_0 = train_df.filter(pl.col('GA')//7 >= cfg.data.ga_cutoff_weeks)
         n1 = df_1.height
         n0 = df_0.height
         if n1 > n0:
