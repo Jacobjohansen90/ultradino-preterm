@@ -39,7 +39,7 @@ if 'Jacob' in os.uname()[1]:
 else:
     train_df, val_df = make_train_val_split(cfg, unique_column='CPR_MOTHER')
     TrainData = PreTermDataset(train_df, cfg, train=True)
-    ValData = PreTermDataset(val_df, cfg, train=True)
+    ValData = PreTermDataset(val_df, cfg, train=False)
     
 
 TrainLoader = DataLoader(TrainData,

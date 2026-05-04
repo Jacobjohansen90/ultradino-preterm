@@ -176,5 +176,7 @@ def make_train_val_split(cfg, unique_column='CPR_MOTHER'):
             df_1 = df_1.sample(n=n0*cfg.data.oversample_ratio, with_replacement=True)
         train_df = pl.concat([df_1, df_0])
         train_df = train_df.sample(fraction=1.0, shuffle=True)
-            
+    if (train_df[unique_column].is_in(val_df[unique_column].implode())).any():
+        raise Exception(f"Traindata and Validation data overlap on column {unique_column}")
+        
     return train_df, val_df
