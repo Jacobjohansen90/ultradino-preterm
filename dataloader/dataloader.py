@@ -136,7 +136,7 @@ class PreTermDataset(Dataset):
         img_data = torch.flatten(img_data)
         
         label = {'cls': label,
-                 'reg': ga_weeks}
+                 'reg': torch.Tensor([ga_weeks])}
         
         return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'label': label}
     
