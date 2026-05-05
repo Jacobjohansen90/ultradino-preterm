@@ -23,7 +23,8 @@ import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
 
 if 'Jacob' in os.uname()[1]:
-    cfg = OmegaConf.load("./confs/training_confs/debug.yaml")
+    cfg = OmegaConf.load("/home/jacob/Desktop/NAS/Work/PreTerm/ultradino-preterm/confs/training_confs/append_tokens_vitb16.yaml")
+    cfg.model.vit.weights_path = None
 else:
     cfg = OmegaConf.load("/projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/training_confs/append_tokens_vitb16.yaml")
 
@@ -96,7 +97,7 @@ for epoch in range(cfg.training.epochs):
     model.eval()
     val_loss = 0
     with torch.no_grad():
-        for val_data in iter(ValLoader):
+        for data in iter(ValLoader):
             logits, preds = model(data['img'].to(cfg.device.type), 
                                   data['img_data'].to(cfg.device.type), 
                                   data['ehr_data'].to(cfg.device.type))
