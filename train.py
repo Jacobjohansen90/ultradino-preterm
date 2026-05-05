@@ -68,7 +68,7 @@ model.freeze_model(model.ehr_model)
 
 optimizer = get_optimizer(model, cfg)
 scheduler = get_cosine_schedule_with_warmup(optimizer, cfg, cfg.training.epochs)
-loss_fn = get_loss(cfg)
+loss_fns = get_loss(cfg)
 metrics = get_metrics(cfg)
 
 for epoch in range(cfg.training.epochs):
@@ -82,11 +82,15 @@ for epoch in range(cfg.training.epochs):
     train_loss = 0
     for i, data in enumerate(tqdm(TrainLoader)):
         optimizer.zero_grad()
-        logits, preds = model(data['img'].to(cfg.device.type), 
-                              data['img_data'].to(cfg.device.type), 
-                              data['ehr_data'].to(cfg.device.type))
+        outputs = model(data['img'].to(cfg.device.type), 
+                        data['img_data'].to(cfg.device.type), 
+                        data['ehr_data'].to(cfg.device.type))
         
-        loss = loss_fn(logits, data['label'].to(cfg.device.type))
+        loss = 0
+        for task, loss_fn in loss_fns.items():
+            loss += loss_fn(outputs[task], data['label'][task].to(cfg.device.type))
+        
+        # loss = loss_fn(logits, data['label'].to(cfg.device.type))
         
         loss.backward()
 

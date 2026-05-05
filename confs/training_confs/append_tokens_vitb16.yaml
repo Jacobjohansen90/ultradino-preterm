@@ -36,9 +36,10 @@ model:
   transform:
     layer_dims: [256]
 
-  predictor:
+  head:
     layer_dims: [256,64]
     dropout: 0.4
+    
     
 optimizer:
   type: AdamW
@@ -54,7 +55,9 @@ scheduler:
   num_cycles: 1 #A multiplier for the cosine scheduler. 2 means two cycles per epoch, 0.5 means half an epoch etc
 
 loss:
-  type: bce
+  tasks:
+    cls: bce
+    reg: l2
   
 device:
   type: cuda

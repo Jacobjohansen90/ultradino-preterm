@@ -72,14 +72,19 @@ def model_from_conf(cfg, **kwargs):
                               layer_dims=cfg.model.transform.layer_dims)
 
     predictor = FCPredictor(vit_model.embed_dim,
-                            cfg.model.predictor.dropout,
-                            cfg.model.predictor.layer_dims)
+                            cfg.model.head.dropout,
+                            cfg.model.head.layer_dims)
+    
+    regressor = FCPredictor(vit_model.embed_dim,  
+                            cfg.model.head.dropout,
+                            cfg.model.head.layer_dims)
 
     model = BirthModel(vit_model,
                        ehr_model,
                        ehr_transform,
                        img_data_transform,
                        predictor,
+                       regressor,
                        aux_method=cfg.auxiliary.method)
     
     return model.to(device)

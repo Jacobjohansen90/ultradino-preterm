@@ -7,8 +7,18 @@ Created on Wed Mar 11 12:08:41 2026
 """
 import torch 
 
-def get_loss(conf):
-    if conf.loss.type == 'bce':
-        return torch.nn.BCEWithLogitsLoss()
-    else:
-        raise Exception(f"Loss type {conf.loss.type} not implemented")
+
+
+def get_loss(cfg):
+    losses = {}
+    for name, loss in cfg.loss.tasks.items():
+        if loss == 'bce':
+            losses[name] = torch.nn.BCEWithLogitsLoss()
+        elif loss == 'l2':
+            losses[name] = torch.nn.MSELoss()
+        elif loss == 'l1':
+            losses[name] = torch.nn.L1Loss() 
+        else:
+            raise Exception(f"Loss type {cfg.loss.type} not implemented")
+            
+    return losses
