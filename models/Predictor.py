@@ -10,7 +10,7 @@ from torch import nn
 from models.layers.FCLayer import FCLayer
 
 class FCPredictor(nn.Module):
-    def __init__(self, num_inputs, layer_dims=[]):
+    def __init__(self, num_inputs, dropout, layer_dims=[]):
         super().__init__()
         
         self.num_inputs = num_inputs
@@ -23,13 +23,13 @@ class FCPredictor(nn.Module):
             layers.append(FCLayer(last_dim, self.layer_dims[i]))
             last_dim = self.layer_dims[i]
             
-        self.pred = nn.Linear(last_dim, 1)
-
-        self.act = nn.Sigmoid()
-
+        self.dropout = nn.Dropout(dropout)
         self.fc = nn.Sequential(*layers)
+        self.pred = nn.Linear(last_dim, 1)
+        self.act = nn.Sigmoid()
         
     def forward(self, x):
+        x = self.dropout(x)
         x = self.fc(x)
         logits = self.pred(x)
         pred = self.act(logits)

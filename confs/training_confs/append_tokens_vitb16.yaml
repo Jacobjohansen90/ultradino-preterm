@@ -9,17 +9,17 @@ data:
   batch_size: 128
   val_frac: 0.05
   workers: 64
-  ga_cutoff_weeks: 37 # Is sharp (GA < GA_cutoff) cutoff
+  ga_cutoff_weeks: 37 #Sharp cutoff (GA < GA_cutoff)
   ehr_data: []
-  size: [224, 224]
+  img_size: [224, 224]
   prefix: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_processed_no_OCR/
   oversample: True
   oversample_ratio: 1
 
 training:
-  epochs: 100
-  vit_frozen_until: 10  #VIT is frozen until this epoch
-  ehr_frozen_until: 10 #EHR is frozen until this epoch
+  epochs: 150
+  vit_frozen_until: 15  #VIT is frozen until this epoch
+  ehr_frozen_until: 15 #EHR is frozen until this epoch
 
 auxiliary:
   method: append
@@ -28,6 +28,7 @@ model:
   vit:
     type: vitb16
     weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/model_final.rank_0.pth
+    dropout: 0.2
   
   ehr:
     weights_path: 
@@ -37,6 +38,7 @@ model:
 
   predictor:
     layer_dims: [256,64]
+    dropout: 0.4
     
 optimizer:
   type: AdamW

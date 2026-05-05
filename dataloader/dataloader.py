@@ -69,16 +69,16 @@ class DummySet(Dataset):
         return {'img': img, 'img_data': pixel_spacing, 'ehr_data': ehr_data, 'label': label}
         
 class PreTermDataset(Dataset):
-    def __init__(self, data_df, cfg, train):
+    def __init__(self, df, cfg, train):
 
         super().__init__()
-        self.img_size = cfg.data.size
+        self.img_size = cfg.data.img_size
         self.ehr_data = cfg.data.ehr_data
         self.ga_cutoff = cfg.data.ga_cutoff_weeks
         self.prefix = cfg.data.prefix
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424       
-        self.df = data_df
+        self.df = df
 
         self.setup_transforms(train)
         
@@ -121,17 +121,19 @@ class PreTermDataset(Dataset):
         
         img = Image.open(self.prefix + data['file_path'].item())
         img = np.asarray(img)
+        
         try:
             img = self.transforms(image=img)['image']
         except:
             img = torch.Tensor(np.zeros((1,224,224)))
             label = torch.Tensor([0])
+        
         try:
             img_data = torch.Tensor([data['physical_delta_x'], data['physical_delta_y']])
         except:
             img_data = torch.Tensor([[0],[0]])            
+        
         img_data = torch.flatten(img_data)
-        label.to(torch.int)
         
         return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'label': label}
     

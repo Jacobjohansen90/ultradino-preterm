@@ -11,24 +11,27 @@ import logging
 from models.Transform import Transform
 from models.Predictor import FCPredictor
 from models.BirthModel import BirthModel
+import torch.nn as nn
 
 logger = logging.getLogger("model_loader")
 
-def vit_from_conf(conf, **kwargs):
+def vit_from_conf(cfg, **kwargs):
     # First create randomly initialized encoder
-    model = vit_load.load_from_scratch(conf.type, **kwargs)
+    model = vit_load.load_from_scratch(cfg.type, **kwargs)
     
     # Load pretrained weights if specified
-    if conf.weights_path is not None:
-        logger.info('Loading pretrained encoder from %s', conf.weights_path)
+    if cfg.weights_path is not None:
+        logger.info('Loading pretrained encoder from %s', cfg.weights_path)
         vit_load.load_pretrained_weights(model,
-                                         conf.weights_path)
+                                         cfg.weights_path)
     else:
         logger.info('No pretrained weights provided - encoder initialized randomly.')
-
+    
+    model = set_dropout(model, cfg.model.vit.dropout)
+    
     return model
 
-def ehr_from_conf(conf, **kwargs):
+def ehr_from_conf(cfg, **kwargs):
     #Currently dummy model    
     from torch import nn
     class PassThrough(nn.Module):
@@ -43,36 +46,41 @@ def ehr_from_conf(conf, **kwargs):
     
     return model
 
+def set_dropout(model, p=0.1):
+    for m in model.modules():
+        if isinstance(m, nn.Dropout):
+            m.p = p
 
-def model_from_conf(conf, **kwargs):
+def model_from_conf(cfg, **kwargs):
     """Create GA model from configuration"""
 
     #Possibility for kwargs to pretrained models - not currently used
     vit_kwargs = {}
     ehr_kwargs = {}
 
-    device = conf.device.type
+    device = cfg.device.type
 
-    vit_model = vit_from_conf(conf.model.vit, **vit_kwargs)
-    ehr_model = ehr_from_conf(conf.model.ehr, **ehr_kwargs)
+    vit_model = vit_from_conf(cfg.model.vit, **vit_kwargs)
+    ehr_model = ehr_from_conf(cfg.model.ehr, **ehr_kwargs)
     
     img_data_transform = Transform(2, 
                                    vit_model.embed_dim,
-                                   layer_dims=conf.model.transform.layer_dims)
+                                   layer_dims=cfg.model.transform.layer_dims)
     
     ehr_transform = Transform(ehr_model.embed_dim, 
                               vit_model.embed_dim,
-                              layer_dims=conf.model.transform.layer_dims)
+                              layer_dims=cfg.model.transform.layer_dims)
 
     predictor = FCPredictor(vit_model.embed_dim,
-                            conf.model.predictor.layer_dims)
+                            cfg.model.predictor.dropout,
+                            cfg.model.predictor.layer_dims)
 
     model = BirthModel(vit_model,
                        ehr_model,
                        ehr_transform,
                        img_data_transform,
                        predictor,
-                       aux_method=conf.auxiliary.method)
+                       aux_method=cfg.auxiliary.method)
     
     return model.to(device)
 
