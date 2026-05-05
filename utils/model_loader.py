@@ -27,7 +27,7 @@ def vit_from_conf(cfg, **kwargs):
     else:
         logger.info('No pretrained weights provided - encoder initialized randomly.')
     
-    model = set_dropout(model, cfg.dropout)
+    set_dropout(model, cfg.dropout)
     
     return model
 
