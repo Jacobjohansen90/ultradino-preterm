@@ -88,7 +88,7 @@ for epoch in range(cfg.training.epochs):
         
         loss = 0
         for task, loss_fn in loss_fns.items():
-            loss += loss_fn(outputs[task], data['label'][task].to(cfg.device.type))
+            loss += loss_fn(outputs[task][0], data['label'][task].to(cfg.device.type))
         
         # loss = loss_fn(logits, data['label'].to(cfg.device.type))
         
@@ -102,15 +102,15 @@ for epoch in range(cfg.training.epochs):
     val_loss = 0
     with torch.no_grad():
         for data in iter(ValLoader):
-            logits, preds = model(data['img'].to(cfg.device.type), 
-                                  data['img_data'].to(cfg.device.type), 
-                                  data['ehr_data'].to(cfg.device.type))
+            outputs = model(data['img'].to(cfg.device.type), 
+                            data['img_data'].to(cfg.device.type), 
+                            data['ehr_data'].to(cfg.device.type))
             
-            labels = data['label'].to(cfg.device.type)
-            loss = loss_fn(logits, labels)
+            labels = data['label']['cls'].to(cfg.device.type)
+            loss = loss_fn(outputs['cls'][0], labels)
             val_loss += loss.item() / len(ValLoader)
             for key in metrics.keys():
-                metrics[key](preds, labels.to(torch.int))
+                metrics[key](outputs['cls'][1], labels.to(torch.int))
     
 
     torch.save(model.state_dict(), save_path + '/weights/' + str(epoch).zfill(3) + '.pth')        
