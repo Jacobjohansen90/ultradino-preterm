@@ -83,7 +83,7 @@ for epoch in range(cfg.training.epochs):
                         data['ehr_data'].to(cfg.device.type))
         
         loss = 0
-        for task, (loss, weight) in cfg.labels.tasks.items():
+        for task, (_, weight) in cfg.labels.tasks.items():
             loss += loss_fns[task](outputs[task], data['labels'][task].to(cfg.device.type))*weight
             
         loss.backward()
