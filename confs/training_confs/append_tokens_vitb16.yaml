@@ -16,10 +16,18 @@ data:
   oversample: True
   oversample_ratio: 1
 
+labels: #Task: [Type of task, loss multiplier, label smoothing, label smoothing parameter]
+  tasks:
+    preterm: ['bce', 1]
+    GA_reg: ['l2', 0.01]
+  label_smoothing: True
+  label_smoothing_param: 2
+
 training:
   epochs: 150
-  vit_frozen_until: 15  #VIT is frozen until this epoch
-  ehr_frozen_until: 15 #EHR is frozen until this epoch
+  vit_frozen_until: 5  #VIT is frozen until this epoch
+  ehr_frozen_until: 5 #EHR is frozen until this epoch
+  strategy: 'all'
 
 auxiliary:
   method: append
@@ -36,14 +44,17 @@ model:
   transform:
     layer_dims: [256]
 
-  head:
-    layer_dims: [256,64]
-    dropout: 0.4
-    
+  pred_head:
+    layer_dims: []
+    dropout: 0.2
+  reg_head:
+    layer_dims: []
+    dropout: 0.2
     
 optimizer:
   type: AdamW
-  learning_rate: 5e-5
+  lr: 5e-5
+  lr_decay: 0.65
   weight_decay: 1e-2
 
   #AdamW
@@ -52,12 +63,7 @@ optimizer:
 scheduler:
   type: cosine_warmup
   num_warmup_steps: 10
-  num_cycles: 1 #A multiplier for the cosine scheduler. 2 means two cycles per epoch, 0.5 means half an epoch etc
-
-loss:
-  tasks:
-    cls: bce
-    reg: l2
+  num_cycles: 2 #A multiplier for the cosine scheduler. 2 means two cycles over training
   
 device:
   type: cuda

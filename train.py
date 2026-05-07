@@ -13,7 +13,7 @@ from tqdm import tqdm
 import os
 
 from dataloader.dataloader import PreTermDataset, DummySet, collate_fn, make_train_val_split
-from utils.model_loader import model_from_conf
+from utils.model_utils import model_from_conf, model_freezer
 from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
 from utils.loss_loader import get_loss
 from utils.metric_loader import get_metrics
@@ -72,11 +72,7 @@ loss_fns = get_loss(cfg)
 metrics = get_metrics(cfg)
 
 for epoch in range(cfg.training.epochs):
-    if epoch == cfg.training.vit_frozen_until:
-        model.unfreeze_model(model.vit_model)
-        
-    if epoch == cfg.training.ehr_frozen_until:
-        model.unfreeze_model(model.ehr_model)
+    model_freezer(model, epoch, cfg)
 
     model.train(True)
     train_loss = 0
@@ -87,11 +83,9 @@ for epoch in range(cfg.training.epochs):
                         data['ehr_data'].to(cfg.device.type))
         
         loss = 0
-        for task, loss_fn in loss_fns.items():
-            loss += loss_fn(outputs[task][0], data['label'][task].to(cfg.device.type))
-        
-        # loss = loss_fn(logits, data['label'].to(cfg.device.type))
-        
+        for task, (loss, weight) in cfg.labels.tasks.items():
+            loss += loss_fns[task](outputs[task], data['labels'][task].to(cfg.device.type))*weight
+            
         loss.backward()
 
         train_loss += loss.item() / len(TrainLoader)
@@ -106,11 +100,11 @@ for epoch in range(cfg.training.epochs):
                             data['img_data'].to(cfg.device.type), 
                             data['ehr_data'].to(cfg.device.type))
             
-            labels = data['label']['cls'].to(cfg.device.type)
-            loss = loss_fn(outputs['cls'][0], labels)
+            labels = data['labels']['preterm'].to(cfg.device.type)
+            loss = loss_fns['preterm'](outputs['preterm'], labels)
             val_loss += loss.item() / len(ValLoader)
             for key in metrics.keys():
-                metrics[key](outputs['cls'][1], labels.to(torch.int))
+                metrics[key](outputs['preterm'], labels.to(torch.int))
     
 
     torch.save(model.state_dict(), save_path + '/weights/' + str(epoch).zfill(3) + '.pth')        

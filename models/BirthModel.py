@@ -45,10 +45,11 @@ class BirthModel(nn.Module):
             # ehr_embeddings.append(embedding.unsqueeze(1))
         embeddings = [self.img_data_transform(img_data)]
         vision_features = self.vit_model(img, append_tokens=embeddings)
-        reg_logits, reg_pred = self.regressor(vision_features)
-        cls_logits, cls_pred = self.predictor(vision_features)
-        return {'cls': [cls_logits, cls_pred], 
-                'reg': [reg_logits, reg_pred]}
+        GA_reg, _ = self.regressor(vision_features)
+        preterm_pred, preterm_logits = self.predictor(vision_features)
+        return {'preterm': preterm_pred,
+                'preterm_logits': preterm_logits,
+                'GA_reg': GA_reg}
             
     def freeze_model(self, model):
         for n, p in model.named_parameters():
@@ -60,3 +61,4 @@ class BirthModel(nn.Module):
 
     def forward(self, img, img_data, ehr):
         return self.forward_(img, img_data, ehr) 
+    

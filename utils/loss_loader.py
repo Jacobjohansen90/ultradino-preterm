@@ -11,14 +11,14 @@ import torch
 
 def get_loss(cfg):
     losses = {}
-    for name, loss in cfg.loss.tasks.items():
+    for name, (loss, weight) in cfg.labels.tasks.items():
         if loss == 'bce':
-            losses[name] = torch.nn.BCEWithLogitsLoss()
+            losses[name] = torch.nn.BCELoss()
         elif loss == 'l2':
             losses[name] = torch.nn.MSELoss()
         elif loss == 'l1':
             losses[name] = torch.nn.L1Loss() 
         else:
-            raise Exception(f"Loss type {cfg.loss.type} not implemented")
+            raise Exception(f"Loss type {loss} not implemented")
             
     return losses

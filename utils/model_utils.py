@@ -72,12 +72,12 @@ def model_from_conf(cfg, **kwargs):
                               layer_dims=cfg.model.transform.layer_dims)
 
     predictor = FCPredictor(vit_model.embed_dim,
-                            cfg.model.head.dropout,
-                            cfg.model.head.layer_dims)
+                            cfg.model.pred_head.dropout,
+                            cfg.model.pred_head.layer_dims)
     
     regressor = FCPredictor(vit_model.embed_dim,  
-                            cfg.model.head.dropout,
-                            cfg.model.head.layer_dims)
+                            cfg.model.reg_head.dropout,
+                            cfg.model.reg_head.layer_dims)
 
     model = BirthModel(vit_model,
                        ehr_model,
@@ -89,3 +89,8 @@ def model_from_conf(cfg, **kwargs):
     
     return model.to(device)
 
+def model_freezer(model, epoch, cfg):
+    if epoch >= cfg.training.vit_frozen_until:
+        if cfg.training.strategy == 'all':
+            model.unfreeze_model()
+            

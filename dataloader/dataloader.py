@@ -79,6 +79,11 @@ class PreTermDataset(Dataset):
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424       
         self.df = df
+        #self.tasks = cfg.labels.tasks
+        if cfg.labels.label_smoothing:
+            self.label_smoothing_param = cfg.labels.label_smoothing_param
+        else:
+            self.label_smoothing_param = None
 
         self.setup_transforms(train)
         
@@ -103,42 +108,53 @@ class PreTermDataset(Dataset):
                                          A.Normalize(mean=self.norm_mean, std=self.norm_std),
                                          A.ToTensorV2()])        
     
+    def sigmoid(self, x):
+        return 1.0/(1.0 + np.exp(-x))
+        
     
     def __getitem__(self, idx):
         data = self.df[int(idx)]
-                
+        
+        #Prepare EHR data        
         ehr_data = []
         
         for key in self.ehr_data:
             ehr_data.append([float(data[key])])
         ehr_data = torch.Tensor(ehr_data)
         
-        ga_weeks = int(data['GA'].item())//7        
-        
-        label = ga_weeks < self.ga_cutoff
-                
-        label = torch.Tensor([label*1.])
-        
+        #Prepare Image        
         img = Image.open(self.prefix + data['file_path'].item())
         img = np.asarray(img)
-        
-        try:
-            img = self.transforms(image=img)['image']
-        except:
-            img = torch.Tensor(np.zeros((1,224,224)))
-            label = torch.Tensor([0])
+        img = self.transforms(image=img)['image']
 
-        try:
-            img_data = torch.Tensor([data['physical_delta_x'], data['physical_delta_y']])
-        except:
-            img_data = torch.Tensor([[0],[0]])            
+        # try:
+        #     img = self.transforms(image=img)['image']
+        # except:
+        #     img = torch.Tensor(np.zeros((1,224,224)))
+        #     label = torch.Tensor([0])
+
+        #Prepare image metadata
+        img_data = torch.Tensor([data['physical_delta_x'], data['physical_delta_y']])
+
+        # try:
+        #     img_data = torch.Tensor([data['physical_delta_x'], data['physical_delta_y']])
+        # except:
+        #     img_data = torch.Tensor([[0],[0]])            
         
         img_data = torch.flatten(img_data)
         
-        label = {'cls': label,
-                 'reg': torch.Tensor([ga_weeks])}
+        #Prepare labels        
+        labels = {}
+        ga_weeks = data['GA']//7
+        if self.label_smoothing_param is not None:
+            label_preterm = torch.Tensor([1*self.sigmoid((self.ga_cutoff-ga_weeks)/self.label_smoothing_param)])
+        else:
+            label_preterm = torch.Tensor([1*(data['GA']//7 < self.ga_cutoff)])
+
+        labels['preterm'] = label_preterm
+        labels['GA_reg'] = float(ga_weeks)
         
-        return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'label': label}
+        return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'labels': labels}
     
 def collate_fn(batch):
     collated = {'img': torch.stack([x['img'] for x in batch]),
@@ -151,21 +167,10 @@ def collate_fn(batch):
 
     return collated
     
-# def collate_fn(batch):
-#     return {'img': torch.stack([x['img'] for x in batch]),
-#             'img_data': torch.stack([x['img_data'] for x in batch]),
-#             'ehr_data': torch.stack([x['ehr_data'] for x in batch]),
-#             'label': torch.stack([x['label'] for x in batch])}
-
-
-def load_data(path):
-    with open(path) as file:
-        d = json.load(file)
-    return d
-
 
 def make_train_val_split(cfg, unique_column='CPR_MOTHER'):
-    d = load_data(cfg.data.path)
+    with open(cfg.data.path) as file:
+        d = json.load(file)
     df = unpack_dict_to_DF(d, 'imgs')
 
     unique_keys = df.select(unique_column).unique()
