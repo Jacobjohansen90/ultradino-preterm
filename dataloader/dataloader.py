@@ -79,19 +79,20 @@ class PreTermDataset(Dataset):
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424       
         self.df = df
+        self.train = train
         #self.tasks = cfg.labels.tasks
         if cfg.labels.label_smoothing:
             self.label_smoothing_param = cfg.labels.label_smoothing_param
         else:
             self.label_smoothing_param = None
 
-        self.setup_transforms(train)
+        self.setup_transforms()
         
     def __len__(self):
         return len(self.df)
     
-    def setup_transforms(self, train):
-        if train:
+    def setup_transforms(self):
+        if self.train:
             self.transforms = A.Compose([A.RandomBrightnessContrast(brightness_limit=(-0.3, 0.3), contrast_limit=(-0.3, 0.3), p=0.5),
                                          A.RandomGamma(gamma_limit=(80, 120), p=0.5),
                                          A.GaussNoise(std_range=(0.05, 0.2), p=0.5),
