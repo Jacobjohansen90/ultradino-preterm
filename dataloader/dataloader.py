@@ -125,13 +125,14 @@ class PreTermDataset(Dataset):
         #Prepare Image        
         img = Image.open(self.prefix + data['file_path'].item())
         img = np.asarray(img)
-        img = self.transforms(image=img)['image']
+        # img = self.transforms(image=img)['image']
 
-        # try:
-        #     img = self.transforms(image=img)['image']
-        # except:
-        #     img = torch.Tensor(np.zeros((1,224,224)))
-        #     label = torch.Tensor([0])
+        try:
+            img = self.transforms(image=img)['image']
+        except:
+            img = torch.Tensor(np.zeros((1,224,224)))
+            label = torch.Tensor([0])
+            print(data['file_path'])
 
         #Prepare image metadata
         try:
