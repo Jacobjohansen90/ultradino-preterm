@@ -132,7 +132,7 @@ class PreTermDataset(Dataset):
         except:
             img = torch.Tensor(np.zeros((1,224,224)))
             label = torch.Tensor([0])
-            print(data['file_path'])
+            print(data['file_path'].item())
 
         #Prepare image metadata
         try:
