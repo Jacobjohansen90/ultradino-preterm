@@ -162,8 +162,8 @@ def collate_fn(batch):
                 'ehr_data': torch.stack([x['ehr_data'] for x in batch])}
 
     label_keys = batch[0]['label'].keys()
-    collated['label'] = {k: torch.stack([x['label'][k] for x in batch])
-                         for k in label_keys}
+    collated['labels'] = {k: torch.stack([x['labels'][k] for x in batch])
+                          for k in label_keys}
 
     return collated
     
