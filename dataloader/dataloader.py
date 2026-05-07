@@ -129,7 +129,7 @@ class PreTermDataset(Dataset):
         if self.label_smoothing_param is not None and self.train:
             label_preterm = torch.Tensor([1*self.sigmoid((self.ga_cutoff-0.5-ga_weeks)/self.label_smoothing_param)])
         else:
-            label_preterm = torch.Tensor([1*(data['GA']//7 < self.ga_cutoff)])
+            label_preterm = torch.Tensor([1*(ga_weeks < self.ga_cutoff)])
 
         labels['preterm'] = torch.Tensor([label_preterm])
         labels['GA_reg'] = torch.Tensor([float(ga_weeks)])
