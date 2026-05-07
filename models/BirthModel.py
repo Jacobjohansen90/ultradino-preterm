@@ -46,7 +46,7 @@ class BirthModel(nn.Module):
         embeddings = [self.img_data_transform(img_data)]
         vision_features = self.vit_model(img, append_tokens=embeddings)
         GA_reg, _ = self.regressor(vision_features)
-        preterm_pred, preterm_logits = self.predictor(vision_features)
+        preterm_logits, preterm_pred = self.predictor(vision_features)
         return {'preterm': preterm_pred,
                 'preterm_logits': preterm_logits,
                 'GA_reg': GA_reg}
