@@ -15,14 +15,14 @@ def get_optimizer(model, cfg):
         optim = torch.optim.AdamW(decay_lr(model, 
                                            base_lr=cfg.optimizer.lr,
                                            lr_decay=cfg.optimizer.lr_decay), 
-                                  lr=cfg.optimizer.learning_rate,
+                                  lr=cfg.optimizer.lr,
                                   weight_decay=cfg.optimizer.weight_decay,
                                   betas=cfg.optimizer.adamw_params[0:2],
                                   eps=cfg.optimizer.adamw_params[2])
 
     elif cfg.optimizer.type == "Muon":
         optim = torch.optim.Muon(model.parameters(),
-                                 lr=cfg.optimizer.learning_rate,
+                                 lr=cfg.optimizer.lr,
                                  weight_decay=cfg.optimizer.weight_decay)
 
     else:
