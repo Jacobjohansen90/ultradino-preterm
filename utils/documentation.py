@@ -64,7 +64,7 @@ class Logger():
         plt.legend(loc='upper left')
         plt.xlabel('Epoch')
         plt.ylabel('Metric Value')
-        plt.ylim(0,1)
+        plt.ylim(0,1.05)
         plt.savefig(self.save_path + 'Metrics_plot.png')
         plt.close()
                 

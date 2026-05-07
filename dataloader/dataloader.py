@@ -121,6 +121,17 @@ class PreTermDataset(Dataset):
         for key in self.ehr_data:
             ehr_data.append([float(data[key])])
         ehr_data = torch.Tensor(ehr_data)
+
+        #Prepare labels        
+        labels = {}
+        ga_weeks = data['GA'].item()//7
+        if self.label_smoothing_param is not None and self.train:
+            label_preterm = torch.Tensor([1*self.sigmoid((self.ga_cutoff-0.5-ga_weeks)/self.label_smoothing_param)])
+        else:
+            label_preterm = torch.Tensor([1*(data['GA']//7 < self.ga_cutoff)])
+
+        labels['preterm'] = torch.Tensor([label_preterm])
+        labels['GA_reg'] = torch.Tensor([float(ga_weeks)])
         
         #Prepare Image        
         img = Image.open(self.prefix + data['file_path'].item())
@@ -131,7 +142,8 @@ class PreTermDataset(Dataset):
             img = self.transforms(image=img)['image']
         except:
             img = torch.Tensor(np.zeros((1,224,224)))
-            label = torch.Tensor([0])
+            labels['preterm'] = torch.Tensor([0])
+            labels['GA_reg'] = torch.Tensor([0.])
 
         #Prepare image metadata
         try:
@@ -140,18 +152,7 @@ class PreTermDataset(Dataset):
             img_data = torch.Tensor([[0],[0]])            
                     
         img_data = torch.flatten(img_data)
-        
-        #Prepare labels        
-        labels = {}
-        ga_weeks = data['GA'].item()//7
-        if self.label_smoothing_param is not None:
-            label_preterm = torch.Tensor([1*self.sigmoid((self.ga_cutoff-ga_weeks)/self.label_smoothing_param)])
-        else:
-            label_preterm = torch.Tensor([1*(data['GA']//7 < self.ga_cutoff)])
-
-        labels['preterm'] = torch.Tensor([label_preterm])
-        labels['GA_reg'] = torch.Tensor([float(ga_weeks)])
-        
+    
         return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'labels': labels}
     
 def collate_fn(batch):
