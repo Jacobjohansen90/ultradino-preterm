@@ -145,7 +145,7 @@ class PreTermDataset(Dataset):
         
         #Prepare labels        
         labels = {}
-        ga_weeks = data['GA']//7
+        ga_weeks = data['GA'].item()//7
         if self.label_smoothing_param is not None:
             label_preterm = torch.Tensor([1*self.sigmoid((self.ga_cutoff-ga_weeks)/self.label_smoothing_param)])
         else:
