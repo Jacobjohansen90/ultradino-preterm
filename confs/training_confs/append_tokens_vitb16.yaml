@@ -3,7 +3,9 @@
 defaults:
   - ../base/base
   - _self_
-
+info:
+  name: 
+  description: 
 data:
   path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/train.json
   batch_size: 128
@@ -16,7 +18,7 @@ data:
   oversample: True
   oversample_ratio: 1
 
-labels: #Task: [Type of task, loss multiplier, label smoothing, label smoothing parameter]
+labels: #Task: [Type of task, loss multiplier]
   tasks:
     preterm: ['bce', 1]
     GA_reg: ['l2', 0.01]

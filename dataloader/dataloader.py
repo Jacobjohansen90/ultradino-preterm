@@ -78,6 +78,9 @@ class PreTermDataset(Dataset):
         self.prefix = cfg.data.prefix
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424       
+        #TODO: Fix this temp solution
+        df_temp = pl.read_csv('/projects/users/data/UCPH/DeepFetal/projects/preterm/data/flow_imgs.csv')
+        df = df.filter(pl.col('file_path').is_in(df_temp['file_path']).not_())
         self.df = df
         self.train = train
         #self.tasks = cfg.labels.tasks
