@@ -134,13 +134,11 @@ class PreTermDataset(Dataset):
         #     label = torch.Tensor([0])
 
         #Prepare image metadata
-        img_data = torch.Tensor([data['physical_delta_x'], data['physical_delta_y']])
-
-        # try:
-        #     img_data = torch.Tensor([data['physical_delta_x'], data['physical_delta_y']])
-        # except:
-        #     img_data = torch.Tensor([[0],[0]])            
-        
+        try:
+            img_data = torch.Tensor([data['physical_delta_x'], data['physical_delta_y']])
+        except:
+            img_data = torch.Tensor([[0],[0]])            
+                    
         img_data = torch.flatten(img_data)
         
         #Prepare labels        

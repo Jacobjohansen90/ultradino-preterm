@@ -71,6 +71,5 @@ def decay_lr(model, base_lr, lr_decay):
         param_groups.append({"params": [param],
                              "lr": base_lr * scale})
 
-        print(name, base_lr * scale)
 
     return param_groups
