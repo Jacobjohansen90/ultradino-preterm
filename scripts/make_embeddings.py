@@ -9,6 +9,7 @@ Created on Sat May  9 09:56:33 2026
 from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+import torch
 import json
 
 from dataloader.dataloader import PreTermDataset, collate_fn, make_train_val_split
@@ -30,6 +31,8 @@ path = cfg.data.path
 
 
 model = model_from_conf(cfg)
+model.load_state_dict(torch.load(weights, weights_only=True))
+model.eval()
 
 for split in ['train.json', 'test.json']:
     cfg.data.path = path + split
@@ -50,7 +53,6 @@ for split in ['train.json', 'test.json']:
 
     with open(cfg.data.path) as f:
         data_dict = json.load(f) 
-
     for i, data in enumerate(tqdm(Data)):
         CPR = DataSet.df[i]['CPR_CHILD'].item()
         fp = DataSet.df[i]['file_path'].item()
@@ -63,8 +65,8 @@ for split in ['train.json', 'test.json']:
         for i in range(len(data_dict[CPR]['imgs'])):
             if data_dict[CPR]['imgs'][i]['file_path'] == fp:
                 found = True
-                data_dict[CPR]['imgs'][i]['pred'] = outputs['preterm']
-                data_dict[CPR]['imgs'][i]['logits'] = outputs['preterm_logits']
+                data_dict[CPR]['imgs'][i]['pred'] = outputs['preterm'].item()
+                data_dict[CPR]['imgs'][i]['logits'] = outputs['preterm_logits'].item()
         
         if not found:
             print(f"{fp} was not found in child {CPR}") 
