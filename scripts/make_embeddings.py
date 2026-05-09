@@ -34,7 +34,7 @@ model = model_from_conf(cfg)
 model.load_state_dict(torch.load(weights, weights_only=True))
 model.eval()
 
-for split in ['train.json', 'test.json']:
+for split in ['test.json', 'train.json']:
     cfg.data.path = path + split
     df, df_ = make_train_val_split(cfg, unique_column='CPR_MOTHER')
     if len(df_) > 0:
