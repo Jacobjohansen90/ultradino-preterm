@@ -49,6 +49,7 @@ class BirthModel(nn.Module):
         preterm_logits, preterm_pred = self.predictor(vision_features)
         return {'preterm': preterm_pred,
                 'preterm_logits': preterm_logits,
+                'vision_features': vision_features,
                 'GA_reg': GA_reg}
             
     def freeze_model(self, model):
