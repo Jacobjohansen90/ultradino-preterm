@@ -66,7 +66,7 @@ for split in ['test.json', 'train.json']:
             if data_dict[CPR]['imgs'][i]['file_path'] == fp:
                 found = True
                 data_dict[CPR]['imgs'][i]['pred'] = outputs['preterm'].item()
-                data_dict[CPR]['imgs'][i]['logits'] = outputs['vision_features'].numpy()
+                data_dict[CPR]['imgs'][i]['logits'] = outputs['vision_features'].to('cpu').numpy()
         
         if not found:
             print(f"{fp} was not found in child {CPR}") 
