@@ -62,14 +62,15 @@ for split in ['test.json', 'train.json']:
                         data['ehr_data'].to(cfg.device.type))
         
         found = False
-        for i in range(len(data_dict[CPR]['imgs'])):
-            if data_dict[CPR]['imgs'][i]['file_path'] == fp:
-                found = True
-                data_dict[CPR]['imgs'][i]['pred'] = outputs['preterm'].item()
-                data_dict[CPR]['imgs'][i]['logits'] = outputs['vision_features'].to('cpu').numpy()
-        
-        if not found:
-            print(f"{fp} was not found in child {CPR}") 
+        with torch.no_grad():
+            for i in range(len(data_dict[CPR]['imgs'])):
+                if data_dict[CPR]['imgs'][i]['file_path'] == fp:
+                    found = True
+                    data_dict[CPR]['imgs'][i]['pred'] = outputs['preterm'].item()
+                    data_dict[CPR]['imgs'][i]['logits'] = outputs['vision_features'].to('cpu').numpy()
+            
+            if not found:
+                print(f"{fp} was not found in child {CPR}") 
     
     
     with open(save_path + split, 'w') as f:
