@@ -79,8 +79,8 @@ class PreTermDataset(Dataset):
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424       
         #TODO: Fix this temp solution
-        df_temp = pl.read_csv('/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/flow_imgs.csv')
-        df = df.filter(pl.col('file_path').is_in(df_temp['file_path']).not_())
+        #df_temp = pl.read_csv('/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/flow_imgs.csv')
+        #df = df.filter(pl.col('file_path').is_in(df_temp['filepath']).not_())
         self.df = df
         self.train = train
         #self.tasks = cfg.labels.tasks
