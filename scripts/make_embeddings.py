@@ -72,7 +72,7 @@ for split in ['train.json', 'test.json']:
             print(f"{fp} was not found in child {CPR}") 
     
     
-    with open(save_path + split) as f:
+    with open(save_path + split, 'w') as f:
         json.dump(data_dict, f)
 
 
