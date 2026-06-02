@@ -24,7 +24,7 @@ from utils.utils import unpack_dict_to_DF, pack_df_to_dict, match_images_with_ch
 cfg = OmegaConf.load('./confs/Preprocessing.yaml')
 
 #Setup logger
-logging.basicConfig(filename=cfg.paths.data_dir + 'preprocess.log', filemode='w', level=logging.INFO)
+logging.basicConfig(filename=cfg.paths.data_dir + 'logs/preprocess.log', filemode='w', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 #Setup dirs
@@ -45,55 +45,31 @@ df_pop.write_csv(cfg_population.paths.data_dir + 'data_dump/population.csv')
 logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
     
 
-#%%Crawl database
+#%%Extract info from database
 
-df = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER']))
+df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER']))
+df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds)
+df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
+df_img = df_img.with_columns(pl.col("study_date").cast(pl.Utf8).str.to_date("%Y%m%d"))
 
 df.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
 
-"""
-    
-    #Dump data into files
-    with open(cfg.paths.data_dir + 'logs/db_errors.csv', 'w', newline='') as file:
-        wr = csv.writer(file)
-        wr.writerow(["Error", "DB Query"])
-        wr.writerows(errors_db)
+del df_cervix_preds
 
-    with open(cfg.paths.data_dir + 'logs/img_errors.csv', 'w', newline='') as file:
-        wr = csv.writer(file)
-        wr.writerow(["Error", "Image Path"])
-        wr.writerows(errors_img)
-
-    with open(cfg.paths.data_dir + 'logs/cpr_errors.csv', 'w', newline='') as file:
-        wr = csv.writer(file)
-        wr.writerow(['Error', 'CPR_MOTHER'])
-        wr.writerows(not_found)
-
-    df_img = unpack_dict_to_DF(final_data, 'imgs')
-
-    #Add cervix predictions to DF.
-    #Convert study date to date format
-    df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds)
-    df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
-    df_img = df_img.with_columns(pl.col("study_date").cast(pl.Utf8).str.to_date("%Y%m%d"))
-    del df_cervix_preds
-    
-
-    with open(cfg.paths.data_dir + 'data_dump/img_data.json', 'w') as file:
-        json.dump(pack_df_to_dict(df_img, [], "CPR_MOTHER"), file)   
-       
-    df_img.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
-    
-    del not_found
-    del errors_db
-    del errors_img
+logger.info(f"Found {len(df_img)} images - " + str(datetime.now().strftime('%H:%M:%S')))
+logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
+ 
  
 #%%Apply inclusion/exclusion criteria
-
-
+cfg = OmegaConf.load('./confs/Preprocessing.yaml')
 
 #Merge the img df with the EHR df
 df = df_img.join(df_pop, on='CPR_MOTHER', how='inner')
+
+
+df = apply_inclusion_exclusion(df, cfg_incl_excl)
+
+
 
 #Convert date columns to dates and link children and images
 df = match_images_with_child(df, cfg_population.imaging_matching_criteria[0].args)
