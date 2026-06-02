@@ -3,15 +3,13 @@ defaults:
   - _self_
 
 paths:
-  input_dir_SDS: /storage/archive/UCPH/DeepFetal/SDS/registers_pseudonymized
-  input_dir_SP: /storage/archive/UCPH/DeepFetal/SP/tables1
-  holdout_csv: /projects/users/data/UCPH/DeepFetal/projects/ultrasound_preprocessing/splits/PRETERM_RCT_PT_V2/holdout_test_5pct.csv
-  
-strict: True 
-
+  input_dir_SDS: /storage/archive/UCPH/DeepFetal/SDS/registers_pseudonymized/
 
 population: 
   population_key: CPR_CHILD
+  types: #By default column types are strings. If not listed here, it will be kept as string
+    GA: int
+    BIRTHDAY: date
   tables: 
     - table: ${paths.input_dir_SDS}/mfr.csv
       columns:
@@ -27,5 +25,6 @@ population:
         GA: Gestationsalder
         BIRTHDAY: FoedselsDato_Barn
         Hospital: SHAK_Sygehus 
+
 
 
