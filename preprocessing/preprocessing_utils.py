@@ -123,8 +123,7 @@ def sqlite_extractor(cfg, cpr_mothers):
         LEFT JOIN cpr_hashes c
             ON c.phair_hash = t.phair_hash
         LEFT JOIN path_table pt
-            ON pt.file_hash = c.xxhash
-    """)
+            ON pt.file_hash = c.xxhash""")
 
     df = pl.DataFrame(cur.fetchall(),
                       schema=["phair_hash",
