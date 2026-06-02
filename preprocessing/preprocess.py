@@ -21,7 +21,7 @@ from preprocessing.calc_stats import calc_stats
 from preprocessing.inclusion_exclusion import merge_population_tables, apply_inclusion_exclusion#, make_train_test_split
 from utils.utils import unpack_dict_to_DF, pack_df_to_dict, match_images_with_child
 #%%Load variable YAML and setup logger and dirs
-cfg = OmegaConf.load('../confs/Preprocessing.yaml')
+cfg = OmegaConf.load('./confs/Preprocessing.yaml')
 
 #Setup logger
 logging.basicConfig(filename=cfg.paths.data_dir + 'preprocess.log', filemode='w', level=logging.INFO)
