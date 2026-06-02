@@ -9,6 +9,8 @@ Created on Thu Mar 19 14:37:28 2026
 import sqlite3
 import time
 from datetime import datetime
+import polars as pl
+from collections import Counter
 
 #%% Define worker for preprocess.py
 def csv_extracter(dataframe, in_que, done):
@@ -53,7 +55,7 @@ def db_crawler(db_idx, path_to_db, in_que, out_que, done):
             for cpr_ in cpr_hashes:
                 cpr = cpr_[0]
                 try:
-                    query = f"SELECT * FROM metadata_cache WHERE file_hash = '{cpr}'"
+                    query = f"SELECT * FROM path_table WHERE file_hash = '{cpr}'"
                     entries = list(cur.execute(query))
                 except:
                     out_que.put(['DB_error', 'UTF-8 encoding error in cpr', query])
@@ -83,3 +85,68 @@ def db_crawler(db_idx, path_to_db, in_que, out_que, done):
                 out_que.put([cpr_mother, temp_dict])
             else:
                 out_que.put(['CPR_error', 'No images associated with CPR', cpr_mother])
+                
+def sqlite_extractor(cfg, cpr_mothers):
+    chunk_size = 100000
+    conn = sqlite3.connect(cfg.paths.SQL_DB)
+    cur = conn.cursor()
+
+    #Make a temporary SQL table
+    cur.execute("DROP TABLE IF EXISTS tmp_hashes")
+    cur.execute("CREATE TEMP TABLE tmp_hashes (phair_hash TEXT PRIMARY KEY)")
+    
+    #Insert CPR hashes
+    insert_sql = "INSERT OR IGNORE INTO tmp_hashes VALUES (?)"
+   
+    for i in range(0, len(cpr_mothers), chunk_size):
+        chunk = cpr_mothers[i:i+chunk_size]
+        cur.executemany(insert_sql, ((h,) for h in chunk))
+    conn.commit()
+    
+    dicom_select = ",\n    ".join(f"d.{c}" for c in cfg.metadata_dicom_variables)
+
+    query = f"""
+            SELECT
+                t.phair_hash,
+                pt.file_path,
+                pt.file_hash,
+                pt.no_ocr_preprocessed_file_path,
+                {dicom_select}
+            FROM tmp_hashes t
+            JOIN cpr_hashes c
+                ON c.phair_hash = t.phair_hash
+            JOIN path_table pt
+                ON pt.file_hash = c.xxhash
+            LEFT JOIN dicom_metadata_table d
+                ON d.file_hash = pt.file_hash
+            """
+
+    cur.execute(query)
+
+    cols = [d[0] for d in cur.description]
+
+    counts = Counter(cols)
+
+    duplicates = [col for col, count in counts.items() if count > 1]
+
+    if duplicates:
+        raise ValueError(f"Duplicate columns found: {duplicates}")
+
+    frames = []
+
+    while True:
+        rows = cur.fetchmany(chunk_size)
+        if not rows:
+            break
+
+        clean_rows = [["" if v is None else str(v) for v in row] for row in rows]
+
+        df_chunk = pl.DataFrame(clean_rows, schema=cols, orient="row")
+
+        frames.append(df_chunk)
+
+    df = pl.concat(frames, rechunk=True)     
+    
+    conn.close()
+    
+    return df

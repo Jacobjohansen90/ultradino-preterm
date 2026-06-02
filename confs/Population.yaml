@@ -1,0 +1,31 @@
+defaults:
+  - default@
+  - _self_
+
+paths:
+  input_dir_SDS: /storage/archive/UCPH/DeepFetal/SDS/registers_pseudonymized
+  input_dir_SP: /storage/archive/UCPH/DeepFetal/SP/tables1
+  holdout_csv: /projects/users/data/UCPH/DeepFetal/projects/ultrasound_preprocessing/splits/PRETERM_RCT_PT_V2/holdout_test_5pct.csv
+  
+strict: True 
+
+
+population: 
+  population_key: CPR_CHILD
+  tables: 
+    - table: ${paths.input_dir_SDS}/mfr.csv
+      columns:
+        CPR_CHILD: CPR_BARN
+        CPR_MOTHER: CPR_MODER
+        GA: GESTATIONSALDER_DAGE
+        BIRTHDAY: FOEDSELSDATO
+        Hospital: SYGEHUS
+    - table: ${paths.input_dir_SDS}/nyfoedte.csv
+      columns:
+        CPR_CHILD: CPRnummer_Barn
+        CPR_MOTHER: CPRnummer_Mor
+        GA: Gestationsalder
+        BIRTHDAY: FoedselsDato_Barn
+        Hospital: SHAK_Sygehus 
+
+

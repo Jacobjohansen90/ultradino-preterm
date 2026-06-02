@@ -1,0 +1,249 @@
+paths:
+  input_dir_SDS: /home/jacob/Desktop/NAS/Work/PreTerm/Data
+  
+
+image_criteria:
+  - name: cervix_imgs
+    action: include
+    function: filter_df_internal
+    conditions:
+      - condition:
+        column: pred
+        operator: "=="
+        value: "14"
+        
+  - name: flow imgs
+    action: exclude
+    function: filter_df_internal
+    conditions:
+      column: n_imgs
+      condition: ">"
+      value: 1
+ 
+population_criteria:
+    #Must have CPR
+  - name: Child has CPR
+    action: exclude
+    function: filter_df_internal
+    conditions:
+      condition: ['INVALID']
+      column: CPR_CHILD
+
+    #Must have GA
+  - name: Has GA
+    filter_on: CPR_CHILD
+    action: include
+    function: filter_df_external
+    conditions:
+      - condition: 
+        table: ${paths.input_dir_SDS}/mfr.csv
+        match_on: CPR_BARN
+        column: GESTATIONSALDER_DAGE
+        operator: ">"
+        value: 0
+      - condition: or
+        table: ${paths.input_dir_SDS}/nyfoedte.csv
+        match_on: CPRnummer_Barn
+        column: Gestationsalder
+        operator: ">"
+        value: 0
+
+    #Only live birth
+  - name: Live birth 
+    filter_on: CPR_CHILD
+    action: include
+    function: filter_df_external
+    conditions:
+      - condition: 
+        table: ${paths.input_dir_SDS}/mfr.csv
+        match_on: CPR_BARN
+        column: LEVENDE_ELLER_DOEDFOEDT
+        operator: "=="
+        value: Levendefødt
+      - condition: or
+        table: ${paths.input_dir_SDS}/nyfoedte.csv
+        match_on: CPRnummer_Barn
+        column: LevendefoedtDoedfoedt
+        operator: "=="
+        value: "1"
+
+    #Only first pregnancy
+  - name: First Pregnancy
+    filter_on: CPR_CHILD
+    action: exclude
+    function: filter_df_external
+    conditions:
+      - condition: 
+        table: ${paths.input_dir_SDS}/mfr.csv
+        match_on: CPR_BARN
+        column: PARITET
+        operator: "!="
+        value: "1"
+      - condition: or
+        table: ${paths.input_dir_SDS}/nyfoedte.csv
+        match_on: CPRnummer_Barn
+        column: Paritet
+        operator: "!="
+        value: "1"
+
+    #Non-twins
+  - name: No multi-births
+    filter_on: CPR_MOTHER
+    action: include
+    function: filter_df_external
+    conditions:
+      - condition: 
+        table: ${paths.input_dir_SDS}/mfr.csv
+        match_on: CPR_MODER
+        column: FOEDSELSLOEBENUMMER
+        operator: "unique"
+        value: True
+      - condition: or
+        table: ${paths.input_dir_SDS}/nyfoedte.csv
+        match_on: CPRnummer_Mor
+        column: DW_EK_Foedsel
+        operator: "unique"
+        value: True
+
+    #No Cerclage
+  - name: No Cerclage
+    filter_on: CPR_MOTHER
+    action: exclude
+    function: filter_df_external
+    conditions:
+      - condition: 
+        table: ${paths.input_dir_SDS}/mor_diagnoser.csv
+        match_on: CPR_MODER
+        column: DiagnoseKode
+        operator: "=="
+        value: "DO343C"
+      - condition: or
+        table: ${paths.input_dir_SDS}/t_diag.csv
+        match_on: CPRnummer_Mor
+        column: C_DIAG
+        operator: "=="
+        value: "DO343C"
+      - condition: or
+        table: ${paths.input_dir_SDS}/mor_procedurer.csv
+        match_on: CPRnummer_Mor
+        column: ProcedureKode
+        operator: "in"
+        value: [KLDD10A, KLDD10B, KMAB00, KMAB01]
+      - condition: or
+        table: ${paths.input_dir_SDS}/t_afl.csv
+        match_on: CPRnummer_Mor
+        column: C_TILOPR
+        operator: "in"
+        value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
+      - condition: or
+        table: ${paths.input_dir_SDS}/t_sksopr.csv
+        match_on: CPRnummer_Mor
+        column: C_OPR
+        operator: "in"
+        value: [KLDD10A, KLDD10B, KMAB00, KMAB01]
+      - condition: or
+        table: ${paths.input_dir_SDS}/mor_procedurer.csv
+        match_on: CPRnummer_Mor
+        column: ProcedureKode
+        operator: "in"
+        value: [KLDD20, KMAB03]
+
+conditional_criteria:
+  #C-section (kejsersnit)
+  - name: C-section
+    filter_on: CPR_CHILD
+    function: mark_df_external
+    mark: False
+    mark_name: c-section
+    conditions:
+      - condition:
+        table: ${paths.input_dir_SDS}/nyfoedte.csv
+        match_on: CPRnummer_Barn
+        column: Kejsersnit
+        operator: "=="
+        value: "-1"
+      - condition: or
+        table: ${paths.input_dir_SDS}/mfr.csv
+        match_on: CPR_BARN
+        column: MARKOER_KEJSERSNIT
+        operator: "!="
+        value: "1"
+
+  #Induced
+  - name: Induced
+    filter_on: CPR_CHILD
+    mark: True
+    mark_name: induced
+    function: mark_df_external
+    conditions:
+      - condition:
+        table: ${paths.input_dir_SDS}/mfr.csv
+        match_on: CPR_BARN
+        column: MARKOER_IGANGSAETTELSE
+        operator: "=="
+        value: "1"
+      - condition: or
+        table: ${paths.input_dir_SDS}/nyfoedte.csv
+        match_on: CPRnummer_Barn
+        column: Igangsaettelse_Ballonkateter
+        operator: "=="
+        value: "Ja"
+      - condition: or
+        table: ${paths.input_dir_SDS}/nyfoedte.csv
+        match_on: CPRnummer_Barn
+        column: Igangsaettelse_Medicinsk
+        operator: "=="
+        value: "Ja"
+      - condition: or
+        table: ${paths.input_dir_SDS}/nyfoedte.csv
+        match_on: CPRnummer_Barn
+        column: Igangsaettelse_HSP
+        operator: "=="
+        value: "Ja"
+
+
+
+
+
+
+
+
+custom_criteria:
+
+  # Removes close pregnancies
+  - function: find_close_births
+    args:
+      table: ${paths.input_dir_SDS}/nyfoedte.csv
+      match_on: CPRnummer_Barn
+      mom_column: CPRnummer_Mor
+      birth_id_column: DW_EK_Foedsel
+      delivery_date_column: FoedselsDato_Barn
+      threshold_days: 280
+    action: exclude
+  - function: find_close_births
+    args:
+      table: ${paths.input_dir_SDS}/mfr.csv
+      match_on: CPR_BARN
+      mom_column: CPR_MODER
+      birth_id_column: FOEDSELSLOEBENUMMER
+      delivery_date_column: FOEDSELSDATO
+      threshold_days: 280
+    action: exclude
+
+  
+imaging_matching_criteria:
+  # Filter1: Scan-to-delivery interval
+  # Filter2: GA at scan
+  - function: find_images_within_time_windows
+    args: 
+      scan_date_column: study_date
+      image_path_column: file_path
+      population_ga_in_days_at_delivery_column: GA
+      population_delivery_date_column: BIRTHDAY
+      min_diff_days_scan_to_delivery: 0 #0
+      max_diff_days_scan_to_delivery: 210 #210
+      min_ga_in_days_at_scan: 196 #196
+      max_ga_in_days_at_scan: 259 #259
+
+    
+

@@ -21,6 +21,17 @@ from utils.loss_loader import get_loss
 from utils.metric_loader import get_metrics
 from utils.documentation import setup, Logger
 
+def test(cfg, test_path='/projects/users/UCPH/DeepFetal/projects/preterm/Data/test.json'):
+    weights_path = cfg.
+    cfg.data.path = test_path
+    weights = os.listdir(weights_path)
+    model = model_from_conf(cfg)
+
+    for w in weights:
+        model.load_state_dict(torch.load(w, weights_only=True))
+        
+
+        
 
 cfg = OmegaConf.load("/home/jacob/Desktop/NAS/Work/PreTerm/training_runs/2026-04-24 12:28:47/conf.yaml")
 

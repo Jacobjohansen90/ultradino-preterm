@@ -16,8 +16,8 @@ from datetime import datetime
 from omegaconf import OmegaConf
 import polars as pl
 
-from workers import csv_extracter, db_crawler
-from calc_stats import calc_stats
+from preprocessing.workers import sqlite_extractor
+from preprocessing.calc_stats import calc_stats
 from EHR_extract.extract import merge_population_tables, extract_from_cfg, make_train_test_split
 from utils.utils import unpack_dict_to_DF, pack_df_to_dict, match_images_with_child
 #%%Load variable YAML and setup logger and dirs
@@ -32,101 +32,26 @@ Path(cfg.paths.data_dir + 'logs/').mkdir(exist_ok=True)
 Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=True)
 
 #%%Build population data
-cfg_population = OmegaConf.load(cfg.paths.population_yaml)
+cfg_population = OmegaConf.load('./confs/Population.yaml')
 cfg_population.paths.data_dir = cfg.paths.data_dir
 
-population = merge_population_tables(cfg_population.population.tables)
+df_pop = merge_population_tables(cfg_population)
 
 if cfg.debug:
-    population = population[:1000]
+    df_pop = df_pop[:10000]
 
-population.write_csv(cfg_population.paths.data_dir + 'data_dump/population.csv')
+df_pop.write_csv(cfg_population.paths.data_dir + 'data_dump/population.csv')
 
-n_mothers = mp.Value('i', population['CPR_MOTHER'].n_unique())
-
-logger.info(f"Found {n_mothers.value} births - " + str(datetime.now().strftime('%H:%M:%S')))
+logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
     
 
 #%%Crawl database
-if not cfg.crawl_db:
-    logger.info("Using existing database - " + str(datetime.now().strftime('%H:%M:%S')))
-    df_img = pl.read_csv(cfg.paths.data_dir + 'data_dump/img_data.csv', ignore_errors=True)
 
-else:
-    #Setup ques, loggers and start processes
-    in_que = mp.Queue()
-    out_que = mp.Queue()
-    done = mp.Value('b', False)
-    db_idx = {}
-    
-    #Find population indexes
-    variables = population.columns
-    if not 'CPR_MOTHER' in variables:
-        raise Exception("CPR_MOTHER must be present in population variables")
+df = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER']))
 
-    
-    #Crawl DB for variables indexes and check we found all of them
-    with sqlite3.connect(cfg.paths.SQL_DB) as con:
-        cur = con.cursor()
-        cur.execute("SELECT * FROM metadata_cache LIMIT 0")
-        db_headers = [desc[0] for desc in cur.description]
-    
-    for i in range(len(db_headers)):
-        for variable in cfg.variables_from_db:
-            if db_headers[i] == variable:
-                db_idx[variable] = i
-    if len(db_idx) != len(cfg.variables_from_db):
-        found = list(db_idx.keys())
-        diff = list(set(cfg.variables_from_db) - set(found))
-        raise Exception(f"Did not find {diff} in database")
-        
-    num_workers = min(cfg.num_workers, mp.cpu_count()-4)
-    
-    logger.info(f"Starting {num_workers} workers - " + str(datetime.now().strftime('%H:%M:%S')))
-    
-    #Start crawler workers
-    processes = []
-    p = mp.Process(target=csv_extracter, args=(population, in_que, done))
-    p.start()
-    processes.append(p)
-    
-    for i in range(num_workers):
-        p = mp.Process(target=db_crawler, args=(db_idx, cfg.paths.SQL_DB, 
-                                                in_que, out_que, done))
-        p.start()
-        processes.append(p)
-    
-    not_found = []
-    errors_db = []
-    errors_img = []
-    final_data = {}
-    invalid_counter = 0
-    n = 1
-    
-    while n <= n_mothers.value:
-        data = out_que.get()
-        if data[0] == 'DB_error':
-            errors_db.append([data[1], data[2]])
-        elif data[0] == 'img_error':
-            errors_img.append([data[1], data[2]])
-        elif data[0] == 'CPR_error':
-            n += 1
-            not_found.append([data[1], data[2]])
-            if n % 100000 == 0:
-                logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))
-        else:
-            if data[0] == 'INVALID':
-                final_data['INVALID_' + str(invalid_counter)] = data[1]
-                invalid_counter += 1
-            else:
-                final_data[data[0]] = data[1]
-            n += 1
-            if n % 100000 == 0:
-                logger.info(f"Completed {n} files - " + str(datetime.now().strftime('%H:%M:%S')))            
-    
-    #Shutdown processes
-    for p in processes:
-        p.terminate()
+df.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
+
+"""
     
     #Dump data into files
     with open(cfg.paths.data_dir + 'logs/db_errors.csv', 'w', newline='') as file:
@@ -139,21 +64,24 @@ else:
         wr.writerow(["Error", "Image Path"])
         wr.writerows(errors_img)
 
-    with open(cfg.paths.data_dir + 'data_dump/img_data.json', 'w') as file:
-        json.dump(final_data, file)   
-       
     with open(cfg.paths.data_dir + 'logs/cpr_errors.csv', 'w', newline='') as file:
         wr = csv.writer(file)
         wr.writerow(['Error', 'CPR_MOTHER'])
         wr.writerows(not_found)
-    
+
     df_img = unpack_dict_to_DF(final_data, 'imgs')
+
+    #Add cervix predictions to DF.
+    #Convert study date to date format
+    df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds)
+    df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
+    df_img = df_img.with_columns(pl.col("study_date").cast(pl.Utf8).str.to_date("%Y%m%d"))
+    del df_cervix_preds
     
-    #img_cpr_link = dict(zip(df['file_path'], df['CPR_CHILD']))
-    
-    # with open(cfg.paths.data_dir + 'data_dump/img_cpr_link.json', 'w') as file:
-        # json.dump(img_cpr_link, file)
-        
+
+    with open(cfg.paths.data_dir + 'data_dump/img_data.json', 'w') as file:
+        json.dump(pack_df_to_dict(df_img, [], "CPR_MOTHER"), file)   
+       
     df_img.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
     
     del not_found
@@ -162,8 +90,10 @@ else:
  
 #%%Apply inclusion/exclusion criteria
 
+
+
 #Merge the img df with the EHR df
-df = df_img.join(population, on='CPR_MOTHER', how='inner')
+df = df_img.join(df_pop, on='CPR_MOTHER', how='inner')
 
 #Convert date columns to dates and link children and images
 df = match_images_with_child(df, cfg_population.imaging_matching_criteria[0].args)
@@ -205,7 +135,7 @@ with open(cfg.paths.data_dir + 'train.json', "w") as file:
 with open(cfg.paths.data_dir + 'test.json', "w") as file:
     json.dump(test_pop_dict, file)
 
-
+"""
 """
 #%% Calculate stats
 logger.info("Calculating stats - " + str(datetime.now().strftime('%H:%M:%S')))
