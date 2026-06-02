@@ -120,6 +120,7 @@ def sqlite_extractor(cfg, cpr_mothers):
                     t.phair_hash,
                     c.xxhash,
                     pt.file_path,
+                    pt.file_hash,
                     pt.no_ocr_preprocessed_file_path,
                     pt.sop_instance_uid,
                     {dicom_select}
@@ -136,6 +137,7 @@ def sqlite_extractor(cfg, cpr_mothers):
                       schema=[("phair_hash", pl.Utf8),
                               ("xxhash", pl.Utf8),
                               ("file_path", pl.Utf8),
+                              ("file_hash", pl.Utf8),
                               ("no_ocr_preprocessed_file_path", pl.Utf8),
                               ("sop_instance_uid", pl.Utf8),
                               *[(c, pl.Utf8) for c in metadata_dicom_variables]],
