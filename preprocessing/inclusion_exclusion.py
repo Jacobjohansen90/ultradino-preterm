@@ -6,12 +6,32 @@ Created on Mon Jun  1 12:01:10 2026
 @author: jacob
 """
 
-from EHR import filter_df_internal, filter_df_external, mark_df_external
+from preprocessing_utils import filter_df_internal, filter_df_external, mark_df_external, load_table
 import polars as pl
+
 
 custom_funcs = {'filter_df_internal': filter_df_internal,
                 'filter_df_external': filter_df_external,
                 'mark_df_external': mark_df_external}
+
+def merge_population_tables(cfg, ignore_errors=False):
+    df = pl.DataFrame()
+    for cfg_table in cfg.population.tables:
+        table = load_table(cfg_table.table, ignore_errors=ignore_errors)
+        table = table.select(list(cfg_table.columns.values()))
+        table = table.rename({v: k for k, v in cfg_table.columns.items()})
+        table = table.select(sorted(table.columns))
+        df = df.vstack(table)
+        
+    for name, t in cfg.population.types.items():
+        if t == 'int':
+            df = df.with_columns(pl.col(name).cast(pl.Int64, strict=False))
+        elif t == 'date':
+            df = df.with_columns(pl.col(name).str.to_date("%Y-%m-%d", strict=False))
+        else:
+            raise NotImplementedError(f"Unknown type {t}")
+
+    return df
 
 def apply_inclusion_exclusion(df, cfg):
     discards = {}

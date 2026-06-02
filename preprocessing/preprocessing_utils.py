@@ -8,6 +8,8 @@ Created on Mon Jun  1 10:58:16 2026
 
 import polars as pl
 import operator
+import sqlite3
+from collections import Counter
 
 def unique(df, column, value):
     if value is True:
@@ -29,28 +31,6 @@ OPS = {">": operator.gt,
 
 custom_OPS = {"unique": unique,
               "in": in_list}
-
-
-    
-
-def merge_population_tables(cfg, ignore_errors=False):
-    df = pl.DataFrame()
-    for cfg_table in cfg.population.tables:
-        table = load_table(cfg_table.table, ignore_errors=ignore_errors)
-        table = table.select(list(cfg_table.columns.values()))
-        table = table.rename({v: k for k, v in cfg_table.columns.items()})
-        table = table.select(sorted(table.columns))
-        df = df.vstack(table)
-        
-    for name, t in cfg.population.types.items():
-        if t == 'int':
-            df = df.with_columns(pl.col(name).cast(pl.Int64, strict=False))
-        elif t == 'date':
-            df = df.with_columns(pl.col(name).str.to_date("%Y-%m-%d", strict=False))
-        else:
-            raise NotImplementedError(f"Unknown type {t}")
-
-    return df
 
 def load_table(path, ignore_errors=False, has_header=True):
     if path.endswith(".csv"):
@@ -118,5 +98,70 @@ def mark_df_external(df, criteria):
         df = df.with_columns(~pl.col(criteria.filter_on).is_in(table[criteria.filter_on]).alias(criteria.mark_name))
     else:
         raise Exception(f"Mark crtieria {criteria.mark} not understood. Use False or True only")
+    
+    return df
+
+def sqlite_extractor(cfg, cpr_mothers):
+    chunk_size = 100000
+    conn = sqlite3.connect(cfg.paths.SQL_DB)
+    cur = conn.cursor()
+
+    #Make a temporary SQL table
+    cur.execute("DROP TABLE IF EXISTS tmp_hashes")
+    cur.execute("CREATE TEMP TABLE tmp_hashes (phair_hash TEXT PRIMARY KEY)")
+    
+    #Insert CPR hashes
+    insert_sql = "INSERT OR IGNORE INTO tmp_hashes VALUES (?)"
+   
+    for i in range(0, len(cpr_mothers), chunk_size):
+        chunk = cpr_mothers[i:i+chunk_size]
+        cur.executemany(insert_sql, ((h,) for h in chunk))
+    conn.commit()
+    
+    dicom_select = ",\n    ".join(f"d.{c}" for c in cfg.metadata_dicom_variables)
+
+    query = f"""
+            SELECT
+                t.phair_hash,
+                pt.file_path,
+                pt.file_hash,
+                pt.no_ocr_preprocessed_file_path,
+                {dicom_select}
+            FROM tmp_hashes t
+            JOIN cpr_hashes c
+                ON c.phair_hash = t.phair_hash
+            JOIN path_table pt
+                ON pt.file_hash = c.xxhash
+            LEFT JOIN dicom_metadata_table d
+                ON d.file_hash = pt.file_hash
+            """
+
+    cur.execute(query)
+
+    cols = [d[0] for d in cur.description]
+
+    counts = Counter(cols)
+
+    duplicates = [col for col, count in counts.items() if count > 1]
+
+    if duplicates:
+        raise ValueError(f"Duplicate columns found: {duplicates}")
+
+    frames = []
+
+    while True:
+        rows = cur.fetchmany(chunk_size)
+        if not rows:
+            break
+
+        clean_rows = [["" if v is None else str(v) for v in row] for row in rows]
+
+        df_chunk = pl.DataFrame(clean_rows, schema=cols, orient="row")
+
+        frames.append(df_chunk)
+
+    df = pl.concat(frames, rechunk=True)     
+    
+    conn.close()
     
     return df
