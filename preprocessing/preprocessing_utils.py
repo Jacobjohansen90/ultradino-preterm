@@ -120,7 +120,6 @@ def sqlite_extractor(cfg, cpr_mothers):
                     t.phair_hash,
                     c.xxhash,
                     pt.file_path,
-                    pt.file_hash,
                     pt.no_ocr_preprocessed_file_path,
                     pt.sop_instance_uid,
                     {dicom_select}
@@ -130,14 +129,13 @@ def sqlite_extractor(cfg, cpr_mothers):
                 LEFT JOIN path_table pt
                     ON pt.file_hash = c.xxhash
                 LEFT JOIN dicom_metadata_table d
-                    ON d.file_hash = pt.file_hash
+                    ON d.sop_instance_uid = pt.sop_instance_uid
                 """)
 
     df = pl.DataFrame(cur.fetchall(),
                       schema=[("phair_hash", pl.Utf8),
                               ("xxhash", pl.Utf8),
                               ("file_path", pl.Utf8),
-                              ("file_hash", pl.Utf8),
                               ("no_ocr_preprocessed_file_path", pl.Utf8),
                               ("sop_instance_uid", pl.Utf8),
                               *[(c, pl.Utf8) for c in metadata_dicom_variables]],

@@ -200,7 +200,44 @@ conditional_criteria:
         column: Igangsaettelse_HSP
         operator: "=="
         value: "Ja"
-
+ 
+  #Progesterone
+  - name: Progesterone
+    filter_on: CPR_MOTHER
+    mark: True
+    mark_name: progesterone
+    function: mark_df_external
+    conditions:
+      - condition:
+        table: ${paths.input_dir_SDS}/epikur_1.csv
+        match_on: cpr
+        column: atc
+        operator: "starts_with"
+        value: "G03DA04"
+      - condition: or
+        table: ${paths.input_dir_SDS}/epikur_2.csv
+        match_on: cpr
+        column: atc
+        operator: "starts_with"
+        value: "G03DA04"
+      - condition: or
+        table: ${paths.input_dir_SDS}/epikur_3.csv
+        match_on: cpr
+        column: atc
+        operator: "starts_with"
+        value: "G03DA04"
+      - condition: or
+        table: ${paths.input_dir_SDS}/t_sksube.csv
+        match_on: CPRnummer_Barn
+        column: C_TILOPR
+        operator: "=="
+        value: "BKHA1"
+      - condition: or
+        table: ${paths.input_dir_SDS}/mor_diagnoser.csv
+        match_on: CPRnummer_Barn
+        column: DiagnoseKode
+        operator: "=="
+        value: "BKHA1"
 
 
 
