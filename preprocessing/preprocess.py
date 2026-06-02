@@ -47,7 +47,7 @@ logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime
 
 #%%Extract info from database
 
-df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER']))
+df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
 df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds)
 df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
 df_img = df_img.with_columns(pl.col("study_date").cast(pl.Utf8).str.to_date("%Y%m%d"))
