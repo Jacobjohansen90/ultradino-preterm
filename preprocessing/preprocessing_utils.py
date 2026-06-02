@@ -107,7 +107,6 @@ def sqlite_extractor(cfg, cpr_mothers):
     conn = sqlite3.connect(cfg.paths.SQL_DB)
     cur = conn.cursor()
     
-    cur.execute("DROP TABLE IF EXISTS tmp_hashes")
     cur.execute("CREATE TEMP TABLE tmp_hashes (phair_hash TEXT PRIMARY KEY)")
     cur.executemany("INSERT INTO tmp_hashes VALUES (?)", [(h,) for h in cpr_mothers])
     conn.commit()
