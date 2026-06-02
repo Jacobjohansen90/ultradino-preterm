@@ -106,14 +106,23 @@ def sqlite_extractor(cfg, cpr_mothers):
     conn = sqlite3.connect(cfg.paths.SQL_DB)
     cur = conn.cursor()
     
-    cur.execute(f"""
-                SELECT phair_hash, xxhash
-                FROM cpr_hashes
-                WHERE phair_hash IN ({",".join("?" * len(cpr_mothers))})
-                """, cpr_mothers)
-
-    rows = cur.fetchall()
-
+    chunk_size = 900
+    rows = []
+    
+    for i in range(0, len(cpr_mothers), chunk_size):
+        chunk = cpr_mothers[i:i+chunk_size]
+    
+        cur.execute(
+            f"""
+            SELECT phair_hash, xxhash
+            FROM cpr_hashes
+            WHERE phair_hash IN ({",".join("?" * len(chunk))})
+            """,
+            chunk
+        )
+    
+        rows.extend(cur.fetchall())
+    
     df = pl.DataFrame(rows, schema=["phair_hash", "xxhash"], orient="row")
 
     return df
