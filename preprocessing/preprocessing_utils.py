@@ -106,11 +106,11 @@ def sqlite_extractor(cfg, cpr_mothers):
     conn = sqlite3.connect(cfg.paths.SQL_DB)
     cur = conn.cursor()
     
-    cur.execute("""
+    cur.execute(f"""
                 SELECT phair_hash, xxhash
                 FROM cpr_hashes
-                WHERE phair_hash IN ({})
-                """.format(",".join("?" * len(cpr_mothers))), cpr_mothers)
+                WHERE phair_hash IN ({",".join("?" * len(cpr_mothers))})
+                """, cpr_mothers)
 
     rows = cur.fetchall()
 
