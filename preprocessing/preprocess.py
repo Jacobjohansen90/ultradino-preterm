@@ -52,7 +52,7 @@ df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds)
 df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
 df_img = df_img.with_columns(pl.col("study_date").cast(pl.Utf8).str.to_date("%Y%m%d"))
 
-df.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
+df_img.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
 
 del df_cervix_preds
 
@@ -61,61 +61,61 @@ logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + s
  
  
 #%%Apply inclusion/exclusion criteria
-cfg = OmegaConf.load('./confs/Preprocessing.yaml')
+# cfg = OmegaConf.load('./confs/Preprocessing.yaml')
 
-#Merge the img df with the EHR df
-df = df_img.join(df_pop, on='CPR_MOTHER', how='inner')
-
-
-df = apply_inclusion_exclusion(df, cfg_incl_excl)
+# #Merge the img df with the EHR df
+# df = df_img.join(df_pop, on='CPR_MOTHER', how='inner')
 
 
-
-#Convert date columns to dates and link children and images
-df = match_images_with_child(df, cfg_population.imaging_matching_criteria[0].args)
+# df = apply_inclusion_exclusion(df, cfg_incl_excl)
 
 
-logging.info(f"Valid images: {len(df)} after matching image + EHR matching.  \n")
 
-final_population, all_discards = extract_from_cfg(cfg_population, df)
+# #Convert date columns to dates and link children and images
+# df = match_images_with_child(df, cfg_population.imaging_matching_criteria[0].args)
 
-discards = {}
-for i in range(len(all_discards)):
-    discards[i] = {"criteria": all_discards[i][0],
-                   "n_discards": all_discards[i][2],
-                   "n_population_pre_discard": all_discards[i][3],
-                   "n_population_post_discard": all_discards[i][3] - all_discards[i][2],
-                   "discards": all_discards[i][1]}
 
-with open(cfg.paths.data_dir + 'logs/discards.json', "w") as file:
-    json.dump(discards, file)
+# logging.info(f"Valid images: {len(df)} after matching image + EHR matching.  \n")
 
-final_population.write_csv(cfg.paths.data_dir + 'data_dump/final_population.csv')
+# final_population, all_discards = extract_from_cfg(cfg_population, df)
 
-train_pop, test_pop = make_train_test_split(cfg.paths.holdout_csv, 
-                                            final_population, 
-                                            'file_path',
-                                            cfg.SQL_prefix)
+# discards = {}
+# for i in range(len(all_discards)):
+#     discards[i] = {"criteria": all_discards[i][0],
+#                    "n_discards": all_discards[i][2],
+#                    "n_population_pre_discard": all_discards[i][3],
+#                    "n_population_post_discard": all_discards[i][3] - all_discards[i][2],
+#                    "discards": all_discards[i][1]}
 
-train_pop.write_csv(cfg.paths.data_dir + 'train.csv')
-test_pop.write_csv(cfg.paths.data_dir + 'test.csv')
+# with open(cfg.paths.data_dir + 'logs/discards.json', "w") as file:
+#     json.dump(discards, file)
 
-population_columns = list(cfg_population.population.tables[0]['columns'].keys())
+# final_population.write_csv(cfg.paths.data_dir + 'data_dump/final_population.csv')
 
-train_pop_dict = pack_df_to_dict(train_pop, population_columns, cfg_population.population.population_key)
-test_pop_dict = pack_df_to_dict(test_pop, population_columns, cfg_population.population.population_key)
+# train_pop, test_pop = make_train_test_split(cfg.paths.holdout_csv, 
+#                                             final_population, 
+#                                             'file_path',
+#                                             cfg.SQL_prefix)
 
-with open(cfg.paths.data_dir + 'train.json', "w") as file:
-    json.dump(train_pop_dict, file)
+# train_pop.write_csv(cfg.paths.data_dir + 'train.csv')
+# test_pop.write_csv(cfg.paths.data_dir + 'test.csv')
 
-with open(cfg.paths.data_dir + 'test.json', "w") as file:
-    json.dump(test_pop_dict, file)
+# population_columns = list(cfg_population.population.tables[0]['columns'].keys())
 
-"""
-"""
-#%% Calculate stats
-logger.info("Calculating stats - " + str(datetime.now().strftime('%H:%M:%S')))
-calc_stats('/'.join(path.split('/')[:-2]) + '/')
+# train_pop_dict = pack_df_to_dict(train_pop, population_columns, cfg_population.population.population_key)
+# test_pop_dict = pack_df_to_dict(test_pop, population_columns, cfg_population.population.population_key)
 
-logger.info("Preprocessing done - " + str(datetime.now().strftime('%H:%M:%S')))
-"""
+# with open(cfg.paths.data_dir + 'train.json', "w") as file:
+#     json.dump(train_pop_dict, file)
+
+# with open(cfg.paths.data_dir + 'test.json', "w") as file:
+#     json.dump(test_pop_dict, file)
+
+# """
+# """
+# #%% Calculate stats
+# logger.info("Calculating stats - " + str(datetime.now().strftime('%H:%M:%S')))
+# calc_stats('/'.join(path.split('/')[:-2]) + '/')
+
+# logger.info("Preprocessing done - " + str(datetime.now().strftime('%H:%M:%S')))
+# """
