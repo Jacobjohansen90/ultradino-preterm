@@ -111,28 +111,38 @@ def sqlite_extractor(cfg, cpr_mothers):
     cur.executemany("INSERT INTO tmp_hashes VALUES (?)", [(h,) for h in cpr_mothers])
     conn.commit()
     
-    cur.execute("""
-    SELECT
-        t.phair_hash,
-        c.xxhash,
-        pt.file_path,
-        pt.no_ocr_preprocessed_file_path,
-        pt.sop_instance_uid
-    FROM tmp_hashes t
-    LEFT JOIN cpr_hashes c
-        ON c.phair_hash = t.phair_hash
-    LEFT JOIN path_table pt
-        ON pt.file_hash = c.xxhash
-    """)
+    metadata_dicom_variables = cfg.metadata_dicom_variables
+  
+    dicom_select = ",\n".join(f"d.{c}" for c in metadata_dicom_variables)
+    
+    cur.execute(f"""
+                SELECT
+                    t.phair_hash,
+                    c.xxhash,
+                    pt.file_path,
+                    pt.no_ocr_preprocessed_file_path,
+                    pt.sop_instance_uid,
+                    {dicom_select}
+                FROM tmp_hashes t
+                LEFT JOIN cpr_hashes c
+                    ON c.phair_hash = t.phair_hash
+                LEFT JOIN path_table pt
+                    ON pt.file_hash = c.xxhash
+                LEFT JOIN dicom_metadata_table d
+                    ON d.file_hash = pt.file_hash
+                """)
 
-    df = pl.DataFrame(cur.fetchall(),
-                      schema=["phair_hash",
-                              "xxhash",
-                              "file_path",
-                              "no_ocr_preprocessed_file_path",
-                              "sop_instance_uid"],
-                      orient="row")
+    df = pl.DataFrame(
+        cur.fetchall(),
+        schema=["phair_hash",
+                "xxhash",
+                "file_path",
+                "no_ocr_preprocessed_file_path",
+                "sop_instance_uid",
+                *metadata_dicom_variables],
+        orient="row")
 
+    conn.close()
     return df
 
     # chunk_size = 100000
