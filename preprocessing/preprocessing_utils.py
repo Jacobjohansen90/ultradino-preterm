@@ -111,19 +111,36 @@ def sqlite_extractor(cfg, cpr_mothers):
     
     for i in range(0, len(cpr_mothers), chunk_size):
         chunk = cpr_mothers[i:i+chunk_size]
-    
+
         cur.execute(
             f"""
-            SELECT phair_hash, xxhash
-            FROM cpr_hashes
-            WHERE phair_hash IN ({",".join("?" * len(chunk))})
+            SELECT
+                c.phair_hash,
+                c.xxhash,
+                pt.file_path,
+                pt.no_ocr_preprocessed_file_path,
+                pt.sop_instance_uid
+            FROM cpr_hashes c
+            LEFT JOIN path_table pt
+                ON pt.file_hash = c.xxhash
+            WHERE c.phair_hash IN ({",".join("?" * len(chunk))})
             """,
             chunk
         )
-    
+
         rows.extend(cur.fetchall())
-    
-    df = pl.DataFrame(rows, schema=["phair_hash", "xxhash"], orient="row")
+
+    df = pl.DataFrame(
+        rows,
+        schema=[
+            "phair_hash",
+            "xxhash",
+            "file_path",
+            "no_ocr_preprocessed_file_path",
+            "sop_instance_uid"
+        ],
+        orient="row"
+    )
 
     return df
 
