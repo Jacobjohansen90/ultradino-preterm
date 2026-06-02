@@ -132,15 +132,14 @@ def sqlite_extractor(cfg, cpr_mothers):
                     ON d.file_hash = pt.file_hash
                 """)
 
-    df = pl.DataFrame(
-        cur.fetchall(),
-        schema=["phair_hash",
-                "xxhash",
-                "file_path",
-                "no_ocr_preprocessed_file_path",
-                "sop_instance_uid",
-                *metadata_dicom_variables],
-        orient="row")
+    df = pl.DataFrame(cur.fetchall(),
+                      schema=[("phair_hash", pl.Utf8),
+                              ("xxhash", pl.Utf8),
+                              ("file_path", pl.Utf8),
+                              ("no_ocr_preprocessed_file_path", pl.Utf8),
+                              ("sop_instance_uid", pl.Utf8),
+                              *[(c, pl.Utf8) for c in metadata_dicom_variables]],
+                      orient="row")
 
     conn.close()
     return df
