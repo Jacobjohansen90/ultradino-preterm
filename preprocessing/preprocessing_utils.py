@@ -109,22 +109,22 @@ def sqlite_extractor(cfg, cpr_mothers):
     
     cur.execute("DROP TABLE IF EXISTS tmp_hashes")
     cur.execute("CREATE TEMP TABLE tmp_hashes (phair_hash TEXT PRIMARY KEY)")
-    cur.executemany("INSERT INTO tmp_hashes VALUES (?)",[(h,) for h in cpr_mothers])
+    cur.executemany("INSERT INTO tmp_hashes VALUES (?)", [(h,) for h in cpr_mothers])
     conn.commit()
     
     cur.execute("""
-                SELECT
-                    t.phair_hash,
-                    c.xxhash,
-                    pt.file_path,
-                    pt.no_ocr_preprocessed_file_path,
-                    pt.sop_instance_uid
-                FROM tmp_hashes t
-                LEFT JOIN cpr_hashes c
-                ON c.phair_hash = t.phair_hash
-                LEFT JOIN path_table pt
-                ON pt.file_hash = c.xxhash
-                """)
+        SELECT
+            t.phair_hash,
+            c.xxhash,
+            pt.file_path,
+            pt.no_ocr_preprocessed_file_path,
+            pt.sop_instance_uid
+        FROM tmp_hashes t
+        LEFT JOIN cpr_hashes c
+            ON c.phair_hash = t.phair_hash
+        LEFT JOIN path_table pt
+            ON pt.file_hash = c.xxhash
+    """)
 
     df = pl.DataFrame(cur.fetchall(),
                       schema=["phair_hash",
