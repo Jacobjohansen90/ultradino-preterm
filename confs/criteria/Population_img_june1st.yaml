@@ -49,15 +49,14 @@ population_criteria:
         column: CPR_CHILD
         operator: "=="
         value: "INVALID"
-
+    
+    #Births must not be close
   - name: No close births
     filter_on: ['CPR_MOTHER', 'CPR_CHILD']
     action: exclude
     function: find_close_births
-    conditions:
-      - condition:
-        column: BIRTHDAY
-        threshold: 280
+    column: BIRTHDAY
+    threshold: 280
 
     #Must have GA
   - name: Has GA

@@ -128,21 +128,25 @@ def mark_df_external(df, criteria):
     return df
 
 def find_close_births(df, criteria):
-    for condition in criteria.conditions:
-        df = df.with_columns(pl.col(condition.column).cast(pl.Date))
-    
-        #Reduce to birth level
-        births = (df.select(["CPR_MOTHER", "CPR_CHILD", condition.column])
-                  .unique().sort(["CPR_MOTHER", condition.column]))
-    
-        #Computer inter-mother birth gaps
-        births = births.with_columns((pl.col(condition.column).diff()
-                                      .over("CPR_MOTHER").dt.total_days()
-                                      .abs() < condition.threshold).alias("close_births"))
-    
-        #Identify births that are close
-        close_births = (births.filter(pl.col("close_births"))
-                        .select(["CPR_MOTHER", "CPR_CHILD"]).unique())
+
+    df = df.with_columns(pl.col(criteria.column).cast(pl.Date))
+
+    #Reduce to birth level
+    births = (df.select(["CPR_MOTHER", "CPR_CHILD", criteria.column])
+              .unique().sort(["CPR_MOTHER", criteria.column]))
+
+    #Computer inter-mother birth gaps
+    births = births.with_columns((pl.col(criteria.column).diff()
+                                  .over("CPR_MOTHER").dt.total_days()
+                                  .abs() < criteria.threshold).alias("close_births"))
+
+    #Identify births that are close
+    close_births = (births.filter(pl.col("close_births"))
+                    .select(["CPR_MOTHER", "CPR_CHILD"]).unique())
+    if criteria.action == 'include':
+        df = df.join(close_births, on=["CPR_MOTHER", "CPR_CHILD"], how="semi")
+    if criteria.action == 'exclude':
+        df = df.join(close_births, on=["CPR_MOTHER", "CPR_CHILD"], how="anti")
 
     return close_births
 
