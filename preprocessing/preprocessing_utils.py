@@ -53,8 +53,10 @@ def filter_conditions(df, condition, filter_on, table, external=True):
             df_temp = df_temp.with_columns(pl.col(condition.match_on).alias(filter_on))
     else:    
         if condition.operator in ['>', '<', '>=', '<=', '-', '+']:
-            df_temp = df_temp.with_columns(pl.col(condition.column).cast(pl.Int64, strict=False))
+            df_temp = df.with_columns(pl.col(condition.column).cast(pl.Int64, strict=False))
             df_temp = df_temp.filter(pl.col(condition.column).is_not_null())
+        else:
+            df_temp = df
         df_temp = df_temp.filter(OPS[condition.operator](pl.col(condition.column), condition.value))
         if external:
             df_temp = df_temp.with_columns(pl.col(condition.match_on).alias(filter_on))

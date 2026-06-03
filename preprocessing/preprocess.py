@@ -11,6 +11,7 @@ from pathlib import Path
 from datetime import datetime
 from omegaconf import OmegaConf
 import polars as pl
+import json
 
 from preprocessing.preprocessing_utils import sqlite_extractor
 from preprocessing.calc_stats import calc_stats
@@ -60,38 +61,28 @@ logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + s
 #TODO: Remove this when DB is updated
 df_flow = pl.read_csv(cfg.paths.flow_imgs)
 
+df_img = df_img.join(df_flow, left_on='file_path', right_on='filepath', how='anti')
 
 df = merge_population_and_image_df(df_img, df_pop, cfg)
  
-
 df.write_csv(cfg.paths.data_dir + 'data_dump/test_data.csv')
 
 #%%Apply inclusion/exclusion criteria
 
 df, discards, conditioned = apply_inclusion_exclusion(df, cfg_incl_excl)
 
+with open(cfg.paths.data_dir + 'logs/discards.json', "w") as file:
+    json.dump(discards, file)
 
+with open(cfg.paths.data_dir + 'logs/conditioned.json', "w") as file:
+    json.dump(conditioned, file)
+    
+    
+logger.info(f"Final data contains {len(df_img)} images - " + str(datetime.now().strftime('%H:%M:%S')))
+logger.info(f"Final data contains {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
+logger.info(f"Final data contains {df_img['CPR_CHILD'].n_unique()} children - " + str(datetime.now().strftime('%H:%M:%S')))
 
-# #Convert date columns to dates and link children and images
-# df = match_images_with_child(df, cfg_population.imaging_matching_criteria[0].args)
-
-
-# logging.info(f"Valid images: {len(df)} after matching image + EHR matching.  \n")
-
-# final_population, all_discards = extract_from_cfg(cfg_population, df)
-
-# discards = {}
-# for i in range(len(all_discards)):
-#     discards[i] = {"criteria": all_discards[i][0],
-#                    "n_discards": all_discards[i][2],
-#                    "n_population_pre_discard": all_discards[i][3],
-#                    "n_population_post_discard": all_discards[i][3] - all_discards[i][2],
-#                    "discards": all_discards[i][1]}
-
-# with open(cfg.paths.data_dir + 'logs/discards.json', "w") as file:
-#     json.dump(discards, file)
-
-# final_population.write_csv(cfg.paths.data_dir + 'data_dump/final_population.csv')
+df.write_csv(cfg.paths.data_dir + 'data_dump/filtered_population.csv')
 
 # train_pop, test_pop = make_train_test_split(cfg.paths.holdout_csv, 
 #                                             final_population, 
