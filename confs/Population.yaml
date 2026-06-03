@@ -32,6 +32,18 @@ population:
         Hospital: SHAK_Sygehus 
         BIRTH_ID: DW_EK_Foedsel
 
+t_tables:
+  poplation_key: CPR_MOTHER
+  adm_table: ${paths.input_dir_SDS}/t_adm.csv
+  link: K_RECNUM
+  
+  tables:
+    - table: ${paths.input_dir_SDS}/t_sksube.csv
+      table_link: V_RECNUM
+      include: [V_CPR]
+
+    
+
 imaging:
   metadata_dicom_variables: 
     - ['manufacturer', 'str']
