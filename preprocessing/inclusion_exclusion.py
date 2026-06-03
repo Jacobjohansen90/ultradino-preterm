@@ -17,8 +17,8 @@ custom_funcs = {'filter_df_internal': filter_df_internal,
 def merge_t_tables(cfg):
     t_adm = pl.read_csv(cfg.t_tables.adm_table, infer_schema=False)
     for table in cfg.t_tables.tables:
-        t_table = pl.read_csv(table.table)
-        t_table = t_table.join(t_adm.select(table.include), left_on=table.table_link, right_on=cfg.t_tables.link, infer_schema=True)
+        t_table = pl.read_csv(table.table, infer_schema=False)
+        t_table = t_table.join(t_adm.select(table.include), left_on=table.table_link, right_on=cfg.t_tables.link)
         t_table.write_csv(cfg.paths.data_dir + 'tables/' + table.table.split('/')[-1])
     
 
