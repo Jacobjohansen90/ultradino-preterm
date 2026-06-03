@@ -110,7 +110,7 @@ def sqlite_extractor(cfg, cpr_mothers):
     cur.executemany("INSERT INTO tmp_hashes VALUES (?)", [(h,) for h in cpr_mothers])
     conn.commit()
     
-    metadata_dicom_variables = cfg.metadata_dicom_variables
+    metadata_dicom_variables = cfg.imaging.metadata_dicom_variables
 
     dicom_select = ",\n".join(f"d.{column}" for column, _ in metadata_dicom_variables)
 
