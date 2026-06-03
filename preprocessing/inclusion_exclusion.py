@@ -39,7 +39,6 @@ def merge_population_and_image_df(df_img, df_pop, cfg):
         df = df.with_columns(OPS[config.operator](pl.col(config.column_1),
                                                   pl.col(config.column_2)).alias(config.var_name))
 
-
     return df
 
 def apply_inclusion_exclusion(df, cfg):

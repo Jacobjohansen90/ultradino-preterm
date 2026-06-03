@@ -11,14 +11,41 @@ image_criteria:
         column: pred
         operator: "=="
         value: "14"
-        
+
+  - name: GA at scan
+    action: include
+    function: filter_df_internal
+    conditions:
+      - condition: 
+        column: GA_at_scan
+        operator: ">="
+        value: 112 #16 weeks
+      - condition: and
+        column: GA_at_scan
+        operator: "<="
+        value: 168 #24 weeks
+
+  - name: Scan to delivery
+    action: include
+    function: filter_df_internal
+    conditions:
+      - condition: 
+        column: scan_to_delivery
+        operator: ">="
+        value: 0 #0 weeks
+      - condition: and
+        column: scan_to_delivery
+        operator: "<="
+        value: 210 #30 weeks
+
   - name: flow imgs
     action: exclude
-    function: filter_df_internal
+    function: filter_df_external
     conditions:
       column: n_imgs
       condition: ">"
       value: 1
+  
  
 population_criteria:
     #Must have CPR

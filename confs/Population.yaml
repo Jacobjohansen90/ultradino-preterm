@@ -41,10 +41,13 @@ merge:
   population_key: CPR_MOTHER
   create_variables:
     - operator: "-" #column_1 - column_2
-      var_name: "study_to_birth"
+      var_name: "scan_to_delivery"
       column_1: "BIRTHDAY"
       column_2: "study_date"
-    
+    - operator: "-" #column_1 - column_2
+      var_name: "GA_at_scan"
+      column_1: "GA"
+      column_2: "scan_to_delivery"
 
 
     
