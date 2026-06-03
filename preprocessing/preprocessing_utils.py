@@ -118,10 +118,8 @@ def sqlite_extractor(cfg, cpr_mothers):
     cur.execute(f"""
                 SELECT
                     t.phair_hash,
-                    c.xxhash,
                     pt.file_path,
                     pt.no_ocr_preprocessed_file_path,
-                    pt.sop_instance_uid,
                     {dicom_select}
                 FROM tmp_hashes t
                 LEFT JOIN cpr_hashes c
@@ -141,71 +139,7 @@ def sqlite_extractor(cfg, cpr_mothers):
                               *[(c, pl.Utf8) for c in metadata_dicom_variables]],
                       orient="row")
 
+    df = df.drop_nulls(subset="no_ocr_preprocessed_file_path")
+
     conn.close()
     return df
-
-    # chunk_size = 100000
-    # conn = sqlite3.connect(cfg.paths.SQL_DB)
-    # cur = conn.cursor()
-
-    # #Make a temporary SQL table
-    # cur.execute("DROP TABLE IF EXISTS tmp_hashes")
-    # cur.execute("CREATE TEMP TABLE tmp_hashes (phair_hash TEXT PRIMARY KEY)")
-    
-    # #Insert CPR hashes
-    # insert_sql = "INSERT OR IGNORE INTO tmp_hashes VALUES (?)"
-   
-    # for i in range(0, len(cpr_mothers), chunk_size):
-    #     chunk = cpr_mothers[i:i+chunk_size]
-    #     cur.executemany(insert_sql, ((h,) for h in chunk))
-    # conn.commit()
-    
-    # dicom_select = ",\n    ".join(f"d.{c}" for c in cfg.metadata_dicom_variables)
-
-    # query = f"""
-    #         SELECT
-    #             t.phair_hash,
-    #             pt.file_path,
-    #             pt.file_hash,
-    #             pt.no_ocr_preprocessed_file_path,
-    #             {dicom_select}
-    #         FROM tmp_hashes t
-    #         JOIN cpr_hashes c
-    #             ON c.phair_hash = t.phair_hash
-    #         JOIN path_table pt
-    #             ON pt.file_hash = c.xxhash
-    #         LEFT JOIN dicom_metadata_table d
-    #             ON d.file_hash = pt.file_hash
-    #         """
-
-    # cur.execute(query)
-
-    # cols = [d[0] for d in cur.description]
-
-    # counts = Counter(cols)
-    
-    # #Check if row collision
-    # duplicates = [col for col, count in counts.items() if count > 1]
-    # if duplicates:
-    #     raise ValueError(f"Duplicate columns found: {duplicates}")
-
-    # #Make entries str and put them in dataframe
-    # frames = []
-    # while True:
-    #     rows = cur.fetchmany(chunk_size)
-    #     if not rows:
-    #         break
-
-    #     clean_rows = [["" if v is None else str(v) for v in row] for row in rows]
-
-    #     df_chunk = pl.DataFrame(clean_rows, schema=cols, orient="row")
-
-    #     frames.append(df_chunk)
-
-    # df = pl.concat(frames, rechunk=True)     
-    
-    
-    
-    # conn.close()
-    
-    # return df
