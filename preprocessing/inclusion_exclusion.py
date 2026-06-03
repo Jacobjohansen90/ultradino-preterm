@@ -15,10 +15,10 @@ custom_funcs = {'filter_df_internal': filter_df_internal,
                 'mark_df_external': mark_df_external}
 
 def merge_t_tables(cfg):
-    t_adm = pl.read_csv(cfg.t_tables.adm_table, ignore_errors=True)
+    t_adm = pl.read_csv(cfg.t_tables.adm_table, infer_schema=False)
     for table in cfg.t_tables.tables:
         t_table = pl.read_csv(table.table)
-        t_table = t_table.join(t_adm.select(table.include), left_on=table.table_link, right_on=cfg.t_tables.link, ignore_errors=True)
+        t_table = t_table.join(t_adm.select(table.include), left_on=table.table_link, right_on=cfg.t_tables.link, infer_schema=True)
         t_table.write_csv(cfg.paths.data_dir + 'tables/' + table.table.split('/')[-1])
     
 
