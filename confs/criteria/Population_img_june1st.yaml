@@ -2,6 +2,9 @@ paths:
 
 #Operators work as: column_1 [operator] column_2
 image_criteria:
+
+#Add flow_img when database has the info
+
   - name: cervix_imgs
     action: include
     function: filter_df_internal
@@ -163,7 +166,13 @@ population_criteria:
         column: C_OPR
         operator: "in"
         value: [KLDD10A, KLDD10B, KMAB00, KMAB01]
-
+      - condition: or
+        table: ${paths.table}/t_diag.csv
+        match_on: V_CPR
+        column: C_DIAG
+        conditional_column: D_UDDTO
+        operator: "=="
+        value: "DO343C"
 
 conditional_criteria:
   #C-section (kejsersnit)

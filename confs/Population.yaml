@@ -44,6 +44,9 @@ t_tables:
     - table: ${paths.input_dir_SDS}/t_sksopr.csv
       table_link: V_RECNUM
       include: [V_CPR]
+    - table: ${paths.input_dir_SDS}/t_diag.csv
+      table_link: V_RECNUM
+      include: [V_CPR, D_UDDTO]
     
 
 imaging:

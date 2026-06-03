@@ -21,6 +21,10 @@ def in_list(df, column, value):
     df = df.filter(pl.col(column).is_in(value))
     return df
 
+def starts_with(df, column, value):
+    df = df.filter(pl.col(column).str.starts_with(value))
+    return df
+
 OPS = {">": operator.gt,
        "<": operator.lt,
        ">=": operator.ge,
@@ -31,7 +35,8 @@ OPS = {">": operator.gt,
        '+': operator.add}
 
 custom_OPS = {"unique": unique,
-              "in": in_list}
+              "in": in_list,
+              "starts_with": starts_with}
 
 type_map = {"str": pl.Utf8,
             "float": pl.Float64,
