@@ -228,13 +228,13 @@ conditional_criteria:
         value: "G03DA04"
       - condition: or
         table: ${paths.input_dir_SDS}/t_sksube.csv
-        match_on: CPRnummer_Barn
+        match_on: 
         column: C_TILOPR
         operator: "=="
         value: "BKHA1"
       - condition: or
         table: ${paths.input_dir_SDS}/mor_diagnoser.csv
-        match_on: CPRnummer_Barn
+        match_on: 
         column: DiagnoseKode
         operator: "=="
         value: "BKHA1"

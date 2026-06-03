@@ -46,18 +46,24 @@ logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime
     
 
 #%%Extract info from database
-
 df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
-# df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds)
-# df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
-# df_img = df_img.with_columns(pl.col("study_date").cast(pl.Utf8).str.to_date("%Y%m%d"))
+
+#Link cervix preds and flow img info to img df
+df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds)
+df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
 
 df_img.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
 
-# del df_cervix_preds
+del df_cervix_preds
 
 logger.info(f"Found {len(df_img)} images - " + str(datetime.now().strftime('%H:%M:%S')))
 logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
+
+
+
+df_img = df_img.with_columns(pl.col("study_date").cast(pl.Utf8).str.to_date("%Y%m%d"))
+
+
  
  
 #%%Apply inclusion/exclusion criteria
