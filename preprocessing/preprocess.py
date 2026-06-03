@@ -59,7 +59,7 @@ logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + s
 #%%Merge image and population dfs
 
 #TODO: Remove this when DB is updated
-df_flow = pl.read_csv(cfg.paths.flow_imgs)
+df_flow = pl.read_csv(cfg.paths.flow_imgs, infer_schema=False)
 
 df_img = df_img.join(df_flow, left_on='file_path', right_on='filepath', how='anti')
 
