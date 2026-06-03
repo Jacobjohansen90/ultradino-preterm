@@ -15,7 +15,7 @@ import json
 
 from preprocessing.preprocessing_utils import sqlite_extractor
 from preprocessing.calc_stats import calc_stats
-from preprocessing.inclusion_exclusion import merge_population_tables, merge_population_and_image_df, apply_inclusion_exclusion
+from preprocessing.inclusion_exclusion import merge_population_tables, merge_population_and_image_df, apply_inclusion_exclusion, merge_t_tables
 from utils.utils import unpack_dict_to_DF, pack_df_to_dict
 #%%Load variable YAML and setup logger and dirs
 cfg = OmegaConf.load('./confs/Population.yaml')
@@ -33,6 +33,8 @@ Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=True)
 #%%Build population data
 
 df_pop = merge_population_tables(cfg)
+
+merge_t_tables(cfg)
 
 if cfg.debug:
     df_pop = df_pop[:10000]
