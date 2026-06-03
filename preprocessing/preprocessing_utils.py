@@ -128,9 +128,6 @@ def mark_df_external(df, criteria):
     return df
 
 def find_close_births(df, criteria):
-
-    df = df.with_columns(pl.col(criteria.column).cast(pl.Date))
-
     #Reduce to birth level
     births = (df.select(["CPR_MOTHER", "CPR_CHILD", criteria.column])
               .unique().sort(["CPR_MOTHER", criteria.column]))
@@ -148,7 +145,30 @@ def find_close_births(df, criteria):
     if criteria.action == 'exclude':
         df = df.join(close_births, on=["CPR_MOTHER", "CPR_CHILD"], how="anti")
 
-    return close_births
+    return df
+
+def find_close_values(df, criteria):
+    #Important! The first value in the filter_on list is assumed to be the one we sort over. 
+    close_values = None
+    for condition in criteria.conditions:
+        df_temp = (df.select(criteria.filter_on + [condition.column])
+                  .unique().sort([criteria.filter_on[0], criteria.column]))
+
+
+        df_temp = df_temp.with_columns((pl.col(criteria.column).diff()
+                                        .over(criteria.filter_on[0]).dt.total_days()
+                                        .abs() < criteria.threshold).alias("close_values"))
+
+        close_values = (df_temp.filter(pl.col("close_values"))
+                        .select(criteria.filter_on).unique())
+
+    if criteria.action == 'include':
+        df = df.join(close_values, on=criteria.filter_on, how="semi")
+    if criteria.action == 'exclude':
+        df = df.join(close_values, on=criteria.filter_on, how="anti")
+
+    return df
+
 
 def sqlite_extractor(cfg, cpr_mothers):
     
