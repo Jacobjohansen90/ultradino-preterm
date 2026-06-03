@@ -22,7 +22,7 @@ cfg = OmegaConf.load('./confs/Population.yaml')
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_cfg)
 cfg_incl_excl.paths = cfg.paths
 
-print(cfg.incl_excl_cfg.paths)
+print(cfg_incl_excl.paths)
 
 #Setup logger
 logging.basicConfig(filename=cfg.paths.data_dir + 'logs/preprocess.log', filemode='w', level=logging.INFO)
