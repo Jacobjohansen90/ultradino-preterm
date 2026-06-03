@@ -46,7 +46,7 @@ logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime
 df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
 
 #Link cervix preds img df
-df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds)
+df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds, infer_schema=False)
 df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
 
 df_img.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
