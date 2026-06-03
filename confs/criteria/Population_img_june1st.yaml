@@ -174,7 +174,7 @@ population_criteria:
         operator: "in"
         value: [KLDD10A, KLDD10B, KMAB00, KMAB01]
       - condition: or
-        table: ${paths.table}/t_diag.csv
+        table: ${paths.tables}/t_diag.csv
         match_on: V_CPR
         column: C_DIAG
         conditional_column: D_UDDTO
