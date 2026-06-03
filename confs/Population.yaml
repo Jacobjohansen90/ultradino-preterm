@@ -58,14 +58,14 @@ imaging:
 merge:
   population_key: CPR_MOTHER
   create_variables:
-    - operator: "-"
-      var_name: "scan_to_delivery"
+    - var_name: "scan_to_delivery"
       var_type: int
+      operator: "-"
       column_1: "BIRTHDAY"
       column_2: "study_date"
-    - operator: "-"
-      var_name: "GA_at_scan"
+    - var_name: "GA_at_scan"
       var_type: int
+      operator: "-"
       column_1: "GA"
       column_2: "scan_to_delivery"
 

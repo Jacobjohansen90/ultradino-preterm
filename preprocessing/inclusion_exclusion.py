@@ -14,7 +14,7 @@ custom_funcs = {'filter_df_internal': filter_df_internal,
                 'filter_df_external': filter_df_external,
                 'mark_df_external': mark_df_external}
 
-def merge_t_tables(cfg):
+def link_t_tables(cfg):
     t_adm = pl.read_csv(cfg.t_tables.adm_table, infer_schema=False)
     for table in cfg.t_tables.tables:
         t_table = pl.read_csv(table.table, infer_schema=False)

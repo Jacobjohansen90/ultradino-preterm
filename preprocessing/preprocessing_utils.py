@@ -78,9 +78,9 @@ def filter_df_internal(df, criteria):
         table = filter_conditions(df, condition, 'CPR_MOTHER', table, external=False)
     
     if criteria.action == 'include':
-        df = df.join(table, on=criteria.filter_on, how='semi')
+        df = df.join(table, on="CPR_MOTHER", how='semi')
     elif criteria.action == 'exclude':
-        df = df.join(table, on=criteria.filter_on, how='anti')
+        df = df.join(table, on="CPR_MOTHER", how='anti')
     
     return df
     
@@ -96,8 +96,8 @@ def filter_df_external(df, criteria):
         df = df.join(table, on=criteria.filter_on, how='anti')
     elif criteria.action == 'exclude_birth':
         matches = (df.join(table, on=criteria.filter_on, how="inner")
-                   .filter((pl.col("table_date") <= pl.col("BIRTHDAY")) &
-                           (pl.col("table_date") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
+                   .filter((pl.col("cond_col") <= pl.col("BIRTHDAY")) &
+                           (pl.col("cond_col") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
                    .select([criteria.filter_on, "BIRTHDAY"]))
         
         df = df.join(matches, on=[criteria.filter_on, "BIRTHDAY"], how="anti") 
