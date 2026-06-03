@@ -111,8 +111,14 @@ def mark_df_external(df, criteria):
         df = df.with_columns(pl.col(criteria.filter_on).is_in(table[criteria.filter_on]).alias(criteria.mark_name))
     elif criteria.mark is False:
         df = df.with_columns(~pl.col(criteria.filter_on).is_in(table[criteria.filter_on]).alias(criteria.mark_name))
-    else:
-        raise Exception(f"Mark crtieria {criteria.mark} not understood. Use False or True only")
+    elif criteria.mark == 'conditional':
+        matches = (df.join(table, on=criteria.filter_on, how="inner")
+                   .filter((pl.col("cond_col") <= pl.col("BIRTHDAY")) &
+                           (pl.col("cond_col") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
+                   .select([criteria.filter_on, "BIRTHDAY"]).with_columns(pl.lit(True).alias(criteria.mark_name)))
+
+        df = (df.join(matches, on=[criteria.filter_on, "BIRTHDAY"], how="left")
+              .with_columns(pl.col(criteria.mark_name).fill_null(False)))
     
     return df
 
