@@ -42,8 +42,12 @@ def merge_population_tables(cfg, ignore_errors=False):
 def merge_population_and_image_df(df_img, df_pop, cfg):
     df = df_img.join(df_pop, on=cfg.merge.population_key, how='left')
     for config in cfg.merge.create_variables:
-        df = df.with_columns(OPS[config.operator](pl.col(config.column_1),
-                                                  pl.col(config.column_2)).cast(type_map[config.var_type]).alias(config.var_name))
+        if config.var_type == "days":
+            df = df.with_columns(OPS[config.operator](pl.col(config.column_1),
+                                                      pl.col(config.column_2)).dt.total_days().alias(config.var_name))
+        else:
+            df = df.with_columns(OPS[config.operator](pl.col(config.column_1),
+                                                      pl.col(config.column_2)).cast(type_map[config.var_type]).alias(config.var_name))
 
     return df
 
