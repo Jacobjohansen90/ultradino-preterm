@@ -6,7 +6,7 @@ Created on Mon Jun  1 12:01:10 2026
 @author: jacob
 """
 
-from preprocessing_utils import filter_df_internal, filter_df_external, mark_df_external, load_table, OPS
+from preprocessing_utils import filter_df_internal, filter_df_external, mark_df_external, load_table, OPS, type_map
 import polars as pl
 
 
@@ -24,22 +24,15 @@ def merge_population_tables(cfg, ignore_errors=False):
         df = df.vstack(table)
         
     for name, t in cfg.population.types.items():
-        if t == 'int':
-            df = df.with_columns(pl.col(name).cast(pl.Int64, strict=False))
-        elif t == 'date':
-            df = df.with_columns(pl.col(name).str.to_date("%Y-%m-%d", strict=False))
-        else:
-            raise NotImplementedError(f"Unknown type {t}")
+        df = df.with_columns(pl.col(name).cast(type_map[t], strict=False))
 
     return df
 
 def merge_population_and_image_df(df_img, df_pop, cfg):
     df = df_img.join(df_pop, on=cfg.merge.population_key, how='left')
     for config in cfg.merge.create_variables:
-        print(df[config.column_1][:5])
-        print(df[config.column_2][:5])
         df = df.with_columns(OPS[config.operator](pl.col(config.column_1),
-                                                  pl.col(config.column_2)).alias(config.var_name))
+                                                  pl.col(config.column_2)).cast(type_map[config.var_type]).alias(config.var_name))
 
     return df
 

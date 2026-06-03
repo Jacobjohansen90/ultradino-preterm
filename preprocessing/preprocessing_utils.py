@@ -27,10 +27,17 @@ OPS = {">": operator.gt,
        "<=": operator.le,
        "==": operator.eq,
        "!=": operator.ne,
-       '-': operator.sub}
+       '-': operator.sub,
+       '+': operator.add}
 
 custom_OPS = {"unique": unique,
               "in": in_list}
+
+type_map = {"str": pl.Utf8,
+            "float": pl.Float64,
+            "int": pl.Int64,
+            "date": pl.Utf8,
+            "bool": pl.Boolean}
 
 def load_table(path, ignore_errors=False, has_header=True):
     if path.endswith(".csv"):
@@ -45,7 +52,7 @@ def filter_conditions(df, condition, filter_on, table, external=True):
         if external:
             df_temp = df_temp.with_columns(pl.col(condition.match_on).alias(filter_on))
     else:    
-        if condition.operator in ['>', '<', '>=', '<=']:
+        if condition.operator in ['>', '<', '>=', '<=', '-', '+']:
             df_temp = df_temp.with_columns(pl.col(condition.column).cast(pl.Int64, strict=False))
             df_temp = df_temp.filter(pl.col(condition.column).is_not_null())
         df_temp = df_temp.filter(OPS[condition.operator](pl.col(condition.column), condition.value))
@@ -113,12 +120,6 @@ def sqlite_extractor(cfg, cpr_mothers):
     metadata_dicom_variables = cfg.imaging.metadata_dicom_variables
 
     dicom_select = ",\n".join(f"d.{column}" for column, _ in metadata_dicom_variables)
-
-    type_map = {"str": pl.Utf8,
-                "float": pl.Float64,
-                "int": pl.Int64,
-                "date": pl.Utf8,
-                "bool": pl.Boolean}
 
     schema = [("CPR_MOTHER", pl.Utf8),
               ("file_path", pl.Utf8),

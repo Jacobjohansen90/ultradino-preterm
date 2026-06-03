@@ -43,10 +43,12 @@ merge:
   create_variables:
     - operator: "-" #column_1 - column_2
       var_name: "scan_to_delivery"
+      var_type: int
       column_1: "BIRTHDAY"
       column_2: "study_date"
     - operator: "-" #column_1 - column_2
       var_name: "GA_at_scan"
+      var_type: int
       column_1: "GA"
       column_2: "scan_to_delivery"
 
