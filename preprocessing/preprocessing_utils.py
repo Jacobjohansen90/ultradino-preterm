@@ -90,7 +90,7 @@ def filter_df_external(df, criteria):
     table = None
     for condition in criteria.conditions:
         df_temp = load_table(condition.table)
-        table = filter_conditions(df_temp, condition, criteria.filter_on, criteria.action, table)
+        table = filter_conditions(df_temp, condition, criteria.filter_on, table, criteria.action)
    
     if criteria.action == 'include':
         df = df.join(table, on=criteria.filter_on, how='semi')
@@ -110,7 +110,7 @@ def mark_df_external(df, criteria):
     table = None
     for condition in criteria.conditions:
         df_temp = load_table(condition.table)
-        table = filter_conditions(df_temp, condition, criteria.filter_on, criteria.action, table)
+        table = filter_conditions(df_temp, condition, criteria.filter_on, table, criteria.action)
            
     if criteria.mark is True:
         df = df.with_columns(pl.col(criteria.filter_on).is_in(table[criteria.filter_on]).alias(criteria.mark_name))
