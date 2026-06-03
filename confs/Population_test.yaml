@@ -26,4 +26,8 @@ population:
         BIRTHDAY: FoedselsDato_Barn
         Hospital: SHAK_Sygehus 
 
-
+merge:
+  population_key: CPR_MOTHER
+  types:
+    study_date: date
+    

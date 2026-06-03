@@ -12,4 +12,9 @@ paths:
 #This prefix is removed from the holdout csv in order to make the file_paths preprocessing and placement agnostic
 SQL_prefix: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_processed_no_OCR/
 
-metadata_dicom_variables: ['manufacturer', 'manufacturer_model_name', 'study_date', 'physical_delta_x', 'physical_delta_y']
+metadata_dicom_variables: 
+  - ['manufacturer', 'str']
+  - ['manufacturer_model_name', 'str']
+  - ['study_date','date']
+  - ['physical_delta_x', 'float']
+  - ['physical_delta_y', 'float']
