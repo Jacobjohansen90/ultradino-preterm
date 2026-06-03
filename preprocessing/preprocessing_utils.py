@@ -128,16 +128,16 @@ def mark_df_external(df, criteria):
     return df
 
 def find_close_births(df, criteria):
-    df = df.with_columns(pl.col(criteria.column).cast(pl.Date))
+    df = df.with_columns(pl.col(criteria.condition.column).cast(pl.Date))
 
     #Reduce to birth level
-    births = (df.select(["CPR_MOTHER", "CPR_CHILD", criteria.column])
-              .unique().sort(["CPR_MOTHER", criteria.column]))
+    births = (df.select(["CPR_MOTHER", "CPR_CHILD", criteria.condition.column])
+              .unique().sort(["CPR_MOTHER", criteria.condition.column]))
 
     #Computer inter-mother birth gaps
-    births = births.with_columns((pl.col(criteria.column).diff()
+    births = births.with_columns((pl.col(criteria.condition.column).diff()
                                   .over("CPR_MOTHER").dt.total_days()
-                                  .abs() < criteria.threshold).alias("close_births"))
+                                  .abs() < criteria.condition.threshold).alias("close_births"))
 
     #Identify births that are close
     close_births = (births.filter(pl.col("close_births"))
