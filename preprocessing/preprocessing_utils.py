@@ -9,8 +9,6 @@ Created on Mon Jun  1 10:58:16 2026
 import polars as pl
 import operator
 import sqlite3
-from collections import Counter
-from tqdm import tqdm
 
 def unique(df, column, value):
     if value is True:
@@ -28,7 +26,8 @@ OPS = {">": operator.gt,
        ">=": operator.ge,
        "<=": operator.le,
        "==": operator.eq,
-       "!=": operator.ne}
+       "!=": operator.ne,
+       '-': operator.sub}
 
 custom_OPS = {"unique": unique,
               "in": in_list}

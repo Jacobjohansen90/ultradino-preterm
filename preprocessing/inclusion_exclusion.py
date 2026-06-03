@@ -6,7 +6,7 @@ Created on Mon Jun  1 12:01:10 2026
 @author: jacob
 """
 
-from preprocessing_utils import filter_df_internal, filter_df_external, mark_df_external, load_table
+from preprocessing_utils import filter_df_internal, filter_df_external, mark_df_external, load_table, OPS
 import polars as pl
 
 
@@ -30,6 +30,15 @@ def merge_population_tables(cfg, ignore_errors=False):
             df = df.with_columns(pl.col(name).str.to_date("%Y-%m-%d", strict=False))
         else:
             raise NotImplementedError(f"Unknown type {t}")
+
+    return df
+
+def merge_population_and_image_df(df_img, df_pop, cfg):
+    df = df_img.join(df_pop, on=cfg.merge.population_key, how='left')
+    for config in cfg.merge.create_variables:
+        df = df.with_columns(OPS[config.operator](pl.col(config.column_1),
+                                                  pl.col(config.column_2)).alias(config.var_name))
+
 
     return df
 

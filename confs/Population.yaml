@@ -1,9 +1,12 @@
-defaults:
-  - default@
-  - _self_
+debug: False
 
 paths:
   input_dir_SDS: /storage/archive/UCPH/DeepFetal/SDS/registers_pseudonymized/
+  data_dir: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/
+  holdout_csv: /projects/users/data/UCPH/DeepFetal/projects/ultrasound_preprocessing/splits/PRETERM_RCT_PT_V2/holdout_test_5pct.csv
+  SQL_DB: /projects/users/data/UCPH/DeepFetal/ultrasound/tables/DeepFetal_image_database_250526.sqlite
+  cervix_preds: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/tables/cervix_preds.csv
+  incl_excl_cfg: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/criteria/Population_img_june1st.yaml
 
 population: 
   population_key: CPR_CHILD
@@ -26,5 +29,22 @@ population:
         BIRTHDAY: FoedselsDato_Barn
         Hospital: SHAK_Sygehus 
 
+imaging:
+  metadata_dicom_variables: 
+    - ['manufacturer', 'str']
+    - ['manufacturer_model_name', 'str']
+    - ['study_date','date']
+    - ['physical_delta_x', 'float']
+    - ['physical_delta_y', 'float']
+
+merge:
+  population_key: CPR_MOTHER
+  - create_variables:
+      - operator: "-" #column_1 - column_2
+        var_name: "study_to_birth"
+        column_1: "BIRTHDAY"
+        column_2: "study_date
+    
 
 
+    

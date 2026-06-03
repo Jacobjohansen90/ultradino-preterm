@@ -18,10 +18,10 @@ import polars as pl
 
 from preprocessing.preprocessing_utils import sqlite_extractor
 from preprocessing.calc_stats import calc_stats
-from preprocessing.inclusion_exclusion import merge_population_tables, apply_inclusion_exclusion#, make_train_test_split
+from preprocessing.inclusion_exclusion import merge_population_tables, merge_population_and_image_df, apply_inclusion_exclusion
 from utils.utils import unpack_dict_to_DF, pack_df_to_dict, match_images_with_child
 #%%Load variable YAML and setup logger and dirs
-cfg = OmegaConf.load('./confs/Preprocessing.yaml')
+cfg = OmegaConf.load('./confs/Population.yaml')
 
 #Setup logger
 logging.basicConfig(filename=cfg.paths.data_dir + 'logs/preprocess.log', filemode='w', level=logging.INFO)
@@ -32,15 +32,13 @@ Path(cfg.paths.data_dir + 'logs/').mkdir(exist_ok=True)
 Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=True)
 
 #%%Build population data
-cfg_population = OmegaConf.load('./confs/Population.yaml')
-cfg_population.paths.data_dir = cfg.paths.data_dir
 
-df_pop = merge_population_tables(cfg_population)
+df_pop = merge_population_tables(cfg)
 
 if cfg.debug:
     df_pop = df_pop[:10000]
 
-df_pop.write_csv(cfg_population.paths.data_dir + 'data_dump/population.csv')
+df_pop.write_csv(cfg.paths.data_dir + 'data_dump/population.csv')
 
 logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
     
@@ -48,7 +46,7 @@ logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime
 #%%Extract info from database
 df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
 
-#Link cervix preds and flow img info to img df
+#Link cervix preds img df
 df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds)
 df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
 
@@ -59,13 +57,13 @@ del df_cervix_preds
 logger.info(f"Found {len(df_img)} images - " + str(datetime.now().strftime('%H:%M:%S')))
 logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
 
+#%%Merge image and population dfs
 
-
-df_img = df_img.with_columns(pl.col("study_date").cast(pl.Utf8).str.to_date("%Y%m%d"))
-
-
+df = merge_population_and_image_df(df_img, df_pop, cfg)
  
- 
+
+df_img.write_csv(cfg.paths.data_dir + 'data_dump/test_data.csv')
+
 #%%Apply inclusion/exclusion criteria
 # cfg_incl_excl = OmegaConf.load('./confs/Preprocessing.yaml')
 
