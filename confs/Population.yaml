@@ -39,11 +39,11 @@ imaging:
 
 merge:
   population_key: CPR_MOTHER
-  - create_variables:
-      - operator: "-" #column_1 - column_2
-        var_name: "study_to_birth"
-        column_1: "BIRTHDAY"
-        column_2: "study_date
+  create_variables:
+    - operator: "-" #column_1 - column_2
+      var_name: "study_to_birth"
+      column_1: "BIRTHDAY"
+      column_2: "study_date"
     
 
 
