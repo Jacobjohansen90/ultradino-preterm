@@ -1,7 +1,7 @@
 paths:
   input_dir_SDS: /home/jacob/Desktop/NAS/Work/PreTerm/Data
-  
 
+#Operators work as: column_1 [operator] column_2
 image_criteria:
   - name: cervix_imgs
     action: include

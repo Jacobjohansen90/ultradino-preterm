@@ -6,12 +6,8 @@ Created on Thu Mar 19 14:29:55 2026
 @author: jj@di.ku.dk
 """
 #%%Imports
-import csv
-import json 
 import logging
-import multiprocessing as mp
 from pathlib import Path
-import sqlite3
 from datetime import datetime
 from omegaconf import OmegaConf
 import polars as pl
@@ -19,7 +15,7 @@ import polars as pl
 from preprocessing.preprocessing_utils import sqlite_extractor
 from preprocessing.calc_stats import calc_stats
 from preprocessing.inclusion_exclusion import merge_population_tables, merge_population_and_image_df, apply_inclusion_exclusion
-from utils.utils import unpack_dict_to_DF, pack_df_to_dict, match_images_with_child
+from utils.utils import unpack_dict_to_DF, pack_df_to_dict
 #%%Load variable YAML and setup logger and dirs
 cfg = OmegaConf.load('./confs/Population.yaml')
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_cfg)
@@ -60,6 +56,10 @@ logger.info(f"Found {len(df_img)} images - " + str(datetime.now().strftime('%H:%
 logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
 
 #%%Merge image and population dfs
+
+#TODO: Remove this when DB is updated
+df_flow = pl.read_csv(cfg.paths.flow_imgs)
+
 
 df = merge_population_and_image_df(df_img, df_pop, cfg)
  

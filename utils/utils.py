@@ -48,18 +48,3 @@ def pack_df_to_dict(df, EHR_columns, population_key):
 
     return final_dict
 
-def match_images_with_child(df, date_args):
-    birthday_key = date_args.population_delivery_date_column
-    study_date_key = date_args.scan_date_column
-    ga_key = date_args.population_ga_in_days_at_delivery_column
-    df = df.with_columns(pl.col(birthday_key).str.to_date())
-    df = df.with_columns(pl.col(study_date_key).cast(pl.String).str.to_date("%Y%m%d"))
-    df = df.with_columns(pl.col(ga_key).str.to_integer(strict=False))
-    df = df.unique()
-    df = df.with_columns(
-        image_during_pregnancy=pl.col(study_date_key).is_between(
-            pl.col(birthday_key) - pl.duration(days=pl.col(ga_key)), pl.col(birthday_key)
-        )
-    )
-    df = df.filter(pl.col("image_during_pregnancy"))
-    return df
