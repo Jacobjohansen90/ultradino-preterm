@@ -62,7 +62,7 @@ logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + s
 df = merge_population_and_image_df(df_img, df_pop, cfg)
  
 
-df_img.write_csv(cfg.paths.data_dir + 'data_dump/test_data.csv')
+df.write_csv(cfg.paths.data_dir + 'data_dump/test_data.csv')
 
 #%%Apply inclusion/exclusion criteria
 # cfg_incl_excl = OmegaConf.load('./confs/Preprocessing.yaml')
