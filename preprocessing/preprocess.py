@@ -22,6 +22,8 @@ from preprocessing.inclusion_exclusion import merge_population_tables, merge_pop
 from utils.utils import unpack_dict_to_DF, pack_df_to_dict, match_images_with_child
 #%%Load variable YAML and setup logger and dirs
 cfg = OmegaConf.load('./confs/Population.yaml')
+cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_cfg)
+cfg_incl_excl.paths = cfg.paths
 
 #Setup logger
 logging.basicConfig(filename=cfg.paths.data_dir + 'logs/preprocess.log', filemode='w', level=logging.INFO)
@@ -65,13 +67,8 @@ df = merge_population_and_image_df(df_img, df_pop, cfg)
 df.write_csv(cfg.paths.data_dir + 'data_dump/test_data.csv')
 
 #%%Apply inclusion/exclusion criteria
-# cfg_incl_excl = OmegaConf.load('./confs/Preprocessing.yaml')
 
-# #Merge the img df with the EHR df
-# df = df_img.join(df_pop, on='CPR_MOTHER', how='inner')
-
-
-# df = apply_inclusion_exclusion(df, cfg_incl_excl)
+df, discards = apply_inclusion_exclusion(df, cfg_incl_excl)
 
 
 

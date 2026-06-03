@@ -295,19 +295,6 @@ custom_criteria:
     action: exclude
 
   
-imaging_matching_criteria:
-  # Filter1: Scan-to-delivery interval
-  # Filter2: GA at scan
-  - function: find_images_within_time_windows
-    args: 
-      scan_date_column: study_date
-      image_path_column: file_path
-      population_ga_in_days_at_delivery_column: GA
-      population_delivery_date_column: BIRTHDAY
-      min_diff_days_scan_to_delivery: 0 #0
-      max_diff_days_scan_to_delivery: 210 #210
-      min_ga_in_days_at_scan: 196 #196
-      max_ga_in_days_at_scan: 259 #259
 
     
 
