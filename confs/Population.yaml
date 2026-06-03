@@ -59,7 +59,7 @@ merge:
   population_key: CPR_MOTHER
   create_variables:
     - var_name: "scan_to_delivery"
-      var_type: int
+      var_type: days
       operator: "-"
       column_1: "BIRTHDAY"
       column_2: "study_date"
