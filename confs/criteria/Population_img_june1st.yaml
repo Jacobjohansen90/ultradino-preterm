@@ -1,11 +1,9 @@
 paths:
 
 #Operators work as: column_1 [operator] column_2
-image_criteria:
-
 #Add flow_img when database has the info
-
-  - name: cervix_imgs
+image_criteria:
+  - name: Image must be Cervix
     action: include
     function: filter_df_internal
     conditions:
@@ -51,6 +49,15 @@ population_criteria:
         column: CPR_CHILD
         operator: "=="
         value: "INVALID"
+
+  - name: No close births
+    filter_on: ['CPR_MOTHER', 'CPR_CHILD']
+    action: exclude
+    function: find_close_births
+    conditions:
+      - condition:
+        column: BIRTHDAY
+        threshold: 280
 
     #Must have GA
   - name: Has GA

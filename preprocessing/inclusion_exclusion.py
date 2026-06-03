@@ -6,13 +6,21 @@ Created on Mon Jun  1 12:01:10 2026
 @author: jacob
 """
 
-from preprocessing_utils import filter_df_internal, filter_df_external, mark_df_external, load_table, OPS, type_map
 import polars as pl
+from preprocessing_utils import (filter_df_internal, 
+                                 filter_df_external, 
+                                 mark_df_external, 
+                                 find_close_births,
+                                 load_table, 
+                                 OPS, 
+                                 type_map)
 
 
 custom_funcs = {'filter_df_internal': filter_df_internal,
                 'filter_df_external': filter_df_external,
-                'mark_df_external': mark_df_external}
+                'mark_df_external': mark_df_external,
+                'find_close_births': find_close_births}
+
 
 def link_t_tables(cfg):
     t_adm = pl.read_csv(cfg.t_tables.adm_table, infer_schema=False)
@@ -36,8 +44,8 @@ def merge_population_tables(cfg, ignore_errors=False):
         if t == 'date':
             df = df.with_columns(pl.col(name).str.strptime(pl.Date, strict=False))
 
-
     return df
+
 
 def merge_population_and_image_df(df_img, df_pop, cfg):
     df = df_img.join(df_pop, on=cfg.merge.population_key, how='left')
@@ -76,6 +84,7 @@ def discard(discards, df, criteria, mothers, children):
 
     return discards, mothers_temp, children_temp
 
+
 def condition(conditioned, df, criteria):
     n_mothers = df.filter(pl.col(criteria.mark_name)).get_column("CPR_MOTHER").n_unique()
     n_children = df.filter(pl.col(criteria.mark_name)).get_column("CPR_CHILD").n_unique()
@@ -89,6 +98,7 @@ def condition(conditioned, df, criteria):
                                   'childrens_cpr': cpr_children}
     
     return conditioned
+
 
 def apply_inclusion_exclusion(df, cfg):
     discards = {}

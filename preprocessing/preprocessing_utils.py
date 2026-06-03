@@ -127,44 +127,23 @@ def mark_df_external(df, criteria):
     
     return df
 
-def remove_close_births(df,  threshold=280):
-    df = df.with_columns(pl.col("BIRTHDAY").cast(pl.Date)
-    )
+def find_close_births(df, criteria):
+    df = df.with_columns(pl.col(criteria.column).cast(pl.Date))
 
-    # 1. reduce to birth-level (IMPORTANT)
-    births = (
-        df
-        .select(["CPR_MOTHER", "CPR_CHILD", "BIRTHDAY"])
-        .unique()
-        .sort(["CPR_MOTHER", "BIRTHDAY"])
-    )
+    #Reduce to birth level
+    births = (df.select(["CPR_MOTHER", "CPR_CHILD", criteria.column])
+              .unique().sort(["CPR_MOTHER", criteria.column]))
 
-    # 2. compute gaps within mother
-    births = births.with_columns(
-        (pl.col("BIRTHDAY")
-         .diff()
-         .over("CPR_MOTHER")
-         .dt.total_days()
-         .abs() < threshold
-        ).alias("bad")
-    )
+    #Computer inter-mother birth gaps
+    births = births.with_columns((pl.col(criteria.column).diff()
+                                  .over("CPR_MOTHER").dt.total_days()
+                                  .abs() < criteria.threshold).alias("close_births"))
 
-    # 3. identify bad births
-    bad_births = (
-        births
-        .filter(pl.col("bad"))
-        .select(["CPR_MOTHER", "CPR_CHILD"])
-        .unique()
-    )
+    #Identify births that are close
+    close_births = (births.filter(pl.col("close_births"))
+                    .select(["CPR_MOTHER", "CPR_CHILD"]).unique())
 
-    # 4. remove from full image-level dataframe
-    df = df.join(
-        bad_births,
-        on=["CPR_MOTHER", "CPR_CHILD"],
-        how="anti"
-    )
-
-    return df
+    return close_births
 
 def sqlite_extractor(cfg, cpr_mothers):
     
