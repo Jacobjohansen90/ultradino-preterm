@@ -147,7 +147,7 @@ population_criteria:
         operator: "in"
         value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
 
-- name: No Cerclage
+  - name: No Cerclage
     filter_on: CPR_MOTHER
     action: exclude_birth
     function: filter_df_external
