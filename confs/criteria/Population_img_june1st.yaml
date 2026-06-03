@@ -52,7 +52,6 @@ population_criteria:
       operator: "=="
       value: "INVALID"
 
-
     #Must have GA
   - name: Has GA
     filter_on: CPR_CHILD

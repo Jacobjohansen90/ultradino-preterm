@@ -67,8 +67,6 @@ df_img = df_img.join(df_flow, left_on='file_path', right_on='filepath', how='ant
 
 df = merge_population_and_image_df(df_img, df_pop, cfg)
 
-df.write_csv(cfg.paths.data_dir + 'data_dump/test_data.csv')
-
 #%%Apply inclusion/exclusion criteria
 
 df, discards, conditioned = apply_inclusion_exclusion(df, cfg_incl_excl)

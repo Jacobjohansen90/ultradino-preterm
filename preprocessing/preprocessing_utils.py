@@ -51,7 +51,8 @@ def load_table(path, ignore_errors=False, has_header=True):
     else:
         raise NotImplementedError(f"Unknown file type for path: {path}")
 
-def filter_conditions(df, condition, filter_on, table, external=True):        
+def filter_conditions(df, condition, filter_on, table, external=True):      
+    print(condition)
     if condition.operator in custom_OPS.keys():
         df_temp = custom_OPS[condition.operator](df, condition.column, condition.value)
     else:    
