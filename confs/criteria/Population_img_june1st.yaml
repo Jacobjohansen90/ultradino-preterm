@@ -47,10 +47,10 @@ population_criteria:
     action: exclude
     function: filter_df_internal
     conditions:
-    - condition: 
-      column: CPR_CHILD
-      operator: "=="
-      value: "INVALID"
+      - condition: 
+        column: CPR_CHILD
+        operator: "=="
+        value: "INVALID"
 
     #Must have GA
   - name: Has GA
