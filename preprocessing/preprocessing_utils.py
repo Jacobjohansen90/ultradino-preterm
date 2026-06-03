@@ -112,8 +112,19 @@ def sqlite_extractor(cfg, cpr_mothers):
     conn.commit()
     
     metadata_dicom_variables = cfg.metadata_dicom_variables
-  
-    dicom_select = ",\n".join(f"d.{c}" for c in metadata_dicom_variables)
+
+    dicom_select = ",\n".join(f"d.{column}" for column, _ in metadata_dicom_variables)
+
+    type_map = {"str": pl.Utf8,
+                "float": pl.Float64,
+                "int": pl.Int64,
+                "date": pl.Utf8,
+                "bool": pl.Boolean}
+
+    schema = [("CPR_MOTHER", pl.Utf8),
+              ("file_path", pl.Utf8),
+              ("no_ocr_preprocessed_file_path", pl.Utf8),
+              *[(column, type_map[dtype]) for column, dtype in metadata_dicom_variables]]
     
     cur.execute(f"""
                 SELECT
@@ -131,13 +142,13 @@ def sqlite_extractor(cfg, cpr_mothers):
                 """)
 
     df = pl.DataFrame(cur.fetchall(),
-                      schema=[("CPR_MOTHER", pl.Utf8),
-                              #("xxhash", pl.Utf8),
-                              ("file_path", pl.Utf8),
-                              ("no_ocr_preprocessed_file_path", pl.Utf8),
-                              #("sop_instance_uid", pl.Utf8),
-                              *[(c, pl.Utf8) for c in metadata_dicom_variables]],
-                      orient="row")
+                      schema=schema,
+                      orient="row",
+                      strict=False)
+
+    date_cols = [col for col, dtype in metadata_dicom_variables if dtype == "date"]
+
+    df = df.with_columns([pl.col(col).str.strptime(pl.Date, format="%Y%m%d") for col in date_cols])
 
     df = df.drop_nulls(subset="no_ocr_preprocessed_file_path")
 
