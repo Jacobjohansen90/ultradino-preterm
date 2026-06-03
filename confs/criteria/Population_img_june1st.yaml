@@ -37,15 +37,7 @@ image_criteria:
         column: scan_to_delivery
         operator: "<="
         value: 210 #30 weeks
-
-  - name: flow imgs
-    action: exclude
-    function: filter_df_external
-    conditions:
-      column: n_imgs
-      condition: ">"
-      value: 1
-  
+ 
  
 population_criteria:
     #Must have CPR
@@ -133,47 +125,25 @@ population_criteria:
         value: True
 
     #No Cerclage
-  - name: No Cerclage
-    filter_on: CPR_MOTHER
+  - name: No Cerclage (Nyfoedte)
+    filter_on: BIRTH_ID
     action: exclude
     function: filter_df_external
     conditions:
       - condition: 
         table: ${paths.input_dir_SDS}/mor_diagnoser.csv
-        match_on: CPR_MODER
+        match_on: DW_EK_Foedsel
         column: DiagnoseKode
         operator: "=="
         value: "DO343C"
       - condition: or
-        table: ${paths.input_dir_SDS}/t_diag.csv
-        match_on: CPRnummer_Mor
-        column: C_DIAG
-        operator: "=="
-        value: "DO343C"
-      - condition: or
         table: ${paths.input_dir_SDS}/mor_procedurer.csv
-        match_on: CPRnummer_Mor
+        match_on: DW_EK_Foedsel
         column: ProcedureKode
-        operator: "in"
-        value: [KLDD10A, KLDD10B, KMAB00, KMAB01]
-      - condition: or
-        table: ${paths.input_dir_SDS}/t_afl.csv
-        match_on: CPRnummer_Mor
-        column: C_TILOPR
         operator: "in"
         value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
-      - condition: or
-        table: ${paths.input_dir_SDS}/t_sksopr.csv
-        match_on: CPRnummer_Mor
-        column: C_OPR
-        operator: "in"
-        value: [KLDD10A, KLDD10B, KMAB00, KMAB01]
-      - condition: or
-        table: ${paths.input_dir_SDS}/mor_procedurer.csv
-        match_on: CPRnummer_Mor
-        column: ProcedureKode
-        operator: "in"
-        value: [KLDD20, KMAB03]
+
+
 
 conditional_criteria:
   #C-section (kejsersnit)
@@ -253,6 +223,19 @@ conditional_criteria:
         column: atc
         operator: "starts_with"
         value: "G03DA04"
+
+
+tbd_criteria:
+   #flow imgs
+  - name: flow imgs
+    action: exclude
+    function: filter_df_external
+    conditions:
+      column: n_imgs
+      condition: ">"
+      value: 1
+
+	#Progesterone
       - condition: or
         table: ${paths.input_dir_SDS}/t_sksube.csv
         match_on: 
@@ -266,9 +249,29 @@ conditional_criteria:
         operator: "=="
         value: "BKHA1"
 
-
-
-
+ - name: No Cerclage (MFR)
+    filter_on: 
+    action: exclude
+    function: filter_df_external
+    conditions:
+      - condition:
+        table: ${paths.input_dir_SDS}/t_diag.csv
+        match_on: 
+        column: C_DIAG
+        operator: "=="
+        value: "DO343C"
+      - condition: or
+        table: ${paths.input_dir_SDS}/t_afl.csv
+        match_on: 
+        column: C_TILOPR
+        operator: "in"
+        value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
+      - condition: or
+        table: ${paths.input_dir_SDS}/t_sksopr.csv
+        match_on: 
+        column: C_OPR
+        operator: "in"
+        value: [KLDD10A, KLDD10B, KMAB00, KMAB01]
 
 
 

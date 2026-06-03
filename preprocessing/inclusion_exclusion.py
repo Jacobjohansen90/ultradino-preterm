@@ -25,6 +25,9 @@ def merge_population_tables(cfg, ignore_errors=False):
         
     for name, t in cfg.population.types.items():
         df = df.with_columns(pl.col(name).cast(type_map[t], strict=False))
+        if t == 'date':
+            df = df.with_columns(pl.col(name).str.strptime(pl.Date, format="%Y%m%d", strict=False))
+
 
     return df
 
@@ -39,6 +42,9 @@ def merge_population_and_image_df(df_img, df_pop, cfg):
 
     return df
 
+# def discard(discards, df, name):
+#     if name in 
+
 def apply_inclusion_exclusion(df, cfg):
     discards = {}
     conditioned = {}
@@ -48,6 +54,7 @@ def apply_inclusion_exclusion(df, cfg):
     for criteria in cfg.image_criteria:
         fn = custom_funcs[criteria.function]
         df = fn(df, criteria)
+        
         mothers_new = df['CPR_MOTHER'].unique()
         children_new = df['CPR_CHILD'].unique()
         discards[criteria.name] = {'mothers_discarded': len(mothers)-len(mothers_new),

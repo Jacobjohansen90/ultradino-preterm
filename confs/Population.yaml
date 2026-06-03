@@ -22,6 +22,7 @@ population:
         GA: GESTATIONSALDER_DAGE
         BIRTHDAY: FOEDSELSDATO
         Hospital: SYGEHUS
+        BIRTH_ID: FOEDSELSLOEBENUMMER
     - table: ${paths.input_dir_SDS}/nyfoedte.csv
       columns:
         CPR_CHILD: CPRnummer_Barn
@@ -29,6 +30,7 @@ population:
         GA: Gestationsalder
         BIRTHDAY: FoedselsDato_Barn
         Hospital: SHAK_Sygehus 
+        BIRTH_ID: DW_EK_Foedsel
 
 imaging:
   metadata_dicom_variables: 
