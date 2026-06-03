@@ -73,10 +73,11 @@ def filter_conditions(df, condition, filter_on, table, external=True):
     return table
 
 def filter_df_internal(df, criteria):
+    print(df.shape)
     table = None
     for condition in criteria.conditions:
         table = filter_conditions(df, condition, 'CPR_MOTHER', table, external=False)
-    
+        print(table.shape)
     if criteria.action == 'include':
         df = df.join(table, on="CPR_MOTHER", how='semi')
     elif criteria.action == 'exclude':
