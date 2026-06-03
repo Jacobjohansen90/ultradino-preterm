@@ -51,8 +51,7 @@ def load_table(path, ignore_errors=False, has_header=True):
     else:
         raise NotImplementedError(f"Unknown file type for path: {path}")
 
-def filter_conditions(df, condition, filter_on, table, external=True):      
-    print(condition)
+def filter_conditions(df, condition, filter_on, table, action, external=True):      
     if condition.operator in custom_OPS.keys():
         df_temp = custom_OPS[condition.operator](df, condition.column, condition.value)
     else:    
@@ -65,7 +64,7 @@ def filter_conditions(df, condition, filter_on, table, external=True):
 
     if external:
         df_temp = df_temp.with_columns(pl.col(condition.match_on).alias(filter_on))
-        if condition.action == 'exclude_birth':
+        if action == 'exclude_birth':
             df_temp = df_temp.with_columns(pl.col(condition.conditional_column).alias('cond_col'))
     if condition.condition is None:
         table = df_temp.select(filter_on)
@@ -79,7 +78,7 @@ def filter_conditions(df, condition, filter_on, table, external=True):
 def filter_df_internal(df, criteria):
     table = None
     for condition in criteria.conditions:
-        table = filter_conditions(df, condition, 'CPR_MOTHER', table, external=False)
+        table = filter_conditions(df, condition, 'CPR_MOTHER', table, criteria.action, external=False)
     if criteria.action == 'include':
         df = df.join(table, on="CPR_MOTHER", how='semi')
     elif criteria.action == 'exclude':
@@ -91,7 +90,7 @@ def filter_df_external(df, criteria):
     table = None
     for condition in criteria.conditions:
         df_temp = load_table(condition.table)
-        table = filter_conditions(df_temp, condition, criteria.filter_on, table)
+        table = filter_conditions(df_temp, condition, criteria.filter_on, criteria.action, table)
    
     if criteria.action == 'include':
         df = df.join(table, on=criteria.filter_on, how='semi')
@@ -111,7 +110,7 @@ def mark_df_external(df, criteria):
     table = None
     for condition in criteria.conditions:
         df_temp = load_table(condition.table)
-        table = filter_conditions(df_temp, condition, criteria.filter_on, table)
+        table = filter_conditions(df_temp, condition, criteria.filter_on, criteria.action, table)
            
     if criteria.mark is True:
         df = df.with_columns(pl.col(criteria.filter_on).is_in(table[criteria.filter_on]).alias(criteria.mark_name))

@@ -256,7 +256,7 @@ conditional_criteria:
         operator: "starts_with"
         value: "G03DA04"
 
-#Progesterone_2
+   #Progesterone_2
   - name: Progesterone
     filter_on: BIRTH_ID
     mark: True
@@ -270,7 +270,7 @@ conditional_criteria:
         operator: "=="
         value: "BKHA1"
 
-#Progesterone_3
+  #Progesterone_3
   - name: Progesterone
     filter_on: CPR_MOTHER
     mark: conditional
