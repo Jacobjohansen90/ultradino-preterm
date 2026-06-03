@@ -61,7 +61,7 @@ def filter_conditions(df, condition, filter_on, table, external=True):
         df_temp = df_temp.with_columns(pl.col(condition.match_on).alias(filter_on))
         if condition.action == 'exclude_birth':
             df_temp = df_temp.with_columns(pl.col(condition.conditional_column).alias('cond_col'))
-
+    print(df_temp.shape)
     if condition.condition is None:
         table = df_temp.select(filter_on)
     elif condition.condition == "or":
