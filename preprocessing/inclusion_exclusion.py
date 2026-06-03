@@ -36,8 +36,8 @@ def merge_population_tables(cfg, ignore_errors=False):
 def merge_population_and_image_df(df_img, df_pop, cfg):
     df = df_img.join(df_pop, on=cfg.merge.population_key, how='left')
     for config in cfg.merge.create_variables:
-        print(df[config.column_1].dtype)
-        print(df[config.column_2].dtype)
+        print(df[config.column_1][:5])
+        print(df[config.column_2][:5])
         df = df.with_columns(OPS[config.operator](pl.col(config.column_1),
                                                   pl.col(config.column_2)).alias(config.var_name))
 
