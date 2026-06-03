@@ -157,7 +157,7 @@ population_criteria:
         table: ${paths.tables}/t_sksopr.csv
         match_on: V_CPR
         conditional_column: D_ODTO
-	column: C_OPR
+        column: C_OPR
         operator: "in"
         value: [KLDD10A, KLDD10B, KMAB00, KMAB01]
 
