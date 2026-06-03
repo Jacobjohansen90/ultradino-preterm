@@ -144,7 +144,8 @@ population_criteria:
   - name: No Cerclage
     filter_on: CPR_MOTHER
     action: exclude_birth
-    function: filter_df_external       
+    function: filter_df_external
+    conditions:
       - condition:
         table: ${paths.tables}/t_afl.csv
         match_on: V_CPR
