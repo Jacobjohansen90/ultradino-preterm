@@ -66,9 +66,7 @@ def filter_conditions(df, condition, filter_on, table, external=True):
     elif condition.condition == "or":
         table = pl.concat([table, df_temp.select(filter_on)])
     elif condition.condition == "and":
-        print(df_temp)
-        print(table)
-        table = table.join(df_temp.select(filter_on), on=filter_on, how="inner")
+        table = table.join(df_temp.select(filter_on), on=filter_on, how="semi")
 
     return table
 
