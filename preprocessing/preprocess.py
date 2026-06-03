@@ -68,7 +68,7 @@ df.write_csv(cfg.paths.data_dir + 'data_dump/test_data.csv')
 
 #%%Apply inclusion/exclusion criteria
 
-df, discards = apply_inclusion_exclusion(df, cfg_incl_excl)
+df, discards, conditioned = apply_inclusion_exclusion(df, cfg_incl_excl)
 
 
 
