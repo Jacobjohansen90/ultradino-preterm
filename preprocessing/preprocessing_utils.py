@@ -49,8 +49,6 @@ def load_table(path, ignore_errors=False, has_header=True):
 def filter_conditions(df, condition, filter_on, table, external=True):        
     if condition.operator in custom_OPS.keys():
         df_temp = custom_OPS[condition.operator](df, condition.column, condition.value)
-        if external:
-            df_temp = df_temp.with_columns(pl.col(condition.match_on).alias(filter_on))
     else:    
         if condition.operator in ['>', '<', '>=', '<=', '-', '+']:
             df_temp = df.with_columns(pl.col(condition.column).cast(pl.Int64, strict=False))
@@ -58,8 +56,12 @@ def filter_conditions(df, condition, filter_on, table, external=True):
         else:
             df_temp = df
         df_temp = df_temp.filter(OPS[condition.operator](pl.col(condition.column), condition.value))
-        if external:
-            df_temp = df_temp.with_columns(pl.col(condition.match_on).alias(filter_on))
+
+    if external:
+        df_temp = df_temp.with_columns(pl.col(condition.match_on).alias(filter_on))
+        if condition.action == 'exclude_birth':
+            df_temp = df_temp.with_columns(pl.col(condition.conditional_column).alias('cond_col'))
+
 
     if condition.condition is None:
         table = df_temp.select(filter_on)
@@ -92,7 +94,14 @@ def filter_df_external(df, criteria):
         df = df.join(table, on=criteria.filter_on, how='semi')
     elif criteria.action == 'exclude':
         df = df.join(table, on=criteria.filter_on, how='anti')
-
+    elif criteria.action == 'exclude_birth':
+        matches = (df.join(table, on=criteria.filter_on, how="inner")
+                   .filter((pl.col("table_date") <= pl.col("BIRTHDAY")) &
+                           (pl.col("table_date") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
+                   .select([criteria.filter_on, "BIRTHDAY"]))
+        
+        df = df.join(matches, on=[criteria.filter_on, "BIRTHDAY"], how="anti") 
+        
     return df
         
 def mark_df_external(df, criteria):

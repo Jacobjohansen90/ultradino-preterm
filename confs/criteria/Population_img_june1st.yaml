@@ -124,7 +124,7 @@ population_criteria:
         value: True
 
     #No Cerclage
-  - name: No Cerclage (Nyfoedte)
+  - name: No Cerclage
     filter_on: BIRTH_ID
     action: exclude
     function: filter_df_external
@@ -141,7 +141,24 @@ population_criteria:
         column: ProcedureKode
         operator: "in"
         value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
-
+  - name: No Cerclage
+    filter_on: CPR_MOTHER
+    action: exclude_birth
+    function: filter_df_external       
+      - condition:
+        table: ${paths.tables}/t_afl.csv
+        match_on: V_CPR
+        conditional_column: D_ODTO
+        column: C_TILOPR
+        operator: "in"
+        value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
+      - condition: or
+        table: ${paths.tables}/t_sksopr.csv
+        match_on: V_CPR
+        conditional_column: D_ODTO
+	column: C_OPR
+        operator: "in"
+        value: [KLDD10A, KLDD10B, KMAB00, KMAB01]
 
 
 conditional_criteria:
@@ -200,25 +217,28 @@ conditional_criteria:
   #Progesterone_1
   - name: Progesterone
     filter_on: CPR_MOTHER
-    mark: True
+    mark: conditional
     mark_name: progesterone
     function: mark_df_external
     conditions:
       - condition:
         table: ${paths.input_dir_SDS}/epikur_1.csv
         match_on: cpr
+        conditional_column: D_ODTO
         column: atc
         operator: "starts_with"
         value: "G03DA04"
       - condition: or
         table: ${paths.input_dir_SDS}/epikur_2.csv
         match_on: cpr
+        conditional_column: D_ODTO
         column: atc
         operator: "starts_with"
         value: "G03DA04"
       - condition: or
         table: ${paths.input_dir_SDS}/epikur_3.csv
         match_on: cpr
+        conditional_column: D_ODTO
         column: atc
         operator: "starts_with"
         value: "G03DA04"
@@ -239,14 +259,15 @@ conditional_criteria:
 
 #Progesterone_3
   - name: Progesterone
-    filter_on: CPR_CHILD
-    mark: True
+    filter_on: CPR_MOTHER
+    mark: conditional
     mark_name: progesterone
     function: mark_df_external
     conditions:
       - condition: 
-        table: ${paths.input_dir_SDS}/t_sksube.csv
-        match_on:
+        table: ${paths.tables}/t_sksube.csv
+        match_on: V_CPR
+        conditional_column: D_ODTO
         column: C_TILOPR
         operator: "=="
         value: "BKHA1"
