@@ -62,7 +62,6 @@ def filter_conditions(df, condition, filter_on, table, external=True):
         if condition.action == 'exclude_birth':
             df_temp = df_temp.with_columns(pl.col(condition.conditional_column).alias('cond_col'))
 
-
     if condition.condition is None:
         table = df_temp.select(filter_on)
     elif condition.condition == "or":
@@ -70,6 +69,7 @@ def filter_conditions(df, condition, filter_on, table, external=True):
     elif condition.condition == "and":
         table = table.join(df_temp.select(filter_on), on=filter_on, how="inner")
 
+    print(table.shape)
     return table
 
 def filter_df_internal(df, criteria):
@@ -77,7 +77,6 @@ def filter_df_internal(df, criteria):
     table = None
     for condition in criteria.conditions:
         table = filter_conditions(df, condition, 'CPR_MOTHER', table, external=False)
-        print(table.shape)
     if criteria.action == 'include':
         df = df.join(table, on="CPR_MOTHER", how='semi')
     elif criteria.action == 'exclude':
