@@ -89,6 +89,7 @@ def apply_inclusion_exclusion(df, cfg):
     mothers = df['CPR_MOTHER'].unique()
     children = df['CPR_CHILD'].unique()
     print(df.shape)
+    print(df.schema)
 
     for criteria in cfg.image_criteria:
         print(criteria.name)

@@ -54,23 +54,25 @@ logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime
 
 df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
 
-#Link cervix preds img df
+#Link cervix preds and image df
 df_cervix_preds = pl.read_csv(cfg.paths.misc_dir + 'cervix_preds.csv', infer_schema=False)
 df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
 
+df_cervix_preds.write_csv(cfg.paths.data_dir + 'tables/cervix_preds.csv')
 df_img.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
 
 del df_cervix_preds
+
+#TODO: Remove this when DB is updated
+#Currently using flow_imgs to detect multi images. Will be included in SQL DB at some point
+df_flow = pl.read_csv(cfg.paths.misc + 'flow_imgs.csv', infer_schema=False)
+df_img = df_img.join(df_flow, left_on='file_path', right_on='filepath', how='anti')
+
 
 logger.info(f"Found {len(df_img)} images - " + str(datetime.now().strftime('%H:%M:%S')))
 logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
 
 #%%Merge image and population dfs
-
-#TODO: Remove this when DB is updated
-# df_flow = pl.read_csv(cfg.paths.tables + 'flow_imgs.csv', infer_schema=False)
-# df_img = df_img.join(df_flow, left_on='file_path', right_on='filepath', how='anti')
-
 df = merge_population_and_image_df(df_img, df_pop, cfg)
 
 #%%Apply inclusion/exclusion criteria
