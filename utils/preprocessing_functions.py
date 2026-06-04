@@ -112,7 +112,6 @@ def apply_inclusion_exclusion(df, cfg):
         df = fn(df, criteria)
         print(df.shape)
         conditioned = condition(conditioned, df, criteria)
-
     
     return df, discards, conditioned
 

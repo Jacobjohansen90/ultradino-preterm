@@ -75,7 +75,7 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
     elif condition.condition == "or":
         table = pl.concat([table, df_temp.select(filter_on)]).unique()
     elif condition.condition == "and":
-        table = table.join(df_temp.select(filter_on), on=filter_on, how="semi").unique()
+        table = table.join(df_temp.select(filter_on), on=filter_on, how="semi")
 
     return table
 
@@ -123,11 +123,11 @@ def mark_df_external(df, criteria):
         matches = (df.join(table, on=criteria.filter_on, how="left")
                    .filter((pl.col("cond_col") <= pl.col("BIRTHDAY")) &
                            (pl.col("cond_col") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
-                   .select([criteria.filter_on, "BIRTHDAY"]).with_columns(pl.lit(True).alias(criteria.mark_name)))
+                   .select([criteria.filter_on, "BIRTHDAY"]))
 
-        df = (df.join(matches, on=[criteria.filter_on, "BIRTHDAY"], how="left")
-              .with_columns(pl.col(criteria.mark_name).fill_null(False)))
-    
+        df = df.with_columns(pl.col(criteria.filter_on).is_in(matches[criteria.filter_on]).alias(criteria.mark_name))
+        
+        
     return df
 
 def find_close_births(df, criteria):
@@ -183,8 +183,8 @@ def discard(discards, df, criteria, mothers, children):
         
         discards[criteria.name] = {'mothers_discarded': mothers_discarded + len(mothers)-len(mothers_temp),
                                    'children_discarded': children_discarded + len(children)-len(children_temp),
-                                   'mothers_cpr': pl.concat([mothers.filter(~mothers.is_in(mothers_temp)), mothers_cpr]),
-                                   'children_cpr': pl.concat([children.filter(~children.is_in(children_temp)), children_cpr])}
+                                   'mothers_cpr': [mothers.filter(~mothers.is_in(mothers_temp)).to_list(), mothers_cpr],
+                                   'children_cpr': [children.filter(~children.is_in(children_temp)).to_list(), children_cpr]}
         
         
     else:
@@ -192,17 +192,17 @@ def discard(discards, df, criteria, mothers, children):
         children_temp = df['CPR_CHILD'].unique()
         discards[criteria.name] = {'mothers_discarded': len(mothers)-len(mothers_temp),
                                    'children_discarded': len(children)-len(children_temp),
-                                   'mothers_cpr': mothers.filter(~mothers.is_in(mothers_temp)),
-                                   'children_cpr': children.filter(~children.is_in(children_temp))}
-
+                                   'mothers_cpr': mothers.filter(~mothers.is_in(mothers_temp)).to_list(),
+                                   'children_cpr': children.filter(~children.is_in(children_temp)).to_list()}
+    
     return discards, mothers_temp, children_temp
 
 
-def condition(conditioned, df, criteria):
+def condition(conditioned, df, criteria):    
     n_mothers = df.filter(pl.col(criteria.mark_name)).get_column("CPR_MOTHER").n_unique()
     n_children = df.filter(pl.col(criteria.mark_name)).get_column("CPR_CHILD").n_unique()
-    cpr_mothers = df.filter(pl.col(criteria.mark_name)).select("CPR_MOTHER").unique()
-    cpr_children = df.filter(pl.col(criteria.mark_name)).select("CPR_CHILD").unique()
+    cpr_mothers = df.filter(pl.col(criteria.mark_name)).select("CPR_MOTHER").unique().to_list()
+    cpr_children = df.filter(pl.col(criteria.mark_name)).select("CPR_CHILD").unique().to_list()
         
         
     conditioned[criteria.name] = {'mothers_conditioned': n_mothers,
