@@ -24,8 +24,8 @@ from utils.preprocessing_functions import (merge_population_tables,
 #%%Load variable YAML and setup logger and dirs
 cfg = OmegaConf.load('./confs/Population.yaml')
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_cfg)
+cfg.paths.data_dir += cfg_incl_excl.population_name + '/'
 cfg_incl_excl.paths = cfg.paths
-cfg_incl_excl.paths.data_dir += cfg_incl_excl.population_name + '/'
 
 #Setup dirs
 Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=False)
