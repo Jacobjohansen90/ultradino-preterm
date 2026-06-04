@@ -135,7 +135,7 @@ def find_close_births(df, criteria):
     births = (df.select(["CPR_MOTHER", "CPR_CHILD", criteria.column])
               .unique().sort(["CPR_MOTHER", criteria.column]))
 
-    #Computer inter-mother birth gaps
+    #Compute inter-mother birth gaps
     births = births.with_columns((pl.col(criteria.column).diff()
                                   .over("CPR_MOTHER").dt.total_days()
                                   .abs() < criteria.threshold).alias("close_births"))
@@ -143,6 +143,7 @@ def find_close_births(df, criteria):
     #Identify births that are close
     close_births = (births.filter(pl.col("close_births"))
                     .select(["CPR_MOTHER", "CPR_CHILD"]).unique())
+
     if criteria.action == 'include':
         df = df.join(close_births, on=["CPR_MOTHER", "CPR_CHILD"], how="semi")
     if criteria.action == 'exclude':
@@ -201,8 +202,8 @@ def discard(discards, df, criteria, mothers, children):
 def condition(conditioned, df, criteria):    
     n_mothers = df.filter(pl.col(criteria.mark_name)).get_column("CPR_MOTHER").n_unique()
     n_children = df.filter(pl.col(criteria.mark_name)).get_column("CPR_CHILD").n_unique()
-    cpr_mothers = df.filter(pl.col(criteria.mark_name)).select("CPR_MOTHER").unique().to_list()
-    cpr_children = df.filter(pl.col(criteria.mark_name)).select("CPR_CHILD").unique().to_list()
+    cpr_mothers = df.filter(pl.col(criteria.mark_name))["CPR_MOTHER"].unique().to_list()
+    cpr_children = df.filter(pl.col(criteria.mark_name))["CPR_CHILD"].unique().to_list()
         
         
     conditioned[criteria.name] = {'mothers_conditioned': n_mothers,
