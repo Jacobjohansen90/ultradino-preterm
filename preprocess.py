@@ -13,10 +13,14 @@ from omegaconf import OmegaConf
 import polars as pl
 import json
 
-from preprocessing.preprocessing_utils import sqlite_extractor
-from preprocessing.calc_stats import calc_stats
-from preprocessing.inclusion_exclusion import merge_population_tables, merge_population_and_image_df, apply_inclusion_exclusion, link_t_tables
-from utils.utils import unpack_dict_to_DF, pack_df_to_dict
+from utils.calc_stats import calc_stats
+from utils.utils import pack_df_to_dict
+from utils.preprocessing_functions import (merge_population_tables, 
+                                           merge_population_and_image_df, 
+                                           apply_inclusion_exclusion, 
+                                           link_t_tables,
+                                           make_train_test_split,
+                                           sqlite_extractor)
 #%%Load variable YAML and setup logger and dirs
 cfg = OmegaConf.load('./confs/Population.yaml')
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_cfg)
@@ -85,13 +89,10 @@ logger.info(f"Final data contains {df_img['CPR_CHILD'].n_unique()} children - " 
 
 df.write_csv(cfg.paths.data_dir + 'data_dump/filtered_population.csv')
 
-# train_pop, test_pop = make_train_test_split(cfg.paths.holdout_csv, 
-#                                             final_population, 
-#                                             'file_path',
-#                                             cfg.SQL_prefix)
+df_train, df_test = make_train_test_split(df, cfg)
 
-# train_pop.write_csv(cfg.paths.data_dir + 'train.csv')
-# test_pop.write_csv(cfg.paths.data_dir + 'test.csv')
+df_train.write_csv(cfg.paths.data_dir + 'train.csv')
+df_test.write_csv(cfg.paths.data_dir + 'test.csv')
 
 # population_columns = list(cfg_population.population.tables[0]['columns'].keys())
 

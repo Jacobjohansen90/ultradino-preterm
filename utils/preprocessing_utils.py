@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun  1 10:58:16 2026
+Created on Thu Jun  4 10:28:32 2026
 
 @author: jacob
 """
-
+#%%Imports
 import polars as pl
 import operator
-import sqlite3
 
+#%%Operator functions
 def unique(df, column, value):
     if value is True:
         df = df.filter(pl.col(column).count().over(column) == 1)
@@ -44,6 +44,7 @@ type_map = {"str": pl.Utf8,
             "date": pl.Utf8,
             "bool": pl.Boolean}
 
+#%%Utility function
 def load_table(path, ignore_errors=False, has_header=True):
     if path.endswith(".csv"):
         return pl.read_csv(path, ignore_errors=ignore_errors, has_header=has_header, infer_schema=False)
@@ -171,67 +172,42 @@ def find_close_values(df, criteria):
 
     return df
 
+def discard(discards, df, criteria, mothers, children):
+    if criteria.name in discards.keys():
+        mothers_temp = df['CPR_MOTHER'].unique()
+        children_temp = df['CPR_CHILD'].unique()
+        mothers_discarded = discards[criteria.name]['mothers_discarded']
+        children_discarded = discards[criteria.name]['children_discarded']
+        mothers_cpr = discards[criteria.name]['mothers_cpr']
+        children_cpr = discards[criteria.name]['children_cpr']
+        
+        discards[criteria.name] = {'mothers_discarded': mothers_discarded + len(mothers)-len(mothers_temp),
+                                   'children_discarded': children_discarded + len(children)-len(children_temp),
+                                   'mothers_cpr': pl.concat([mothers.filter(~mothers.is_in(mothers_temp)), mothers_cpr]),
+                                   'children_cpr': pl.concat([children.filter(~children.is_in(children_temp)), children_cpr])}
+        
+        
+    else:
+        mothers_temp = df['CPR_MOTHER'].unique()
+        children_temp = df['CPR_CHILD'].unique()
+        discards[criteria.name] = {'mothers_discarded': len(mothers)-len(mothers_temp),
+                                   'children_discarded': len(children)-len(children_temp),
+                                   'mothers_cpr': mothers.filter(~mothers.is_in(mothers_temp)),
+                                   'children_cpr': children.filter(~children.is_in(children_temp))}
 
-def sqlite_extractor(cfg, cpr_mothers):
-    
-    conn = sqlite3.connect(cfg.paths.SQL_DB)
-    cur = conn.cursor()
-    
-    cur.execute("CREATE TEMP TABLE tmp_hashes (phair_hash TEXT PRIMARY KEY)")
-    cur.executemany("INSERT INTO tmp_hashes VALUES (?)", [(h,) for h in cpr_mothers])
-    conn.commit()
-    
-    metadata_dicom_variables = cfg.imaging.metadata_dicom_variables
+    return discards, mothers_temp, children_temp
 
-    dicom_select = ",\n".join(f"d.{column}" for column, _ in metadata_dicom_variables)
 
-    schema = [("CPR_MOTHER", pl.Utf8),
-              ("file_path", pl.Utf8),
-              ("no_ocr_preprocessed_file_path", pl.Utf8),
-              *[(column, type_map[dtype]) for column, dtype in metadata_dicom_variables]]
+def condition(conditioned, df, criteria):
+    n_mothers = df.filter(pl.col(criteria.mark_name)).get_column("CPR_MOTHER").n_unique()
+    n_children = df.filter(pl.col(criteria.mark_name)).get_column("CPR_CHILD").n_unique()
+    cpr_mothers = df.filter(pl.col(criteria.mark_name)).select("CPR_MOTHER").unique()
+    cpr_children = df.filter(pl.col(criteria.mark_name)).select("CPR_CHILD").unique()
+        
+        
+    conditioned[criteria.name] = {'mothers_conditioned': n_mothers,
+                                  'children_conditioned': n_children,
+                                  'mothers_cpr': cpr_mothers,
+                                  'childrens_cpr': cpr_children}
     
-    cur.execute(f"""
-                SELECT
-                    t.phair_hash,
-                    pt.file_path,
-                    pt.no_ocr_preprocessed_file_path,
-                    {dicom_select}
-                FROM tmp_hashes t
-                LEFT JOIN cpr_hashes c
-                    ON c.phair_hash = t.phair_hash
-                LEFT JOIN path_table pt
-                    ON pt.file_hash = c.xxhash
-                LEFT JOIN dicom_metadata_table d
-                    ON d.sop_instance_uid = pt.sop_instance_uid
-                """)
-
-    df = pl.DataFrame(cur.fetchall(),
-                      schema=schema,
-                      orient="row",
-                      strict=False)
-
-    date_cols = [col for col, dtype in metadata_dicom_variables if dtype == "date"]
-
-    df = df.with_columns([pl.col(col).str.strptime(pl.Date, format="%Y%m%d", strict=False) for col in date_cols])
-
-    df = df.drop_nulls(subset="file_path")
-
-    conn.close()
-  
-    return df
-
-def make_train_test_split(df, cfg, cols_to_check=['CPR_MOTHER', 'CPR_CHILD', 'no_ocr_preprocessed_file_path']):
-    
-    df_holdout = pl.read_csv(cfg.paths.holdout_csv, has_header=False)
-    
-    df_train = df.join(df_holdout, right_on="column_1", left_on="no_ocr_preprocessed_file_path", how="anti")
-    df_test = df.join(df_holdout, right_on="column_1", left_on="no_ocr_preprocessed_file_path", how="semi")
-    
-    for col in cols_to_check:
-        overlap = (df_train.select(col).unique().join(df_test.select(col).unique(),
-                                                      on=col,
-                                                      how="inner")
-                   .get_column(col).to_list())  
-    
-    
-    return train_split, test_split
+    return conditioned
