@@ -20,7 +20,7 @@ data:
   oversample_ratio: 1
 
 dataset:
-  - progesterone: label #label / remove / ignore
+    progesterone: label #label / remove / ignore
     c-section: remove_on_GA
     induced: remove_on_GA
 

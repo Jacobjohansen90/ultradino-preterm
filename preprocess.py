@@ -73,7 +73,7 @@ logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + s
 
 #%%Merge image and population dfs
 df = merge_population_and_image_df(df_img, df_pop, cfg)
-
+df.write_csv(cfg.paths.data_dir + 'data_dump/test.csv')
 #%%Apply inclusion/exclusion criteria
 
 df, discards, conditioned = apply_inclusion_exclusion(df, cfg_incl_excl)
