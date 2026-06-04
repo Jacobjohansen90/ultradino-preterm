@@ -27,13 +27,13 @@ cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_cfg)
 cfg_incl_excl.paths = cfg.paths
 cfg.paths.data_dir += cfg_incl_excl.population_name + '/'
 
-#Setup logger
-logging.basicConfig(filename=cfg.paths.data_dir + 'logs/preprocess.log', filemode='w', level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 #Setup dirs
 Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=False)
 Path(cfg.paths.data_dir + 'logs/').mkdir()
+
+#Setup logger
+logging.basicConfig(filename=cfg.paths.data_dir + 'logs/preprocess.log', filemode='w', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 #%%Build population data
 
