@@ -64,10 +64,12 @@ def merge_population_and_image_df(df_img, df_pop, cfg):
 
 def make_train_test_split(df, cfg, cols_to_check=['CPR_MOTHER', 'CPR_CHILD', 'no_ocr_preprocessed_file_path']):
     
-    df_holdout = pl.read_csv(cfg.paths.holdout_csv, has_header=False)
+    #df_holdout = pl.read_csv(cfg.paths.holdout_csv, has_header=False)
     
-    df_train = df.join(df_holdout, right_on="column_1", left_on="no_ocr_preprocessed_file_path", how="anti")
-    df_test = df.join(df_holdout, right_on="column_1", left_on="no_ocr_preprocessed_file_path", how="semi")
+    df_holdout = (df.select("CPR_MOTHER").unique().sample(fraction=0.15, shuffle=True, seed=42))
+    
+    df_train = df.join(df_holdout, right_on="column_1", left_on="CPR_MOTHER", how="anti")
+    df_test = df.join(df_holdout, right_on="column_1", left_on="CPR_MOTHER", how="semi")
     
     for col in cols_to_check:
         overlap = (df_train.select(col).unique().join(df_test.select(col).unique(),
@@ -104,7 +106,7 @@ def apply_inclusion_exclusion(df, cfg):
         print(criteria.name)
         fn = custom_funcs[criteria.function]
         df = fn(df, criteria)
-        conditioned, mothers, children = condition(conditioned, df, criteria)
+        conditioned = condition(conditioned, df, criteria)
 
     
     return df, discards, conditioned

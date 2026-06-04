@@ -10,9 +10,8 @@ from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
 import torch
 from tqdm import tqdm
-import os
 
-from dataloader.dataloader import PreTermDataset, DummySet, collate_fn, make_train_val_split
+from dataloader.dataloader import PreTermDataset, collate_fn, make_train_val_split
 from utils.model_utils import model_from_conf, model_freezer
 from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
 from utils.loss_loader import get_loss
@@ -22,11 +21,7 @@ from utils.documentation import setup, Logger
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
 
-if 'Jacob' in os.uname()[1]:
-    cfg = OmegaConf.load("/home/jacob/Desktop/NAS/Work/PreTerm/ultradino-preterm/confs/training_confs/append_tokens_vitb16.yaml")
-    cfg.model.vit.weights_path = None
-else:
-    cfg = OmegaConf.load("/projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/training_confs/append_tokens_vitb16.yaml")
+cfg = OmegaConf.load("/projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/training_confs/append_tokens_vitb16.yaml")
 
 save_path = setup(cfg)
 
@@ -34,13 +29,10 @@ logger = Logger(save_path)
 
 #%% Setup dataloaders and models
 
-if 'Jacob' in os.uname()[1]:
-    TrainData = DummySet(train=True, scans=500)
-    ValData = DummySet(train=False, scans=500)
-else:
-    train_df, val_df = make_train_val_split(cfg, unique_column='CPR_MOTHER')
-    TrainData = PreTermDataset(train_df, cfg, train=True)
-    ValData = PreTermDataset(val_df, cfg, train=False)
+
+train_df, val_df = make_train_val_split(cfg, unique_column='CPR_MOTHER')
+TrainData = PreTermDataset(train_df, cfg, train=True)
+ValData = PreTermDataset(val_df, cfg, train=False)
     
 
 TrainLoader = DataLoader(TrainData,
