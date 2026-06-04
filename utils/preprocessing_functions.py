@@ -88,17 +88,20 @@ def apply_inclusion_exclusion(df, cfg):
     conditioned = {}
     mothers = df['CPR_MOTHER'].unique()
     children = df['CPR_CHILD'].unique()
-    
+    print(df.shape)
+
     for criteria in cfg.image_criteria:
         print(criteria.name)
         fn = custom_funcs[criteria.function]
         df = fn(df, criteria)
+        print(df.shape)
         discards, mothers, children = discard(discards, df, criteria, mothers, children)
         
     for criteria in cfg.population_criteria:       
         print(criteria.name)
         fn = custom_funcs[criteria.function]
         df = fn(df, criteria)
+        print(df.shape)
         discards, mothers, children = discard(discards, df, criteria, mothers, children)
 
     
@@ -106,6 +109,7 @@ def apply_inclusion_exclusion(df, cfg):
         print(criteria.name)
         fn = custom_funcs[criteria.function]
         df = fn(df, criteria)
+        print(df.shape)
         conditioned = condition(conditioned, df, criteria)
 
     
