@@ -55,7 +55,7 @@ logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime
 df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
 
 #Link cervix preds img df
-df_cervix_preds = pl.read_csv(cfg.paths.tables + 'cervix_preds.csv', infer_schema=False)
+df_cervix_preds = pl.read_csv(cfg.paths.misc_dir + 'cervix_preds.csv', infer_schema=False)
 df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
 
 df_img.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
@@ -68,9 +68,8 @@ logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + s
 #%%Merge image and population dfs
 
 #TODO: Remove this when DB is updated
-df_flow = pl.read_csv(cfg.paths.tables + 'flow_imgs.csv', infer_schema=False)
-df_img = df_img.join(df_flow, left_on='file_path', right_on='filepath', how='anti')
-
+# df_flow = pl.read_csv(cfg.paths.tables + 'flow_imgs.csv', infer_schema=False)
+# df_img = df_img.join(df_flow, left_on='file_path', right_on='filepath', how='anti')
 
 df = merge_population_and_image_df(df_img, df_pop, cfg)
 

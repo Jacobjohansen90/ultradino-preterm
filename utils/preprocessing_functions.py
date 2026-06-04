@@ -116,7 +116,6 @@ def apply_inclusion_exclusion(df, cfg):
     return df, discards, conditioned
 
 def sqlite_extractor(cfg, cpr_mothers):
-    
     conn = sqlite3.connect(cfg.paths.SQL_DB)
     cur = conn.cursor()
     
@@ -154,9 +153,7 @@ def sqlite_extractor(cfg, cpr_mothers):
                       strict=False)
 
     date_cols = [col for col, dtype in metadata_dicom_variables if dtype == "date"]
-
     df = df.with_columns([pl.col(col).str.strptime(pl.Date, format="%Y%m%d", strict=False) for col in date_cols])
-
     df = df.drop_nulls(subset="file_path")
 
     conn.close()
