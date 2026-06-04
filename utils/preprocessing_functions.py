@@ -68,8 +68,8 @@ def make_train_test_split(df, cfg, cols_to_check=['CPR_MOTHER', 'CPR_CHILD', 'no
     
     df_holdout = (df.select("CPR_MOTHER").unique().sample(fraction=0.15, shuffle=True, seed=42))
     
-    df_train = df.join(df_holdout, right_on="column_1", left_on="CPR_MOTHER", how="anti")
-    df_test = df.join(df_holdout, right_on="column_1", left_on="CPR_MOTHER", how="semi")
+    df_train = df.join(df_holdout, on="CPR_MOTHER", how="anti")
+    df_test = df.join(df_holdout, on="CPR_MOTHER", how="semi")
     
     for col in cols_to_check:
         overlap = (df_train.select(col).unique().join(df_test.select(col).unique(),
@@ -88,29 +88,21 @@ def apply_inclusion_exclusion(df, cfg):
     conditioned = {}
     mothers = df['CPR_MOTHER'].unique()
     children = df['CPR_CHILD'].unique()
-    print(df.shape)
-    print(df.schema)
 
     for criteria in cfg.image_criteria:
-        print(criteria.name)
         fn = custom_funcs[criteria.function]
         df = fn(df, criteria)
-        print(df.shape)
         discards, mothers, children = discard(discards, df, criteria, mothers, children)
         
     for criteria in cfg.population_criteria:       
-        print(criteria.name)
         fn = custom_funcs[criteria.function]
         df = fn(df, criteria)
-        print(df.shape)
         discards, mothers, children = discard(discards, df, criteria, mothers, children)
 
     
     for criteria in cfg.conditional_criteria:
-        print(criteria.name)
         fn = custom_funcs[criteria.function]
         df = fn(df, criteria)
-        print(df.shape)
         conditioned = condition(conditioned, df, criteria)
     
     return df, discards, conditioned
