@@ -1,5 +1,7 @@
 paths:
 
+population_name: OnlyFirstPreg_June
+
 #Operators work as: column_1 [operator] column_2
 #Add flow_img when database has the info
 image_criteria:
@@ -243,21 +245,21 @@ conditional_criteria:
       - condition:
         table: ${paths.input_dir_SDS}/epikur_1.csv
         match_on: cpr
-        conditional_column: D_ODTO
+        conditional_column: eksd
         column: atc
         operator: "starts_with"
         value: "G03DA04"
       - condition: or
         table: ${paths.input_dir_SDS}/epikur_2.csv
         match_on: cpr
-        conditional_column: D_ODTO
+        conditional_column: eksd
         column: atc
         operator: "starts_with"
         value: "G03DA04"
       - condition: or
         table: ${paths.input_dir_SDS}/epikur_3.csv
         match_on: cpr
-        conditional_column: D_ODTO
+        conditional_column: eksd
         column: atc
         operator: "starts_with"
         value: "G03DA04"

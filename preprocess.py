@@ -25,14 +25,15 @@ from utils.preprocessing_functions import (merge_population_tables,
 cfg = OmegaConf.load('./confs/Population.yaml')
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_cfg)
 cfg_incl_excl.paths = cfg.paths
+cfg.paths.data_dir += cfg_incl_excl.population_name + '/'
 
 #Setup logger
 logging.basicConfig(filename=cfg.paths.data_dir + 'logs/preprocess.log', filemode='w', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 #Setup dirs
-Path(cfg.paths.data_dir + 'logs/').mkdir(exist_ok=True)
-Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=True)
+Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=False)
+Path(cfg.paths.data_dir + 'logs/').mkdir()
 
 #%%Build population data
 
@@ -94,22 +95,21 @@ df_train, df_test = make_train_test_split(df, cfg)
 df_train.write_csv(cfg.paths.data_dir + 'train.csv')
 df_test.write_csv(cfg.paths.data_dir + 'test.csv')
 
-# population_columns = list(cfg_population.population.tables[0]['columns'].keys())
+population_columns = list(cfg.population.tables[0]['columns'].keys())
 
-# train_pop_dict = pack_df_to_dict(train_pop, population_columns, cfg_population.population.population_key)
-# test_pop_dict = pack_df_to_dict(test_pop, population_columns, cfg_population.population.population_key)
+dict_train = pack_df_to_dict(df_train, population_columns, cfg.population.population_key)
+dict_test = pack_df_to_dict(df_test, population_columns, cfg.population.population_key)
 
-# with open(cfg.paths.data_dir + 'train.json', "w") as file:
-#     json.dump(train_pop_dict, file)
+with open(cfg.paths.data_dir + 'train.json', "w") as file:
+    json.dump(dict_train, file)
 
-# with open(cfg.paths.data_dir + 'test.json', "w") as file:
-#     json.dump(test_pop_dict, file)
+with open(cfg.paths.data_dir + 'test.json', "w") as file:
+    json.dump(dict_test, file)
 
-# """
-# """
-# #%% Calculate stats
-# logger.info("Calculating stats - " + str(datetime.now().strftime('%H:%M:%S')))
-# calc_stats('/'.join(path.split('/')[:-2]) + '/')
+"""
+#%% Calculate stats
+logger.info("Calculating stats - " + str(datetime.now().strftime('%H:%M:%S')))
+calc_stats('/'.join(path.split('/')[:-2]) + '/')
 
-# logger.info("Preprocessing done - " + str(datetime.now().strftime('%H:%M:%S')))
-# """
+logger.info("Preprocessing done - " + str(datetime.now().strftime('%H:%M:%S')))
+"""
