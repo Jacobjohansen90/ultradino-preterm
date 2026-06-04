@@ -6,6 +6,7 @@ defaults:
 info:
   name: 
   description: 
+
 data:
   path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/train.json
   batch_size: 128
@@ -17,6 +18,11 @@ data:
   prefix: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_processed_no_OCR/
   oversample: True
   oversample_ratio: 1
+
+dataset:
+  - progesterone: label #label / remove / ignore
+    c-section: remove_on_GA
+    induced: remove_on_GA
 
 labels: #Task: [Type of task, loss multiplier]
   tasks:

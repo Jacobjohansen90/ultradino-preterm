@@ -58,14 +58,13 @@ df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
 df_cervix_preds = pl.read_csv(cfg.paths.misc_dir + 'cervix_preds.csv', infer_schema=False)
 df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
 
-df_cervix_preds.write_csv(cfg.paths.data_dir + 'tables/cervix_preds.csv')
 df_img.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
 
 del df_cervix_preds
 
 #TODO: Remove this when DB is updated
 #Currently using flow_imgs to detect multi images. Will be included in SQL DB at some point
-df_flow = pl.read_csv(cfg.paths.misc + 'flow_imgs.csv', infer_schema=False)
+df_flow = pl.read_csv(cfg.paths.misc_dir + 'flow_imgs.csv', infer_schema=False)
 df_img = df_img.join(df_flow, left_on='file_path', right_on='filepath', how='anti')
 
 
