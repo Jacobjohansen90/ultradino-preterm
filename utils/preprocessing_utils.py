@@ -73,9 +73,9 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
     if condition.condition is None:
         table = df_temp.select(filter_on)
     elif condition.condition == "or":
-        table = pl.concat([table, df_temp.select(filter_on)])
+        table = pl.concat([table, df_temp.select(filter_on)]).unique()
     elif condition.condition == "and":
-        table = table.join(df_temp.select(filter_on), on=filter_on, how="semi")
+        table = table.join(df_temp.select(filter_on), on=filter_on, how="semi").unique()
 
     return table
 
