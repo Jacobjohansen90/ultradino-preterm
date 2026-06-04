@@ -30,6 +30,7 @@ cfg.paths.data_dir += cfg_incl_excl.population_name + '/'
 #Setup dirs
 Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=False)
 Path(cfg.paths.data_dir + 'logs/').mkdir()
+Path(cfg.paths.data_dir + 'tables/').mkdir()
 
 #Setup logger
 logging.basicConfig(filename=cfg.paths.data_dir + 'logs/preprocess.log', filemode='w', level=logging.INFO)
