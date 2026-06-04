@@ -175,7 +175,19 @@ def make_train_val_split(cfg, unique_column='CPR_MOTHER'):
     with open(cfg.data.path) as file:
         d = json.load(file)
     df = unpack_dict_to_DF(d, 'imgs')
-
+    
+    df = df.with_columns(pl.col("GA")//7 < cfg.data.ga_cutoff_weeks).alias('label')
+    
+    for col, cond in cfg.datasets.items():
+        if cond == 'ignore':
+            continue
+        elif cond == 'label':
+            df = df.with_columns((pl.col('label') | pl.col(col)).alias('label'))
+        elif cond == 'remove':
+            df = df.filter(~pl.col(col))
+        elif cond == 'remove_on_GA':
+            df = df.filter(~(pl.col(col) & pl.col('label')))
+            
     unique_keys = df.select(unique_column).unique()
 
     rng = np.random.default_rng()

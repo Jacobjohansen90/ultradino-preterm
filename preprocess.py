@@ -79,6 +79,9 @@ df = merge_population_and_image_df(df_img, df_pop, cfg)
 df, discards, conditioned = apply_inclusion_exclusion(df, cfg_incl_excl)
 df.write_csv(cfg.paths.data_dir + 'data_dump/filtered_population.csv')
 
+print(discards)
+print(conditioned)
+
 with open(cfg.paths.data_dir + 'logs/discards.json', "w") as file:
     json.dump(discards, file)
 

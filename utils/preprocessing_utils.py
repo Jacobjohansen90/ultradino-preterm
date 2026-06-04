@@ -100,7 +100,7 @@ def filter_df_external(df, criteria):
     elif criteria.action == 'exclude':
         df = df.join(table, on=criteria.filter_on, how='anti')
     elif criteria.action == 'exclude_birth':
-        matches = (df.join(table, on=criteria.filter_on, how="inner")
+        matches = (df.join(table, on=criteria.filter_on, how="left")
                    .filter((pl.col("cond_col") <= pl.col("BIRTHDAY")) &
                            (pl.col("cond_col") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
                    .select([criteria.filter_on, "BIRTHDAY"]))
@@ -120,7 +120,7 @@ def mark_df_external(df, criteria):
     elif criteria.action == 'exclude':
         df = df.with_columns(~pl.col(criteria.filter_on).is_in(table[criteria.filter_on]).alias(criteria.mark_name))
     elif criteria.action == 'exclude_birth':
-        matches = (df.join(table, on=criteria.filter_on, how="inner")
+        matches = (df.join(table, on=criteria.filter_on, how="left")
                    .filter((pl.col("cond_col") <= pl.col("BIRTHDAY")) &
                            (pl.col("cond_col") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
                    .select([criteria.filter_on, "BIRTHDAY"]).with_columns(pl.lit(True).alias(criteria.mark_name)))

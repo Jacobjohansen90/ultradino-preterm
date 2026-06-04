@@ -19,8 +19,10 @@ data:
   oversample: True
   oversample_ratio: 1
 
-dataset:
-    progesterone: label #label / remove / ignore
+#label / remove / ignore / remove_on_GA 
+#(Label as true if cond is true / remove from DF if cond is true / ignore / remove if GA < GA_cutoff)
+dataset: 
+    progesterone: label 
     c-section: remove_on_GA
     induced: remove_on_GA
 
