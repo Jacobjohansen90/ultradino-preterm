@@ -7,6 +7,7 @@ population_name: OnlyFirstPreg_June
 image_criteria:
   - name: Image must be Cervix
     action: include
+    filter_on: file_path
     function: filter_df_internal
     conditions:
       - condition:
@@ -16,6 +17,7 @@ image_criteria:
 
   - name: GA at scan
     action: include
+    filter_on: file_path
     function: filter_df_internal
     conditions:
       - condition: 
@@ -29,6 +31,7 @@ image_criteria:
 
   - name: Scan to delivery
     action: include
+    filter_on: file_path
     function: filter_df_internal
     conditions:
       - condition: 
@@ -161,21 +164,21 @@ population_criteria:
     function: filter_df_external
     conditions:
       - condition:
-        table: ${paths.tables}/t_afl.csv
+        table: ${paths.data_dir}/tables/t_afl.csv
         match_on: V_CPR
         conditional_column: D_ODTO
         column: C_TILOPR
         operator: "in"
         value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
       - condition: or
-        table: ${paths.tables}/t_sksopr.csv
+        table: ${paths.data_dir}/tables/t_sksopr.csv
         match_on: V_CPR
         conditional_column: D_ODTO
         column: C_OPR
         operator: "in"
         value: [KLDD10A, KLDD10B, KMAB00, KMAB01]
       - condition: or
-        table: ${paths.tables}/t_diag.csv
+        table: ${paths.data_dir}/tables/t_diag.csv
         match_on: V_CPR
         column: C_DIAG
         conditional_column: D_UDDTO
@@ -286,7 +289,7 @@ conditional_criteria:
     function: mark_df_external
     conditions:
       - condition: 
-        table: ${paths.tables}/t_sksube.csv
+        table: ${paths.data_dir}/tables/t_sksube.csv
         match_on: V_CPR
         conditional_column: D_ODTO
         column: C_TILOPR
