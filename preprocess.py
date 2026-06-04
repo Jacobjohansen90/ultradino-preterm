@@ -86,9 +86,9 @@ with open(cfg.paths.data_dir + 'logs/conditioned.json', "w") as file:
     json.dump(conditioned, file)
     
     
-logger.info(f"Final data contains {len(df_img)} images - " + str(datetime.now().strftime('%H:%M:%S')))
-logger.info(f"Final data contains {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
-logger.info(f"Final data contains {df_img['CPR_CHILD'].n_unique()} children - " + str(datetime.now().strftime('%H:%M:%S')))
+logger.info(f"Final data contains {len(df)} images - " + str(datetime.now().strftime('%H:%M:%S')))
+logger.info(f"Final data contains {df['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
+logger.info(f"Final data contains {df['CPR_CHILD'].n_unique()} children - " + str(datetime.now().strftime('%H:%M:%S')))
 
 #%%Make train/test split and save the data
 
