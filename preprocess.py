@@ -25,7 +25,7 @@ from utils.preprocessing_functions import (merge_population_tables,
 cfg = OmegaConf.load('./confs/Population.yaml')
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_cfg)
 cfg_incl_excl.paths = cfg.paths
-cfg.paths.data_dir += cfg_incl_excl.population_name + '/'
+cfg_incl_excl.paths.data_dir += cfg_incl_excl.population_name + '/'
 
 #Setup dirs
 Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=False)
@@ -73,10 +73,11 @@ logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + s
 
 #%%Merge image and population dfs
 df = merge_population_and_image_df(df_img, df_pop, cfg)
-df.write_csv(cfg.paths.data_dir + 'data_dump/test.csv')
+
 #%%Apply inclusion/exclusion criteria
 
 df, discards, conditioned = apply_inclusion_exclusion(df, cfg_incl_excl)
+df.write_csv(cfg.paths.data_dir + 'data_dump/filtered_population.csv')
 
 with open(cfg.paths.data_dir + 'logs/discards.json', "w") as file:
     json.dump(discards, file)
@@ -89,10 +90,9 @@ logger.info(f"Final data contains {len(df_img)} images - " + str(datetime.now().
 logger.info(f"Final data contains {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
 logger.info(f"Final data contains {df_img['CPR_CHILD'].n_unique()} children - " + str(datetime.now().strftime('%H:%M:%S')))
 
-df.write_csv(cfg.paths.data_dir + 'data_dump/filtered_population.csv')
+#%%Make train/test split and save the data
 
 df_train, df_test = make_train_test_split(df, cfg)
-
 df_train.write_csv(cfg.paths.data_dir + 'train.csv')
 df_test.write_csv(cfg.paths.data_dir + 'test.csv')
 
@@ -107,8 +107,9 @@ with open(cfg.paths.data_dir + 'train.json', "w") as file:
 with open(cfg.paths.data_dir + 'test.json', "w") as file:
     json.dump(dict_test, file)
 
-"""
 #%% Calculate stats
+
+"""
 logger.info("Calculating stats - " + str(datetime.now().strftime('%H:%M:%S')))
 calc_stats('/'.join(path.split('/')[:-2]) + '/')
 
