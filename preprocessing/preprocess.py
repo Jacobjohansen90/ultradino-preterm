@@ -45,6 +45,7 @@ logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime
     
 
 #%%Extract info from database
+
 df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
 
 #Link cervix preds img df

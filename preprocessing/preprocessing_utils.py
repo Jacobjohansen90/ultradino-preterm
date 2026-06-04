@@ -114,11 +114,11 @@ def mark_df_external(df, criteria):
         df_temp = load_table(condition.table)
         table = filter_conditions(df_temp, condition, criteria.filter_on, table, criteria.action)
            
-    if criteria.mark is True:
+    if criteria.action == 'include':
         df = df.with_columns(pl.col(criteria.filter_on).is_in(table[criteria.filter_on]).alias(criteria.mark_name))
-    elif criteria.mark is False:
+    elif criteria.action == 'exclude':
         df = df.with_columns(~pl.col(criteria.filter_on).is_in(table[criteria.filter_on]).alias(criteria.mark_name))
-    elif criteria.mark == 'conditional':
+    elif criteria.mark == 'exclude_birth':
         matches = (df.join(table, on=criteria.filter_on, how="inner")
                    .filter((pl.col("cond_col") <= pl.col("BIRTHDAY")) &
                            (pl.col("cond_col") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
@@ -220,3 +220,18 @@ def sqlite_extractor(cfg, cpr_mothers):
   
     return df
 
+def make_train_test_split(df, cfg, cols_to_check=['CPR_MOTHER', 'CPR_CHILD', 'no_ocr_preprocessed_file_path']):
+    
+    df_holdout = pl.read_csv(cfg.paths.holdout_csv, has_header=False)
+    
+    df_train = df.join(df_holdout, right_on="column_1", left_on="no_ocr_preprocessed_file_path", how="anti")
+    df_test = df.join(df_holdout, right_on="column_1", left_on="no_ocr_preprocessed_file_path", how="semi")
+    
+    for col in cols_to_check:
+        overlap = (df_train.select(col).unique().join(df_test.select(col).unique(),
+                                                      on=col,
+                                                      how="inner")
+                   .get_column(col).to_list())  
+    
+    
+    return train_split, test_split

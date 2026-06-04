@@ -185,7 +185,7 @@ conditional_criteria:
   - name: C-section
     filter_on: CPR_CHILD
     function: mark_df_external
-    mark: False
+    action: exclude
     mark_name: c-section
     conditions:
       - condition:
@@ -204,7 +204,7 @@ conditional_criteria:
   #Induced
   - name: Induced
     filter_on: CPR_CHILD
-    mark: True
+    action: include
     mark_name: induced
     function: mark_df_external
     conditions:
@@ -236,7 +236,7 @@ conditional_criteria:
   #Progesterone_1
   - name: Progesterone
     filter_on: CPR_MOTHER
-    mark: conditional
+    action: exclude_birth
     mark_name: progesterone
     function: mark_df_external
     conditions:
@@ -265,7 +265,7 @@ conditional_criteria:
    #Progesterone_2
   - name: Progesterone
     filter_on: BIRTH_ID
-    mark: True
+    action: include
     mark_name: progesterone
     function: mark_df_external
     conditions:
@@ -279,7 +279,7 @@ conditional_criteria:
   #Progesterone_3
   - name: Progesterone
     filter_on: CPR_MOTHER
-    mark: conditional
+    action: exclude_birth
     mark_name: progesterone
     function: mark_df_external
     conditions:
