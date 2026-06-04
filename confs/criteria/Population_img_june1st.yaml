@@ -48,6 +48,7 @@ population_criteria:
     #Must have CPR
   - name: Child has CPR
     action: exclude
+    filter_on: CPR_CHILD
     function: filter_df_internal
     conditions:
       - condition: 
