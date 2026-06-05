@@ -28,7 +28,7 @@ cfg.paths.data_dir += cfg_incl_excl.population_name + '/'
 cfg_incl_excl.paths = cfg.paths
 
 #Setup dirs
-Path(cfg.paths.data_dir + 'data_dump/').mkdir(exist_ok=False)
+Path(cfg.paths.data_dir).mkdir(exist_ok=False)
 Path(cfg.paths.data_dir + 'data_dump/').mkdir()
 Path(cfg.paths.data_dir + 'logs/').mkdir()
 Path(cfg.paths.data_dir + 'tables/').mkdir()
