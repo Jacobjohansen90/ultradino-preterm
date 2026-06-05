@@ -78,21 +78,33 @@ class PreTermDataset(Dataset):
         self.prefix = cfg.data.prefix
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424       
-        #TODO: Fix this temp solution
-        df_temp = pl.read_csv('/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/flow_imgs.csv')
-        df = df.filter(pl.col('file_path').is_in(df_temp['filepath']).not_())
-        self.df = df
         self.train = train
-        #self.tasks = cfg.labels.tasks
+        
         if cfg.labels.label_smoothing:
             self.label_smoothing_param = cfg.labels.label_smoothing_param
         else:
             self.label_smoothing_param = None
 
+        for col, cond in cfg.datasets.items():
+            if cond == 'ignore':
+                continue
+            elif cond == 'remove':
+                df = df.filter(~pl.col(col))
+            elif cond == 'remove_on_GA':
+                df = df.filter(~(pl.col(col) & (pl.col('GA') // 7 < cfg.data.ga_cutoff_weeks)))
+            elif cond == 'label':
+                #We deal with this later, when performing label smoothing
+                continue 
+            
+        self.df = df
+        
         self.setup_transforms()
         
     def __len__(self):
-        return len(self.df)
+        if self.train:
+            return len(self.df)
+        else:
+            return len(self.)
     
     def setup_transforms(self):
         if self.train:
@@ -175,19 +187,7 @@ def make_train_val_split(cfg, unique_column='CPR_MOTHER'):
     with open(cfg.data.path) as file:
         d = json.load(file)
     df = unpack_dict_to_DF(d, 'imgs')
-    
-    df = df.with_columns(pl.col("GA")//7 < cfg.data.ga_cutoff_weeks).alias('label')
-    
-    for col, cond in cfg.datasets.items():
-        if cond == 'ignore':
-            continue
-        elif cond == 'label':
-            df = df.with_columns((pl.col('label') | pl.col(col)).alias('label'))
-        elif cond == 'remove':
-            df = df.filter(~pl.col(col))
-        elif cond == 'remove_on_GA':
-            df = df.filter(~(pl.col(col) & pl.col('label')))
-            
+                
     unique_keys = df.select(unique_column).unique()
 
     rng = np.random.default_rng()

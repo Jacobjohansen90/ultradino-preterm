@@ -28,7 +28,8 @@ cfg.paths.data_dir += cfg_incl_excl.population_name + '/'
 cfg_incl_excl.paths = cfg.paths
 
 #Setup dirs
-Path(cfg.paths.data_dir + 'data_dump/').mkdir(parents=True, exist_ok=False)
+Path(cfg.paths.data_dir + 'data_dump/').mkdir(exist_ok=False)
+Path(cfg.paths.data_dir + 'data_dump/').mkdir()
 Path(cfg.paths.data_dir + 'logs/').mkdir()
 Path(cfg.paths.data_dir + 'tables/').mkdir()
 
@@ -93,19 +94,9 @@ logger.info(f"Final data contains {df['CPR_CHILD'].n_unique()} children - " + st
 #%%Make train/test split and save the data
 
 df_train, df_test = make_train_test_split(df, cfg)
-df_train.write_csv(cfg.paths.data_dir + 'train.csv')
-df_test.write_csv(cfg.paths.data_dir + 'test.csv')
+df_train.write_parquet(cfg.paths.data_dir + 'train.parquet')
+df_test.write_parquet(cfg.paths.data_dir + 'test.parquet')
 
-population_columns = list(cfg.population.tables[0]['columns'].keys())
-
-dict_train = pack_df_to_dict(df_train, population_columns, cfg.population.population_key)
-dict_test = pack_df_to_dict(df_test, population_columns, cfg.population.population_key)
-
-with open(cfg.paths.data_dir + 'train.json', "w") as file:
-    json.dump(dict_train, file)
-
-with open(cfg.paths.data_dir + 'test.json', "w") as file:
-    json.dump(dict_test, file)
 
 #%% Calculate stats
 
