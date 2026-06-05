@@ -76,8 +76,9 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
         table = pl.concat([table, df_temp.select(filter_on)]).unique()
     elif condition.condition == "and":
         print(table.shape)
+        print(table)
         print(df_temp.shape)
-        print(table.filter(pl.col(filter_on).is_in(df_temp.select(filter_on))).shape)
+        print(df_temp)
         table = table.join(df_temp.select(filter_on), on=filter_on, how="semi")
         print(table.shape)
     return table
