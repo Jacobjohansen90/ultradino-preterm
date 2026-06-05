@@ -81,17 +81,19 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
         print(df_temp)
         table = table.join(df_temp.select(filter_on), on=filter_on, how="semi")
         print(table.shape)
+        print(table)
     return table
 
 def filter_df_internal(df, criteria):
     table = None
+    print(df.shape)
     for condition in criteria.conditions:
         table = filter_conditions(df, condition, criteria.filter_on, table, criteria.action, external=False)
     if criteria.action == 'include':
         df = df.join(table, on=criteria.filter_on, how='semi')
     elif criteria.action == 'exclude':
         df = df.join(table, on=criteria.filter_on, how='anti')
-    
+    print(df.shape)
     return df
     
 def filter_df_external(df, criteria):

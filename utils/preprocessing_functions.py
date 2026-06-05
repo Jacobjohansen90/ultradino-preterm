@@ -79,7 +79,7 @@ def make_train_test_split(df, cfg, cols_to_check=['CPR_MOTHER', 'CPR_CHILD', 'no
         
         if len(overlap) > 0:
             print(overlap)
-            df_train = df_train.filter(pl.col(col).is_in(overlap).implode())
+            df_train = df_train.filter(~pl.col(col).is_in(overlap).implode())
     
     return df_train, df_test
 
