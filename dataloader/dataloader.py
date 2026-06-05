@@ -73,12 +73,13 @@ class PreTermDataset(Dataset):
 
         super().__init__()
         self.img_size = cfg.data.img_size
-        self.ehr_data = cfg.data.ehr_data
+        self.ehr_vars = cfg.data.ehr_data
         self.ga_cutoff = cfg.data.ga_cutoff_weeks
         self.prefix = cfg.data.prefix
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424       
         self.train = train
+        self.relabel = []
         
         if cfg.labels.label_smoothing:
             self.label_smoothing_param = cfg.labels.label_smoothing_param
@@ -93,18 +94,21 @@ class PreTermDataset(Dataset):
             elif cond == 'remove_on_GA':
                 df = df.filter(~(pl.col(col) & (pl.col('GA') // 7 < cfg.data.ga_cutoff_weeks)))
             elif cond == 'label':
-                #We deal with this later, when performing label smoothing
-                continue 
+                self.re_label.append(col)
             
         self.df = df
-        
+
+        self.groups = (df.group_by("CPR_CHILD", maintain_order=True)
+                       .agg(pl.int_range(pl.len()).alias("IDX"))
+                       .get_column("IDX"))
+
         self.setup_transforms()
         
     def __len__(self):
         if self.train:
             return len(self.df)
         else:
-            return len(self.)
+            return len(self.groups)
     
     def setup_transforms(self):
         if self.train:
@@ -127,16 +131,55 @@ class PreTermDataset(Dataset):
     def sigmoid(self, x):
         return 1.0/(1.0 + np.exp(-x))
         
-    
     def __getitem__(self, idx):
-        data = self.df[int(idx)]
-        
-        #Prepare EHR data        
+        labels = []
         ehr_data = []
+        images = []
         
+        if self.train:
+            idx = int(idx)
+        else:
+            idx = self.groups[int(idx)]
+        
+        for i in idx:
+            data = self.df.row(i, named=True)
+
+            ehr_data_temp = []        
+            for key in self.ehr_vars:
+                ehr_data.append([float(data.get(key))])
+            ehr_data.append(ehr_data_temp)
+
+        #Prepare labels        
+        labels_temp = {}
+        ga_weeks = data.get['GA']//7
+        if self.label_smoothing_param is not None and self.train:
+            
+            label_preterm = torch.Tensor([1*self.sigmoid((self.ga_cutoff-0.5-ga_weeks)/self.label_smoothing_param)])
+        else:
+            label_preterm = torch.Tensor([1*(ga_weeks < self.ga_cutoff)])
+
+        labels['preterm'] = torch.Tensor([label_preterm])
+        labels['GA_reg'] = torch.Tensor([float(ga_weeks)])
+
+
+
+        ehr_data = torch.Tensor(ehr_data)
+
+
+
+
+        if self.train:
+            data = self.df.row(int(idx), named=True)
+        else:
+            data = self.df[self.groups[int(idx)]]
+
+        #Prepare EHR data        
+        ehr_data = []        
         for key in self.ehr_data:
             ehr_data.append([float(data[key])])
         ehr_data = torch.Tensor(ehr_data)
+
+
 
         #Prepare labels        
         labels = {}
