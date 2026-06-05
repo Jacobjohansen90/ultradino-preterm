@@ -17,7 +17,7 @@ image_criteria:
 
   - name: GA at scan
     action: include
-    filter_on: file_path
+    filter_on: [file_path, CPR_CHILD]
     function: filter_df_internal
     conditions:
       - condition: 
@@ -31,7 +31,7 @@ image_criteria:
 
   - name: Scan to delivery
     action: include
-    filter_on: file_path
+    filter_on: [file_path, CPR_CHILD]
     function: filter_df_internal
     conditions:
       - condition: 
