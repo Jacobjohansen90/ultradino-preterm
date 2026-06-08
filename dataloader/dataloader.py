@@ -150,7 +150,7 @@ class PreTermDataset(Dataset):
             #Prepare EHR data
             ehr_data_temp = []
             for key in self.ehr_vars:
-                ehr_data_temp.append([data[key]])
+                ehr_data_temp.append([data.get(key)])
             ehr_data_temp = torch.Tensor(ehr_data_temp)
             
             #Prepare labels
@@ -175,20 +175,22 @@ class PreTermDataset(Dataset):
             #Prepare Image        
             img = Image.open(data.get('no_ocr_preprocessed_file_path'))
             img = np.asarray(img)
-            img = self.transforms(image=img)['image']
-            # try:
-            #     img = self.transforms(image=img)['image']
-            #     # print(data.get('no_ocr_preprocessed_file_path'))
-            # except:
-            #     img = torch.Tensor(np.zeros((1,224,224)))
-            #     labels_temp['preterm'] = torch.Tensor([0])
-            #     labels_temp['GA_reg'] = torch.Tensor([0.])
+            # img = self.transforms(image=img)['image']
+            try:
+                img = self.transforms(image=img)['image']
+                print(data.get('no_ocr_preprocessed_file_path'))
+            except:
+                img = torch.Tensor(np.zeros((1,224,224)))
+                labels_temp['preterm'] = torch.Tensor([0])
+                labels_temp['GA_reg'] = torch.Tensor([0.])
             
             
             #Prepare image metadata
-            img_data_temp = torch.Tensor([data.get('physical_delta_x') or 0.0,
-                                          data.get('physical_delta_y') or 0.0])
-                        
+            img_data_temp = []
+            for key in self.img_data_vars:
+                img_data_temp.append([data.get(key) or 0.0])
+            img_data_temp = torch.Tensor(img_data_temp)
+
             img_data_temp = torch.flatten(img_data_temp)
 
             ehr_data.append(ehr_data_temp)

@@ -12,8 +12,9 @@ data:
   batch_size: 128
   val_frac: 0.05
   workers: 64
-  ga_cutoff_weeks: 37 #Sharp cutoff (GA < GA_cutoff)
+  ga_cutoff_weeks: 34 #Sharp cutoff (GA < GA_cutoff)
   ehr_data: [progesterone]
+  img_data: [physical_delta_x, physical_delta_y]
   img_size: [224, 224]
   prefix: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_processed_no_OCR/
   oversample: True
@@ -22,7 +23,7 @@ data:
 #label / remove / ignore / remove_on_GA 
 #(Label as true if cond is true / remove from DF if cond is true / ignore / remove if GA < GA_cutoff)
 dataset: 
-    progesterone: label 
+    progesterone: ignore 
     c-section: remove_on_GA
     induced: remove_on_GA
 
@@ -41,6 +42,7 @@ training:
 
 auxiliary:
   method: append
+  strategy: sum
 
 model:
   vit:

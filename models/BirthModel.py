@@ -17,7 +17,8 @@ class BirthModel(nn.Module):
                  img_data_transform,
                  predictor,
                  regressor,
-                 aux_method='append'):
+                 aux_method='append',
+                 aux_strategy='sum'):
         
         super().__init__()
         
@@ -28,6 +29,7 @@ class BirthModel(nn.Module):
         self.predictor = predictor
         self.regressor = regressor
         self.aux_method = aux_method
+        self.aux_strategy = aux_strategy
         
         if self.aux_method == 'append':
             """
@@ -45,11 +47,25 @@ class BirthModel(nn.Module):
             embedding = self.ehr_transform(ehr_embedding[:,i,:])
             ehr_embeddings.append(embedding)
         ehr_embeddings = torch.cat(ehr_embeddings, dim=1)
-        img_data_embeddings = self.img_data_transform(img_data)
+        
+        img_data_embeddings = []
+        for i in range(img_data.shape[1]):
+            img_data_embedding = self.img_data_transform(img_data[:,i,:])
+            img_data_embeddings.append(img_data_embedding)
+        img_data_embeddings = torch.cat(img_data_embeddings, dim=1)
+        
+        if self.aux_strategy == 'sum':
+            img_data_embeddings = img_data_embeddings.sum(dim=1, keepdim=True)
+            ehr_embeddings = ehr_embeddings.sum(dim=1, keepdim=True)
+
+            
         embeddings = [torch.cat((img_data_embeddings, ehr_embeddings), dim=1)]
+ 
         vision_features = self.vit_model(img, append_tokens=embeddings)
+        
         GA_reg, _ = self.regressor(vision_features)
         preterm_logits, preterm_pred = self.predictor(vision_features)
+        
         return {'preterm': preterm_pred,
                 'preterm_logits': preterm_logits,
                 'vision_features': vision_features,
