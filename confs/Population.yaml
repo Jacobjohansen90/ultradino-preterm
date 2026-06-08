@@ -1,5 +1,3 @@
-debug: False
-
 paths:
   input_dir_SDS: /storage/archive/UCPH/DeepFetal/SDS/registers_pseudonymized/
   misc_dir: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/

@@ -33,6 +33,9 @@ Path(cfg.paths.data_dir + 'data_dump/').mkdir()
 Path(cfg.paths.data_dir + 'logs/').mkdir()
 Path(cfg.paths.data_dir + 'tables/').mkdir()
 
+OmegaConf.save(cfg, cfg.paths.data_dir + 'preprocessing.yaml')
+OmegaConf.save(cfg_incl_excl, cfg.paths.data_dir + 'incl_excl.yaml')
+
 #Setup logger
 logging.basicConfig(filename=cfg.paths.data_dir + 'logs/preprocess.log', filemode='w', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -42,9 +45,6 @@ logger = logging.getLogger(__name__)
 df_pop = merge_population_tables(cfg)
 
 link_t_tables(cfg)
-
-if cfg.debug:
-    df_pop = df_pop[:10000]
 
 df_pop.write_csv(cfg.paths.data_dir + 'data_dump/population.csv')
 

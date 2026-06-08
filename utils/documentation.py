@@ -23,7 +23,8 @@ def setup(conf):
     return path
 
 class Logger():
-    def __init__(self, save_path):
+    def __init__(self, save_path, name):
+        self.name = name
         self.save_path = save_path
         self.first_log = True
         self.metrics = []
@@ -38,7 +39,7 @@ class Logger():
                 else:
                     self.headers.append(key)
 
-            with open(self.save_path + 'metrics.csv', 'w') as file:
+            with open(self.save_path + self.name + '_metrics.csv', 'w') as file:
                 writer = csv.writer(file)
                 writer.writerow(self.headers)
             self.first_log = False
@@ -53,7 +54,7 @@ class Logger():
                 metrics.append(round(metrics_dict[key].compute().item(), 3))
             metrics_dict[key].reset()
             
-        with open(self.save_path + 'metrics.csv', 'a') as file:
+        with open(self.save_path + self.name + '_metrics.csv', 'a') as file:
             writer = csv.writer(file)
             writer.writerow(metrics)
         self.metrics.append(metrics)    
@@ -65,7 +66,7 @@ class Logger():
         plt.xlabel('Epoch')
         plt.ylabel('Metric Value')
         plt.ylim(0,1.05)
-        plt.savefig(self.save_path + 'Metrics_plot.png')
+        plt.savefig(self.save_path + self.name + '_metrics_plot.png')
         plt.close()
                 
               

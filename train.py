@@ -25,7 +25,8 @@ cfg = OmegaConf.load("/projects/users/data/UCPH/DeepFetal/projects/preterm/ultra
 
 save_path = setup(cfg)
 
-logger = Logger(save_path)
+logger_avg = Logger(save_path, name='avg')
+logger_max = Logger(save_path, name='max')
 
 #%% Setup dataloaders and models
 
@@ -44,7 +45,7 @@ TrainLoader = DataLoader(TrainData,
                          collate_fn=collate_fn)
 
 ValLoader = DataLoader(ValData,
-                       cfg.data.batch_size,
+                       1,
                        shuffle=False,
                        pin_memory=False,
                        drop_last=False,
@@ -61,7 +62,9 @@ model.freeze_model(model.ehr_model)
 optimizer = get_optimizer(model, cfg)
 scheduler = get_cosine_schedule_with_warmup(optimizer, cfg, cfg.training.epochs)
 loss_fns = get_loss(cfg)
-metrics = get_metrics(cfg)
+
+metrics_avg = get_metrics(cfg)
+metrics_max = get_metrics(cfg)
 
 for epoch in range(cfg.training.epochs):
     model_freezer(model, epoch, cfg)
@@ -85,23 +88,37 @@ for epoch in range(cfg.training.epochs):
         
     scheduler.step()
     model.eval()
-    val_loss = 0
+
+    val_loss_avg = 0
+    val_loss_max = 0
+
     with torch.no_grad():
         for data in iter(ValLoader):
             outputs = model(data['img'].to(cfg.device.type), 
                             data['img_data'].to(cfg.device.type), 
                             data['ehr_data'].to(cfg.device.type))
             
-            labels = data['labels']['preterm'].to(cfg.device.type)
-            loss = loss_fns['preterm'](outputs['preterm'], labels)
-            val_loss += loss.item() / len(ValLoader)
-            for key in metrics.keys():
-                metrics[key](outputs['preterm'], labels.to(torch.int))
+            output_avg = outputs['preterm'].mean()
+            output_max = outputs['preterm'].max()
+            label = data['labels']['preterm'][0].to(cfg.device.type)
+            
+            loss_avg = loss_fns['preterm'](output_avg, label)
+            loss_max = loss_fns['preterm'](output_max, label)
+
+            val_loss_avg += loss_avg.item() / len(ValLoader)
+            val_loss_max += loss_max.item() / len(ValLoader) 
+            
+            for key in metrics_avg.keys():
+                metrics_avg[key](output_avg, label.to(torch.int))
+                metrics_max[key](output_max, label.to(torch.int))
     
 
     torch.save(model.state_dict(), save_path + '/weights/' + str(epoch).zfill(3) + '.pth')        
-    
-    logger.log_metrics(metrics, train_loss, val_loss)
-    logger.plot_metrics()
+
+    logger_avg.log_metrics(metrics_avg, train_loss, val_loss_avg)
+    logger_max.log_metrics(metrics_avg, train_loss, val_loss_max)
+
+    logger_avg.plot_metrics()
+    logger_max.plot_metrics()
    
         
