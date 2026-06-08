@@ -107,9 +107,6 @@ for epoch in range(cfg.training.epochs):
             val_loss_max += loss_max.item() / len(ValLoader) 
             
             for key in metrics_avg.keys():
-                print(key)
-                print(output_avg)
-                print(label.to(torch.int))
                 metrics_avg[key](output_avg, label.to(torch.int))
                 metrics_max[key](output_max, label.to(torch.int))
     
@@ -117,7 +114,7 @@ for epoch in range(cfg.training.epochs):
     torch.save(model.state_dict(), save_path + '/weights/' + str(epoch).zfill(3) + '.pth')        
 
     logger_avg.log_metrics(metrics_avg, train_loss, val_loss_avg)
-    logger_max.log_metrics(metrics_avg, train_loss, val_loss_max)
+    logger_max.log_metrics(metrics_max, train_loss, val_loss_max)
 
     logger_avg.plot_metrics()
     logger_max.plot_metrics()
