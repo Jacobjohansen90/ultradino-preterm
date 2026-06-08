@@ -71,6 +71,7 @@ class PreTermDataset(Dataset):
         super().__init__()
         self.img_size = cfg.data.img_size
         self.ehr_vars = cfg.data.ehr_data
+        self.img_data_vars = cfg.data.img_data
         self.ga_cutoff = cfg.data.ga_cutoff_weeks
         self.prefix = cfg.data.prefix
         self.norm_mean = 0.1842924807
@@ -175,11 +176,10 @@ class PreTermDataset(Dataset):
             #Prepare Image        
             img = Image.open(data.get('no_ocr_preprocessed_file_path'))
             img = np.asarray(img)
-            # img = self.transforms(image=img)['image']
             try:
                 img = self.transforms(image=img)['image']
-                print(data.get('no_ocr_preprocessed_file_path'))
             except:
+                print(data.get('no_ocr_preprocessed_file_path'))
                 img = torch.Tensor(np.zeros((1,224,224)))
                 labels_temp['preterm'] = torch.Tensor([0])
                 labels_temp['GA_reg'] = torch.Tensor([0.])
