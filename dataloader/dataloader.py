@@ -190,9 +190,7 @@ class PreTermDataset(Dataset):
             for key in self.img_data_vars:
                 img_data_temp.append([data.get(key) or 0.0])
             img_data_temp = torch.Tensor(img_data_temp)
-
-            img_data_temp = torch.flatten(img_data_temp)
-
+            
             ehr_data.append(ehr_data_temp)
             labels.append(labels_temp)
             img_data.append(img_data_temp)
