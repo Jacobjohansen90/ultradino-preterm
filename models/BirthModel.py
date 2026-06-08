@@ -42,9 +42,9 @@ class BirthModel(nn.Module):
         ehr_embedding = self.ehr_model(ehr)
         ehr_embeddings = []
         for i in range(ehr_embedding.shape[1]):
-            embedding = self.ehr_transform(ehr_embedding[:,i,:])
+            embedding = self.ehr_transform(ehr_embedding[:,i:i+1,:])
             print(embedding.shape)
-            ehr_embeddings.append(embedding.unsqueeze(1))
+            ehr_embeddings.append(embedding)
         ehr_embeddings = torch.stack(ehr_embeddings, dim=1)
         print(ehr_embeddings.shape)
         img_data_embeddings = self.img_data_transform(img_data)
