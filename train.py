@@ -102,6 +102,9 @@ for epoch in range(cfg.training.epochs):
             output_max = outputs['preterm'].max()
             label = data['labels']['preterm'][0].to(cfg.device.type)
             
+            print(output_avg)
+            print(label)
+            
             loss_avg = loss_fns['preterm'](output_avg, label)
             loss_max = loss_fns['preterm'](output_max, label)
 
