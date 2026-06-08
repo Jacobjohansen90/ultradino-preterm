@@ -5,7 +5,7 @@ Created on Wed Mar  4 09:41:00 2026
 
 @author: jacob
 """
-
+#%%Imports
 from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
 import torch
@@ -20,13 +20,15 @@ from utils.documentation import setup, Logger
 
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
+warnings.filterwarnings("ignore", category=UserWarning, module="torchmetrics")
 
+#%%Load config and setup logger(s)
 cfg = OmegaConf.load("/projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/training_confs/append_tokens_vitb16.yaml")
 
 save_path = setup(cfg)
 
-logger_avg = Logger(save_path, name='avg')
-logger_max = Logger(save_path, name='max')
+logger_avg = Logger(save_path, name='Avg')
+logger_max = Logger(save_path, name='Max')
 
 #%% Setup dataloaders and models
 

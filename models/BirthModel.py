@@ -41,6 +41,7 @@ class BirthModel(nn.Module):
             raise RuntimeError(f'Unknown fusion type f"{self.fusion}"')
             
     def forward_append(self, img, img_data, ehr):
+        print(ehr)
         ehr_embedding = self.ehr_model(ehr)
         ehr_embeddings = []
         for i in range(ehr_embedding.shape[1]):
