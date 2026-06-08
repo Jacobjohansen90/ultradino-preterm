@@ -12,7 +12,7 @@ import torch
 from tqdm import tqdm
 
 from dataloader.dataloader import PreTermDataset, collate_fn, make_train_val_split
-from utils.model_utils import model_from_conf, model_freezer
+from utils.model_utils import model_from_conf, freeze_model
 from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
 from utils.loss_loader import get_loss
 from utils.metric_loader import get_metrics
@@ -54,8 +54,6 @@ ValLoader = DataLoader(ValData,
 
 
 model = model_from_conf(cfg)
-model.freeze_model(model.vit_model)
-model.freeze_model(model.ehr_model)
 
 #%% Setup finetuning
 
@@ -67,7 +65,7 @@ metrics_avg = get_metrics(cfg)
 metrics_max = get_metrics(cfg)
 
 for epoch in range(cfg.training.epochs):
-    model_freezer(model, epoch, cfg)
+    freeze_model(model, epoch, cfg)
 
     model.train(True)
     train_loss = 0
@@ -100,11 +98,8 @@ for epoch in range(cfg.training.epochs):
             
             output_avg = outputs['preterm'].mean()
             output_max = outputs['preterm'].max()
-            label = data['labels']['preterm'][0].to(cfg.device.type)
-            
-            print(output_avg)
-            print(label)
-            
+            label = data['labels']['preterm'][0].to(cfg.device.type)[0]
+                        
             loss_avg = loss_fns['preterm'](output_avg, label)
             loss_max = loss_fns['preterm'](output_max, label)
 

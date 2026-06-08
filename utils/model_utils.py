@@ -87,9 +87,12 @@ def model_from_conf(cfg, **kwargs):
                        regressor,
                        aux_method=cfg.auxiliary.method)
     
+    model.freeze_model(model.vit_model)
+    model.freeze_model(model.ehr_model)
+    
     return model.to(device)
 
-def model_freezer(model, epoch, cfg):
+def freeze_model(model, epoch, cfg):
     if epoch >= cfg.training.vit_frozen_until:
         if cfg.training.strategy == 'all':
             model.unfreeze_model(model.vit_model)
