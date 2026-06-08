@@ -107,6 +107,9 @@ for epoch in range(cfg.training.epochs):
             val_loss_max += loss_max.item() / len(ValLoader) 
             
             for key in metrics_avg.keys():
+                print(key)
+                print(output_avg)
+                print(label.to(torch.int))
                 metrics_avg[key](output_avg, label.to(torch.int))
                 metrics_max[key](output_max, label.to(torch.int))
     
