@@ -96,8 +96,8 @@ for epoch in range(cfg.training.epochs):
                             data['img_data'].to(cfg.device.type), 
                             data['ehr_data'].to(cfg.device.type))
             
-            output_avg = outputs['preterm'].mean().unsqueeze(1)
-            output_max = outputs['preterm'].max().unsqueeze(1)
+            output_avg = outputs['preterm'].mean().unsqueeze(0)
+            output_max = outputs['preterm'].max().unsqueeze(0)
             label = data['labels']['preterm'][0].to(cfg.device.type)
                         
             loss_avg = loss_fns['preterm'](output_avg, label)
