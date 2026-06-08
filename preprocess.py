@@ -33,8 +33,8 @@ Path(cfg.paths.data_dir + 'data_dump/').mkdir()
 Path(cfg.paths.data_dir + 'logs/').mkdir()
 Path(cfg.paths.data_dir + 'tables/').mkdir()
 
-OmegaConf.save(cfg, cfg.paths.data_dir + 'preprocessing.yaml')
-OmegaConf.save(cfg_incl_excl, cfg.paths.data_dir + 'incl_excl.yaml')
+OmegaConf.save(cfg, cfg.paths.data_dir + 'logs/preprocessing.yaml')
+OmegaConf.save(cfg_incl_excl, cfg.paths.data_dir + 'logs/incl_excl.yaml')
 
 #Setup logger
 logging.basicConfig(filename=cfg.paths.data_dir + 'logs/preprocess.log', filemode='w', level=logging.INFO)
