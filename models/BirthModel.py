@@ -38,12 +38,13 @@ class BirthModel(nn.Module):
             raise RuntimeError(f'Unknown fusion type f"{self.fusion}"')
             
     def forward_append(self, img, img_data, ehr):
-        #ehr_embedding = self.ehr_model(ehr)
-        #ehr_embeddings = []
-        # for i in range(ehr_embedding.shape[1]):
-            # embedding = self.ehr_transform(ehr_embedding[:,i,:])
-            # ehr_embeddings.append(embedding.unsqueeze(1))
-        embeddings = [self.img_data_transform(img_data)]
+        ehr_embedding = self.ehr_model(ehr)
+        ehr_embeddings = []
+        for i in range(ehr_embedding.shape[1]):
+            embedding = self.ehr_transform(ehr_embedding[:,i,:])
+            ehr_embeddings.append(embedding.unsqueeze(1))
+        print(ehr_embeddings)
+        embeddings = [self.img_data_transform(img_data), ehr_embeddings]
         vision_features = self.vit_model(img, append_tokens=embeddings)
         GA_reg, _ = self.regressor(vision_features)
         preterm_logits, preterm_pred = self.predictor(vision_features)
