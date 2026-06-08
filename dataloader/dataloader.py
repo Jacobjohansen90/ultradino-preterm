@@ -173,12 +173,12 @@ class PreTermDataset(Dataset):
             labels_temp['GA_reg'] = torch.Tensor([float(ga_weeks)])
             
             #Prepare Image        
-            img = Image.open(self.prefix + data.get('file_path'))
+            img = Image.open(self.prefix + data.get('no_ocr_preprocessed_file_path'))
             img = np.asarray(img)
 
             try:
                 img = self.transforms(image=img)['image']
-                print(data.get('file_path'))
+                print(data.get('no_ocr_preprocessed_file_path'))
             except:
                 img = torch.Tensor(np.zeros((1,224,224)))
                 labels_temp['preterm'] = torch.Tensor([0])
