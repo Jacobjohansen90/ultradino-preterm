@@ -7,6 +7,7 @@ Created on Wed Feb 18 11:46:47 2026
 """
 
 from torch import nn
+import torch
 
 class BirthModel(nn.Module):
     def __init__(self, 
@@ -43,8 +44,11 @@ class BirthModel(nn.Module):
         for i in range(ehr_embedding.shape[1]):
             embedding = self.ehr_transform(ehr_embedding[:,i,:])
             ehr_embeddings.append(embedding.unsqueeze(1))
-        print(ehr_embeddings)
-        embeddings = [self.img_data_transform(img_data), ehr_embeddings]
+        ehr_embeddings = torch.stack(ehr_embeddings)
+        print(ehr_embeddings.shape)
+        img_data_embeddings = self.img_data_transform(img_data)
+        print(img_data_embeddings.shape)
+        embeddings = [torch.stack((img_data_embeddings, ehr_embeddings))]
         vision_features = self.vit_model(img, append_tokens=embeddings)
         GA_reg, _ = self.regressor(vision_features)
         preterm_logits, preterm_pred = self.predictor(vision_features)
