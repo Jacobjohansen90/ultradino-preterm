@@ -175,7 +175,6 @@ class PreTermDataset(Dataset):
             #Prepare Image        
             img = Image.open(data.get('no_ocr_preprocessed_file_path'))
             img = np.asarray(img)
-            print(img.shape)
             img = self.transforms(image=img)['image']
             # try:
             #     img = self.transforms(image=img)['image']
@@ -187,8 +186,8 @@ class PreTermDataset(Dataset):
             
             
             #Prepare image metadata
-            img_data_temp = torch.Tensor([data.get('physical_delta_x', 0.0),
-                                     data.get('physical_delta_y', 0.0)])
+            img_data_temp = torch.Tensor([data.get('physical_delta_x') or 0.0,
+                                          data.get('physical_delta_y') or 0.0])
                         
             img_data_temp = torch.flatten(img_data_temp)
 
