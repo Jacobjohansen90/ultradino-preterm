@@ -176,13 +176,14 @@ class PreTermDataset(Dataset):
             img = Image.open(data.get('no_ocr_preprocessed_file_path'))
             img = np.asarray(img)
             print(img.shape)
-            try:
-                img = self.transforms(image=img)['image']
-                # print(data.get('no_ocr_preprocessed_file_path'))
-            except:
-                img = torch.Tensor(np.zeros((1,224,224)))
-                labels_temp['preterm'] = torch.Tensor([0])
-                labels_temp['GA_reg'] = torch.Tensor([0.])
+            img = self.transforms(image=img)['image']
+            # try:
+            #     img = self.transforms(image=img)['image']
+            #     # print(data.get('no_ocr_preprocessed_file_path'))
+            # except:
+            #     img = torch.Tensor(np.zeros((1,224,224)))
+            #     labels_temp['preterm'] = torch.Tensor([0])
+            #     labels_temp['GA_reg'] = torch.Tensor([0.])
             
             
             #Prepare image metadata
