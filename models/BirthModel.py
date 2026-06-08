@@ -45,10 +45,8 @@ class BirthModel(nn.Module):
             embedding = self.ehr_transform(ehr_embedding[:,i,:])
             ehr_embeddings.append(embedding)
         ehr_embeddings = torch.cat(ehr_embeddings, dim=1)
-        print(ehr_embeddings.shape)
         img_data_embeddings = self.img_data_transform(img_data)
-        print(img_data_embeddings.shape)
-        embeddings = [torch.stack((img_data_embeddings, ehr_embeddings))]
+        embeddings = [torch.cat((img_data_embeddings, ehr_embeddings), dim=1)]
         vision_features = self.vit_model(img, append_tokens=embeddings)
         GA_reg, _ = self.regressor(vision_features)
         preterm_logits, preterm_pred = self.predictor(vision_features)
