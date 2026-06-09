@@ -164,6 +164,7 @@ class PreTermDataset(Dataset):
                     label_preterm = torch.Tensor([1-(self.sigmoid(ga_weeks/self.label_smoothing_param)-0.5)])
                 else:
                     label_preterm = torch.Tensor([1*self.sigmoid((self.ga_cutoff-0.5-ga_weeks)/self.label_smoothing_param)])
+                    print(label_preterm)
             else:
                 if data.get('relabel'):
                     label_preterm = torch.Tensor([1])
