@@ -99,7 +99,7 @@ class PreTermDataset(Dataset):
         self.df = df
 
         self.groups = (df.with_row_index().group_by("CPR_CHILD", maintain_order=True)
-                       .agg(pl.col("IDX"))["IDX"].to_list())
+                       .agg(pl.col("index"))["index"].to_list())
         
         self.setup_transforms()
         
