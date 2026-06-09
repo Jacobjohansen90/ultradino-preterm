@@ -41,28 +41,35 @@ class BirthModel(nn.Module):
             raise RuntimeError(f'Unknown fusion type f"{self.fusion}"')
             
     def forward_append(self, img, img_data, ehr):
-        print(ehr)
-        ehr_embedding = self.ehr_model(ehr)
-        ehr_embeddings = []
-        for i in range(ehr_embedding.shape[1]):
-            embedding = self.ehr_transform(ehr_embedding[:,i,:])
-            ehr_embeddings.append(embedding)
-        ehr_embeddings = torch.cat(ehr_embeddings, dim=1)
-        
-        img_data_embeddings = []
-        for i in range(img_data.shape[1]):
-            img_data_embedding = self.img_data_transform(img_data[:,i,:])
-            img_data_embeddings.append(img_data_embedding)
-        img_data_embeddings = torch.cat(img_data_embeddings, dim=1)
-        
-        if self.aux_strategy == 'sum':
-            img_data_embeddings = img_data_embeddings.sum(dim=1, keepdim=True)
-            ehr_embeddings = ehr_embeddings.sum(dim=1, keepdim=True)
+        embeddings = []
 
-            
-        embeddings = [torch.cat((img_data_embeddings, ehr_embeddings), dim=1)]
- 
-        vision_features = self.vit_model(img, append_tokens=embeddings)
+        if ehr.shape[1] != 0:
+            ehr_embedding = self.ehr_model(ehr)        
+            ehr_embeddings = []
+            for i in range(ehr_embedding.shape[1]):
+                embedding = self.ehr_transform(ehr_embedding[:,i,:])
+                ehr_embeddings.append(embedding)
+            ehr_embeddings = torch.cat(ehr_embeddings, dim=1)
+            if self.aux_strategy == 'sum':
+                ehr_embeddings = ehr_embeddings.sum(dim=1, keepdim=True)
+            embeddings.append(ehr_embeddings)
+        
+        if img_data.shape[1] != 0:        
+            img_data_embeddings = []
+            for i in range(img_data.shape[1]):
+                img_data_embedding = self.img_data_transform(img_data[:,i,:])
+                img_data_embeddings.append(img_data_embedding)
+            img_data_embeddings = torch.cat(img_data_embeddings, dim=1)
+            if self.aux_strategy == 'sum':
+                img_data_embeddings = img_data_embeddings.sum(dim=1, keepdim=True)
+            embeddings.append(img_data_embeddings)
+        
+        if len(embeddings) > 0:
+            embeddings = [torch.cat(embeddings, dim=1)] 
+            vision_features = self.vit_model(img, append_tokens=embeddings)
+
+        else:
+            vision_features = self.vit_model(img)
         
         GA_reg, _ = self.regressor(vision_features)
         preterm_logits, preterm_pred = self.predictor(vision_features)
