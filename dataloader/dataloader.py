@@ -98,10 +98,9 @@ class PreTermDataset(Dataset):
 
         self.df = df
 
-        self.groups = (df.group_by("CPR_CHILD", maintain_order=True)
-                       .agg(pl.int_range(pl.len()).alias("IDX"))
-                       .get_column("IDX"))
-
+        self.groups = (df.with_row_index().group_by("CPR_CHILD", maintain_order=True)
+                       .agg(pl.col("IDX"))["IDX"].to_list())
+        
         self.setup_transforms()
         
     def __len__(self):
@@ -164,7 +163,6 @@ class PreTermDataset(Dataset):
                     label_preterm = torch.Tensor([1-(self.sigmoid(ga_weeks/self.label_smoothing_param)-0.5)])
                 else:
                     label_preterm = torch.Tensor([1*self.sigmoid((self.ga_cutoff-0.5-ga_weeks)/self.label_smoothing_param)])
-                    print(label_preterm)
             else:
                 if data.get('relabel'):
                     label_preterm = torch.Tensor([1])
