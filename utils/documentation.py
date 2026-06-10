@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 def setup(conf):
     
     timestamp =  datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    path = "../training_runs/" + timestamp + '/'
+    path = "../Training_runs/Current/" + timestamp + '/'
     os.makedirs(path, exist_ok=False)
     os.makedirs(path + 'weights/', exist_ok=False)
     OmegaConf.save(conf, path + 'conf.yaml')

@@ -17,6 +17,7 @@ from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
 from utils.loss_loader import get_loss
 from utils.metric_loader import get_metrics
 from utils.documentation import setup, Logger
+from utils.test_utils import test_model
 
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
@@ -119,4 +120,5 @@ for epoch in range(cfg.training.epochs):
     logger_avg.plot_metrics()
     logger_max.plot_metrics()
    
-        
+test_model(cfg.save_path)
+
