@@ -244,7 +244,7 @@ def make_train_val_split(cfg, unique_column='CPR_MOTHER'):
         n1 = df_1.height
         n0 = df_0.height
         if n1 > n0:
-            df_0 = df_0.sample(n=n1*cfg.dataa.oversample_ratio, with_replacement=True)
+            df_0 = df_0.sample(n=n1*cfg.data.oversample_ratio, with_replacement=True)
         else:
             df_1 = df_1.sample(n=n0*cfg.data.oversample_ratio, with_replacement=True)
         train_df = pl.concat([df_1, df_0])

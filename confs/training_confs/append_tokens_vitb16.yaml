@@ -9,6 +9,7 @@ info:
 
 data:
   path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/OnlyFirstPreg_June/train.parquet
+  test_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/OnlyFirstPreg_June/test.parquet
   batch_size: 128
   val_frac: 0.05
   workers: 64
