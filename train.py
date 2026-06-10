@@ -120,5 +120,5 @@ for epoch in range(cfg.training.epochs):
     logger_avg.plot_metrics()
     logger_max.plot_metrics()
    
-test_model(cfg.save_path, cfg.data.test_path)
+test_model(save_path, cfg.data.test_path)
 
