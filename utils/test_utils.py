@@ -49,8 +49,11 @@ def test_model(folder_path, testdata_path, move=True):
     df_avg = pl.read_csv(folder_path + 'Avg_metrics.csv')
     df_max = pl.read_csv(folder_path + 'Max_metrics.csv')
     
-    for i, weights in enumerate(os.listdir(folder_path + 'weights/')):
-        model.load_state_dict(torch.load(folder_path + weights, weights_only=True))
+    dirs = os.listdir(folder_path + 'weights/')
+    dirs.sort()
+    
+    for i, weights in enumerate(dirs):
+        model.load_state_dict(torch.load(folder_path + 'weights/' + weights, weights_only=True))
         model.eval()
         
         t_avg = df_avg[i+1]['SensAtSpec_cutoff']

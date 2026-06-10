@@ -16,7 +16,6 @@ def setup(conf):
     
     timestamp =  datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     path = "../Training_runs/Current/" + timestamp + '/'
-    path = path.replace(' ', '_')
     os.makedirs(path, exist_ok=False)
     os.makedirs(path + 'weights/', exist_ok=False)
     OmegaConf.save(conf, path + 'conf.yaml')
