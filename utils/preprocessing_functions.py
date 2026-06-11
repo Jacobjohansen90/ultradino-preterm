@@ -137,6 +137,12 @@ def sqlite_extractor(cfg, cpr_mothers):
                     ON d.sop_instance_uid = pt.sop_instance_uid
                 """)
 
+    rows = []
+    
+    for row in cur.fetchall():
+        print(row)
+    
+
     df = pl.DataFrame(cur.fetchall(),
                       schema=schema,
                       orient="row",
