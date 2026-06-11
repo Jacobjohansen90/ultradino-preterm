@@ -63,11 +63,6 @@ df_img.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
 
 del df_cervix_preds
 
-#TODO: Remove this when DB is updated
-#Currently using flow_imgs to detect multi images. Will be included in SQL DB at some point
-df_flow = pl.read_csv(cfg.paths.misc_dir + 'flow_imgs.csv', infer_schema=False)
-df_img = df_img.join(df_flow, left_on='file_path', right_on='filepath', how='anti')
-
 
 logger.info(f"Found {len(df_img)} images - " + str(datetime.now().strftime('%H:%M:%S')))
 logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))

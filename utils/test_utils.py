@@ -110,7 +110,8 @@ def test_model(folder_path, testdata_path, move=True):
             idx, col, _ = top_5.row(i)
             row = df[idx]
             t = col.split('_')[1]
-            wr.writerow([row[col], t, row['Sens_'+t], row['Spec_'+t], row[t+'_cutoff'], row[t+'_cutoff_val'], row['weights']])
+            wr.writerow([row[col].item(), t, row['Sens_'+t].item(), row['Spec_'+t].item(),
+                         row[t+'_cutoff'].item(), row[t+'_cutoff_val'].item(), row['weights'].item()])
        
     if move:
         dst = folder_path.replace('Current', 'Tested')

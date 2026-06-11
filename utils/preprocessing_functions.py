@@ -139,11 +139,15 @@ def sqlite_extractor(cfg, cpr_mothers):
 
     rows = []
     
-    for row in cur.fetchmany(1000):
-        print(row)
+    #TODO: Make this better
+    for row in cur.fetchall():
+        if '[' and ']' in row:
+            continue
+        else:
+            rows.append(row)
     
 
-    df = pl.DataFrame(cur.fetchall(),
+    df = pl.DataFrame(rows,
                       schema=schema,
                       orient="row",
                       strict=False)
