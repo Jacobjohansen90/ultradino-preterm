@@ -13,6 +13,7 @@ import os
 import polars as pl
 import csv
 import shutil
+from tqdm import tqdm
 
 from dataloader.dataloader import PreTermDataset, collate_fn
 from utils.model_utils import model_from_conf
@@ -65,7 +66,7 @@ def test_model(folder_path, testdata_path, move=True):
 
         
         with torch.no_grad():
-            for data in iter(TestLoader):
+            for data in tqdm(TestLoader):
                 outputs = model(data['img'].to(cfg.device.type), 
                                 data['img_data'].to(cfg.device.type), 
                                 data['ehr_data'].to(cfg.device.type))
