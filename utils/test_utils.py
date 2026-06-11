@@ -42,7 +42,7 @@ def test_model(folder_path, testdata_path, move=True):
     wr_all = csv.writer(f_all)
     wr_all.writerow(['Sens@Spec_avg', 'Sens@Spec_max', 
                      'Sens_avg', 'Spec_avg',
-                     'Sens_max', 'Spec_max'
+                     'Sens_max', 'Spec_max',
                      'avg_cutoff', 'max_cutoff', 
                      'avg_cutoff_val', 'max_cutoff_val',
                      'weights'])

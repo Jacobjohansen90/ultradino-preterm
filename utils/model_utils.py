@@ -96,5 +96,7 @@ def freeze_model(model, epoch, cfg):
     if epoch >= cfg.training.vit_frozen_until:
         if cfg.training.strategy == 'all':
             model.unfreeze_model(model.vit_model)
+    if epoch >= cfg.training.ehr_frozen_until:
+        if cfg.training.strategy == 'all'
             model.unfreeze_model(model.ehr_model)
             
