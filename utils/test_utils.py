@@ -56,8 +56,8 @@ def test_model(folder_path, testdata_path, move=True):
         model.load_state_dict(torch.load(folder_path + 'weights/' + weights, weights_only=True))
         model.eval()
         
-        t_avg = df_avg[i+1]['SensAtSpec_cutoff']
-        t_max = df_max[i+1]['SensAtSpec_cutoff']
+        t_avg = df_avg[i+1]['SensAtSpec_cutoff'].item()
+        t_max = df_max[i+1]['SensAtSpec_cutoff'].item()
 
         metrics_avg = get_test_metrics(cfg, t_avg)
         metrics_max = get_test_metrics(cfg, t_max)
