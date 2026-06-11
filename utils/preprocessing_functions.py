@@ -139,7 +139,7 @@ def sqlite_extractor(cfg, cpr_mothers):
 
     rows = []
     
-    for row in cur.fetchall():
+    for row in cur.fetchmany(1000):
         print(row)
     
 
