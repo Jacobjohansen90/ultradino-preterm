@@ -1,6 +1,7 @@
 paths:
   input_dir_SDS: /storage/archive/UCPH/DeepFetal/SDS/registers_pseudonymized/
   misc_dir: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/
+  cervix_preds: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/cervix_preds_v2.csv
   data_dir: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/
   SQL_DB: /projects/users/data/UCPH/DeepFetal/ultrasound/tables/DeepFetal_image_database_250526.sqlite
   holdout_csv: /projects/users/data/UCPH/DeepFetal/projects/common/splits/splits/split_V4/test_split_0.15_2026-06-08.csv
