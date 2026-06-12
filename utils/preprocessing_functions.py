@@ -141,17 +141,9 @@ def sqlite_extractor(cfg, cpr_mothers):
     
     #TODO: Currently we drop any flow image. Update this so they are instead marked
     for row in cur.fetchall():
-        try:
-            b = any("[" in s for s in row)
-        except:
-            print(row)
-        if b:
-            continue
-        else:
+        if any("[" in s for s in row if s is not None):
             rows.append(row)
 
-    print(schema)
-    print(rows[0:5])
     df = pl.DataFrame(rows,
                       schema=schema,
                       orient="row",
