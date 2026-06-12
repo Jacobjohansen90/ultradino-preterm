@@ -139,9 +139,12 @@ def sqlite_extractor(cfg, cpr_mothers):
 
     rows = []
     
-    #TODO: Make this better
-    for row in cur.fetchmany(10000):
+    #TODO: Currently we drop any flow image. Update this so they are instead marked
+    for row in cur.fetchmany(100):
         if '[' in row:
+            print('CAUGHT')
+            print(row)
+            print()
             continue
         else:
             try:
