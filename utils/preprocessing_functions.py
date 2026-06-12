@@ -144,19 +144,15 @@ def sqlite_extractor(cfg, cpr_mothers):
         if any("[" in s for s in row):
             continue
         else:
-            print(row)
-            df = pl.DataFrame(row,
-                              schema=schema,
-                              orient="row",
-                              strict=False)
+            rows.append(row)
 
-    rows.append(row)
-    
+    print(schema)
+    print(rows[0:5])
+    df = pl.DataFrame(rows,
+                      schema=schema,
+                      orient="row",
+                      strict=False)
 
-    # df = pl.DataFrame(rows,
-    #                   schema=schema,
-    #                   orient="row",
-    #                   strict=False)
 
     date_cols = [col for col, dtype in metadata_dicom_variables if dtype == "date"]
     df = df.with_columns([pl.col(col).str.strptime(pl.Date, format="%Y%m%d", strict=False) for col in date_cols])
