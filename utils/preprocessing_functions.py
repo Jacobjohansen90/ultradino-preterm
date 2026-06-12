@@ -140,17 +140,24 @@ def sqlite_extractor(cfg, cpr_mothers):
     rows = []
     
     #TODO: Make this better
-    for row in cur.fetchall():
+    for row in cur.fetchmany(10000):
         if '[' and ']' in row:
             continue
         else:
-            rows.append(row)
+            try:
+                df = pl.DataFrame(row,
+                                  schema=schema,
+                                  orient="row",
+                                  strict=False)
+            except:
+                print(row)
+    # rows.append(row)
     
 
-    df = pl.DataFrame(rows,
-                      schema=schema,
-                      orient="row",
-                      strict=False)
+    # df = pl.DataFrame(rows,
+    #                   schema=schema,
+    #                   orient="row",
+    #                   strict=False)
 
     date_cols = [col for col, dtype in metadata_dicom_variables if dtype == "date"]
     df = df.with_columns([pl.col(col).str.strptime(pl.Date, format="%Y%m%d", strict=False) for col in date_cols])
