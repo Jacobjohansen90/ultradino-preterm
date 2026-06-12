@@ -144,17 +144,16 @@ def sqlite_extractor(cfg, cpr_mothers):
         if '[' in row:
             continue
         else:
-            try:
-                df = pl.DataFrame(row,
-                                  schema=schema,
-                                  orient="row",
-                                  strict=False)
-            except:
-                print(row)
-                for r in row:
-                    print(r)
-                    print('[' in r)
-    # rows.append(row)
+            print(row)
+            for r in row:
+                print(r)
+                print('[' in r)
+            df = pl.DataFrame(row,
+                              schema=schema,
+                              orient="row",
+                              strict=False)
+
+    rows.append(row)
     
 
     # df = pl.DataFrame(rows,
