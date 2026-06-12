@@ -141,7 +141,7 @@ def sqlite_extractor(cfg, cpr_mothers):
     
     #TODO: Make this better
     for row in cur.fetchmany(10000):
-        if '[' and ']' in row:
+        if '[' in row:
             continue
         else:
             try:
