@@ -62,6 +62,7 @@ def merge_population_and_image_df(df_img, df_pop, cfg):
 
     return df
 
+
 def make_train_test_split(df, cfg, cols_to_check=['CPR_MOTHER', 'CPR_CHILD', 'no_ocr_preprocessed_file_path']):
     
     df_holdout = pl.read_csv(cfg.paths.holdout_csv)
@@ -80,6 +81,7 @@ def make_train_test_split(df, cfg, cols_to_check=['CPR_MOTHER', 'CPR_CHILD', 'no
             df_test = df_test.filter(~pl.col(col).is_in(overlap))
     
     return df_train, df_test
+
 
 def apply_inclusion_exclusion(df, cfg):
     discards = {}
@@ -104,6 +106,7 @@ def apply_inclusion_exclusion(df, cfg):
         conditioned = condition(conditioned, df, criteria)
     
     return df, discards, conditioned
+
 
 def sqlite_extractor(cfg, cpr_mothers):
     conn = sqlite3.connect(cfg.paths.SQL_DB)
@@ -157,5 +160,5 @@ def sqlite_extractor(cfg, cpr_mothers):
     df = df.drop_nulls(subset="file_path")
 
     conn.close()
-  
+
     return df

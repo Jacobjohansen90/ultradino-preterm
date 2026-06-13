@@ -8,8 +8,8 @@ info:
   description: 
 
 data:
-  path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/OnlyFirstPreg_June/train.parquet
-  test_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/OnlyFirstPreg_June/test.parquet
+  path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/AnyPreg_June_v2/train.parquet
+  test_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/OnlyFirstPreg_June_v2/test.parquet
   batch_size: 128
   val_frac: 0.05
   workers: 64
@@ -19,7 +19,7 @@ data:
   img_size: [224, 224]
   prefix: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_processed_no_OCR/
   oversample: True
-  oversample_ratio: 1
+  oversample_ratio: 2
 
 #label / remove / ignore / remove_on_GA 
 #(Label as true if cond is true / remove from DF if cond is true / ignore / remove if GA < GA_cutoff)

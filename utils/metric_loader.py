@@ -17,7 +17,7 @@ def get_metrics(cfg):
     #            'SensAtSpec': SensitivityAtSpecificity(min_specificity=0.85, task='binary').to(conf.device.type),
     #            'SpecAtSens': SpecificityAtSensitivity(min_sensitivity=0.7, task='binary').to(conf.device.type)}
     
-    metrics = {'Precision': Precision(task='binary').to(cfg.device.type),
+    metrics = {'Recall': Recall(task='binary').to(cfg.device.type),
                'Specificity': Specificity(task='binary').to(cfg.device.type),
                'SensAtSpec': SensitivityAtSpecificity(min_specificity=0.85, task='binary').to(cfg.device.type)}
     
@@ -25,7 +25,7 @@ def get_metrics(cfg):
     
 def get_test_metrics(cfg, t):
     
-    metrics = {'Sens': Precision(task='binary', threshold=t).to(cfg.device.type),
+    metrics = {'Sens': Recall(task='binary', threshold=t).to(cfg.device.type),
                'Spec': Specificity(task='binary', threshold=t).to(cfg.device.type),
                'SensAtSpec': SensitivityAtSpecificity(min_specificity=0.85, task='binary').to(cfg.device.type)}
     
