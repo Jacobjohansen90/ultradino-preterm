@@ -18,8 +18,8 @@ from utils.model_utils import model_from_conf
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
 
-cfg = OmegaConf.load("/projects/users/data/UCPH/DeepFetal/projects/preterm/Training_runs/2026-06-13 10:41:22/conf.yaml")
-weights = "/projects/users/data/UCPH/DeepFetal/projects/preterm/Training_runs/2026-06-13 10:41:22/weights/017.pth"
+cfg = OmegaConf.load("/projects/users/data/UCPH/DeepFetal/projects/preterm/Training_runs/Tested/2026-06-13 10:41:22/conf.yaml")
+weights = "/projects/users/data/UCPH/DeepFetal/projects/preterm/Training_runs/Tested/2026-06-13 10:41:22/weights/017.pth"
 save_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/misc/"
 
 
