@@ -18,16 +18,14 @@ from utils.model_utils import model_from_conf
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
 
-cfg = OmegaConf.load("/projects/users/data/UCPH/DeepFetal/projects/preterm/training_runs/SOTA_37/conf.yaml")
-weights = "/projects/users/data/UCPH/DeepFetal/projects/preterm/training_runs/SOTA_37/weights/019.pth"
-save_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/misc/EHR/"
+cfg = OmegaConf.load("/projects/users/data/UCPH/DeepFetal/projects/preterm/Training_runs/2026-06-13 10:41:22/conf.yaml")
+weights = "/projects/users/data/UCPH/DeepFetal/projects/preterm/Training_runs/2026-06-13 10:41:22/weights/017.pth"
+save_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/misc/"
 
 
 cfg.data.val_frac = 0
 cfg.data.path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/"
 cfg.data.oversample = False
-
-path = cfg.data.path
 
 
 
@@ -35,8 +33,7 @@ model = model_from_conf(cfg)
 model.load_state_dict(torch.load(weights, weights_only=True))
 model.eval()
 
-for split in ['test.json', 'train.json']:
-    cfg.data.path = path + split
+for path in [cfg.data.path, cfg.data.test_path]:
     df, df_ = make_train_val_split(cfg, unique_column='CPR_MOTHER')
     if len(df_) > 0:
         raise Exception("Data in val split")
@@ -51,30 +48,27 @@ for split in ['test.json', 'train.json']:
                       drop_last=False,
                       num_workers=8,
                       collate_fn=collate_fn)
-
-    with open(cfg.data.path) as f:
-        data_dict = json.load(f) 
+    data = {}
     for i, data in enumerate(tqdm(Data)):
-        CPR = DataSet.df[i]['CPR_CHILD'].item()
-        fp = DataSet.df[i]['file_path'].item()
-        
-        outputs = model(data['img'].to(cfg.device.type), 
-                        data['img_data'].to(cfg.device.type), 
-                        data['ehr_data'].to(cfg.device.type))
-        
-        found = False
+        idx = DataSet.groups[i][0]
+        CPR = DataSet.df[idx]['CPR_CHILD'].item()
+        data[CPR] = {}
         with torch.no_grad():
-            for i in range(len(data_dict[CPR]['imgs'])):
-                if data_dict[CPR]['imgs'][i]['file_path'] == fp:
-                    found = True
-                    data_dict[CPR]['imgs'][i]['pred'] = outputs['preterm'].item()
-                    data_dict[CPR]['imgs'][i]['embedding'] = outputs['vision_features'].to('cpu').tolist()
+
+            outputs = model(data['img'].to(cfg.device.type), 
+                            data['img_data'].to(cfg.device.type), 
+                            data['ehr_data'].to(cfg.device.type))
             
-            if not found:
-                print(f"{fp} was not found in child {CPR}") 
+
+            data[CPR]['pred'] = outputs['preterm'].item()
+            data[CPR]['embedding'] = outputs['vision_features'].to('cpu').tolist()
+            
     
-    
-    with open(save_path + split, 'w') as f:
-        json.dump(data_dict, f)
+    if path == cfg.data.path:
+        with open(save_path + 'train.json', 'w') as f:
+            json.dump(data, f)
+    else:
+        with open(save_path + 'test.json', 'w') as f:
+            json.dump(data, f)
 
 
