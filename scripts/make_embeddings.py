@@ -24,7 +24,6 @@ save_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/misc/"
 
 
 cfg.data.val_frac = 0
-cfg.data.path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/"
 cfg.data.oversample = False
 
 
