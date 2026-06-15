@@ -59,7 +59,7 @@ for path in [cfg.data.path, cfg.data.test_path]:
                             data['ehr_data'].to(cfg.device.type))
             
 
-            data[CPR]['pred'] = outputs['preterm'].item()
+            data[CPR]['pred'] = outputs['preterm'].to('cpu').tolist()
             data[CPR]['embedding'] = outputs['vision_features'].to('cpu').tolist()
             
     
