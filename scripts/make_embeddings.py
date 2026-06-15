@@ -47,27 +47,26 @@ for path in [cfg.data.path, cfg.data.test_path]:
                       drop_last=False,
                       num_workers=8,
                       collate_fn=collate_fn)
-    data = {}
+    data_dict = {}
     for i, data in enumerate(tqdm(Data)):
         idx = DataSet.groups[i][0]
         CPR = DataSet.df[idx]['CPR_CHILD'].item()
-        data[CPR] = {}
+        data_dict[CPR] = {}
         with torch.no_grad():
 
             outputs = model(data['img'].to(cfg.device.type), 
                             data['img_data'].to(cfg.device.type), 
                             data['ehr_data'].to(cfg.device.type))
             
-            data[CPR]['pred'] = outputs['preterm'].to('cpu').tolist()
-            data[CPR]['embedding'] = outputs['vision_features'].to('cpu').tolist()
+            data_dict[CPR]['pred'] = outputs['preterm'].to('cpu').tolist()
+            data_dict[CPR]['embedding'] = outputs['vision_features'].to('cpu').tolist()
             
-            print(data)
     
     if path == cfg.data.path:
         with open(save_path + 'train.json', 'w') as f:
-            json.dump(data, f)
+            json.dump(data_dict, f)
     else:
         with open(save_path + 'test.json', 'w') as f:
-            json.dump(data, f)
+            json.dump(data_dict, f)
 
 
