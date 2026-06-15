@@ -67,7 +67,7 @@ def model_from_conf(cfg, **kwargs):
                                    vit_model.embed_dim,
                                    layer_dims=cfg.model.transform.layer_dims)
     
-    ehr_transform = Transform(0, 
+    ehr_transform = Transform(1, 
                               vit_model.embed_dim,
                               layer_dims=cfg.model.transform.layer_dims)
 
