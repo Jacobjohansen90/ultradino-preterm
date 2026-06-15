@@ -85,10 +85,10 @@ def test_model(folder_path, testdata_path, move=True):
             Sens_avg = round(metrics_avg['Sens'].compute().item(), 3)
             Spec_avg = round(metrics_avg['Spec'].compute().item(), 3)
 
-            SensSpec_max = round(metrics_avg['SensAtSpec'].compute()[0].item(), 3)
-            cutoff_max = round(metrics_avg['SensAtSpec'].compute()[1].item(), 3)
-            Sens_max = round(metrics_avg['Sens'].compute().item(), 3)
-            Spec_max = round(metrics_avg['Spec'].compute().item(), 3)
+            SensSpec_max = round(metrics_max['SensAtSpec'].compute()[0].item(), 3)
+            cutoff_max = round(metrics_max['SensAtSpec'].compute()[1].item(), 3)
+            Sens_max = round(metrics_max['Sens'].compute().item(), 3)
+            Spec_max = round(metrics_max['Spec'].compute().item(), 3)
             
             wr_all.writerow([SensSpec_avg, SensSpec_max, Sens_avg, Spec_avg, Sens_max, Spec_max, 
                              cutoff_avg, cutoff_max, t_avg, t_max, weights])
