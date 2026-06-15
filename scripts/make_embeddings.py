@@ -32,43 +32,41 @@ model = model_from_conf(cfg)
 model.load_state_dict(torch.load(weights, weights_only=True))
 model.eval()
 
-cfg.data.path = cfg.data.test_path
+cfg.data.path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/AnyPreg_June_v2/train.parquet'
 
-for path in [cfg.data.path, cfg.data.test_path]:
-    df, df_ = make_train_val_split(cfg, unique_column='CPR_MOTHER')
-    if len(df_) > 0:
-        raise Exception("Data in val split")
+
+df, df_ = make_train_val_split(cfg, unique_column='CPR_MOTHER')
+if len(df_) > 0:
+    raise Exception("Data in val split")
  
 
-    DataSet = PreTermDataset(df, cfg, train=False)
+DataSet = PreTermDataset(df, cfg, train=False)
 
-    Data = DataLoader(DataSet,
-                      1,
-                      shuffle=False,
-                      pin_memory=False,
-                      drop_last=False,
-                      num_workers=8,
-                      collate_fn=collate_fn)
-    data_dict = {}
-    for i, data in enumerate(tqdm(Data)):
-        idx = DataSet.groups[i][0]
-        CPR = DataSet.df[idx]['CPR_CHILD'].item()
-        data_dict[CPR] = {}
-        with torch.no_grad():
+Data = DataLoader(DataSet,
+                  1,
+                  shuffle=False,
+                  pin_memory=False,
+                  drop_last=False,
+                  num_workers=8,
+                  collate_fn=collate_fn)
+data_dict = {}
+for i, data in enumerate(tqdm(Data)):
+    idx = DataSet.groups[i][0]
+    CPR = DataSet.df[idx]['CPR_CHILD'].item()
+    data_dict[CPR] = {}
+    with torch.no_grad():
 
-            outputs = model(data['img'].to(cfg.device.type), 
-                            data['img_data'].to(cfg.device.type), 
-                            data['ehr_data'].to(cfg.device.type))
-            
-            data_dict[CPR]['pred'] = outputs['preterm'].to('cpu').tolist()
-            data_dict[CPR]['embedding'] = outputs['vision_features'].to('cpu').tolist()
-            
-    
-    if path == cfg.data.path:
-        with open(save_path + 'test.json', 'w') as f:
-            json.dump(data_dict, f)
-    else:
-        with open(save_path + 'test.json', 'w') as f:
-            json.dump(data_dict, f)
+        outputs = model(data['img'].to(cfg.device.type), 
+                        data['img_data'].to(cfg.device.type), 
+                        data['ehr_data'].to(cfg.device.type))
+        
+        data_dict[CPR]['pred'] = outputs['preterm'].to('cpu').tolist()
+        data_dict[CPR]['embedding'] = outputs['vision_features'].to('cpu').tolist()
+        
+
+
+with open(save_path + 'train.json', 'w') as f:
+    json.dump(data_dict, f)
+
 
 
