@@ -45,29 +45,16 @@ class BirthModel(nn.Module):
 
         if ehr.shape[1] != 0:
             ehr_embedding = self.ehr_model(ehr)        
-            ehr_embeddings = []
-            for i in range(ehr_embedding.shape[1]):
-                embedding = self.ehr_transform(ehr_embedding[:,i,:])
-                ehr_embeddings.append(embedding)
-            ehr_embeddings = torch.cat(ehr_embeddings, dim=1)
-            if self.aux_strategy == 'sum':
-                ehr_embeddings = ehr_embeddings.sum(dim=1, keepdim=True)
-            embeddings.append(ehr_embeddings)
+            ehr_embedding = self.ehr_transform(ehr_embedding)
+            embeddings.append(ehr_embedding)
         
         if img_data.shape[1] != 0:        
-            img_data_embeddings = []
-            for i in range(img_data.shape[1]):
-                img_data_embedding = self.img_data_transform(img_data[:,i,:])
-                img_data_embeddings.append(img_data_embedding)
-            img_data_embeddings = torch.cat(img_data_embeddings, dim=1)
-            if self.aux_strategy == 'sum':
-                img_data_embeddings = img_data_embeddings.sum(dim=1, keepdim=True)
-            embeddings.append(img_data_embeddings)
+            img_data_embedding = self.img_data_transform(img_data)
+            embeddings.append(img_data_embedding)
         
         if len(embeddings) > 0:
             embeddings = [torch.cat(embeddings, dim=1)] 
             vision_features = self.vit_model(img, append_tokens=embeddings)
-
         else:
             vision_features = self.vit_model(img)
         
