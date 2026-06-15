@@ -26,7 +26,7 @@ print(f"37 > X >= 34: {count}")
 count = df.select(((pl.col("GA") < 34*7) & (pl.col("GA") >= 32*7)).sum()).item()
 print(f"34 > X >= 32: {count}")
 count = df.select((pl.col("GA") < 32*7).sum()).item()
-print(f"X > 32: {count}")
+print(f"X < 32: {count}")
 
 #Cervix pop
 path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/'
@@ -43,7 +43,7 @@ print(f"37 > X >= 34: {count}")
 count = df.select(((pl.col("GA") < 34*7) & (pl.col("GA") >= 32*7)).sum()).item()
 print(f"34 > X >= 32: {count}")
 count = df.select((pl.col("GA") < 32*7).sum()).item()
-print(f"X > 32: {count}")
+print(f"X < 32: {count}")
 
 
 
