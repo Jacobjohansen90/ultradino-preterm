@@ -32,7 +32,7 @@ model = model_from_conf(cfg)
 model.load_state_dict(torch.load(weights, weights_only=True))
 model.eval()
 
-cfg.data.path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/AnyPreg_June_v2/train.parquet'
+cfg.data.path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/OnlyFirstPreg_June_v2/train.parquet'
 
 
 df, df_ = make_train_val_split(cfg, unique_column='CPR_MOTHER')
