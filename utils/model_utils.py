@@ -63,11 +63,11 @@ def model_from_conf(cfg, **kwargs):
     vit_model = vit_from_conf(cfg.model.vit, **vit_kwargs)
     ehr_model = ehr_from_conf(cfg, **ehr_kwargs)
     
-    img_data_transform = Transform(len(cfg.data.img_data), 
+    img_data_transform = Transform(1, 
                                    vit_model.embed_dim,
                                    layer_dims=cfg.model.transform.layer_dims)
     
-    ehr_transform = Transform(ehr_model.embed_dim, 
+    ehr_transform = Transform(0, 
                               vit_model.embed_dim,
                               layer_dims=cfg.model.transform.layer_dims)
 
