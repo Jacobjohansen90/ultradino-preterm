@@ -30,7 +30,7 @@ print(f"X > 32: {count}")
 
 #Cervix pop
 path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/'
-df = pl.read_csv(path + 'AnyPreg_June_v2/data_dump/filtered_population.csv')
+df = pl.read_csv(path + 'AnyPreg_June_v2/data_dump/filtered_population.csv', ignore_errors=True)
 df = df.unique(subset=['CPR_CHILD'])
 
 print ("Cervix scan pop:")
