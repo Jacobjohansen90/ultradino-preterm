@@ -128,6 +128,8 @@ class PreTermDataset(Dataset):
         for key in self.ehr_vars:
             ehr_data.append([data.get(key)])
         ehr_data = torch.tensor(ehr_data)
+        ehr_data = ehr_data.unsqueeze(0)
+
         
         #Prepare labels
         labels= {}
