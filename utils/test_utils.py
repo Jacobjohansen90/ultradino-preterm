@@ -14,6 +14,7 @@ import polars as pl
 import shutil
 from tqdm import tqdm
 from datetime import datetime
+from filelock import FileLock
 
 from dataloader.dataloader import PreTermDataset, collate_fn
 from utils.model_utils import model_from_conf
@@ -113,41 +114,43 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
     best = (results_df.sort("SensAtSpec_best", descending=True).head(1))
     
     dst_name = f"{os.path.join(folder_path.replace('Current', 'SOTA'), 'weights/')}"
-
     sota_csv = os.path.join(folder_path.replace('Current', 'SOTA'), f"SOTA_{cfg.data.cutoff_weeks}.csv")
-    if os.path.exists(sota_csv):
-        name = datetime.now().strftime("%Y%m%d_%H%M%S_%f") + ".pth"
-        sota_df = pl.read_csv(sota_csv)     
-        if len(sota_df) < 5:
-            shutil.copy(best['weights'][0], dst_name + name)
-            best = best.with_columns(pl.lit(dst_name + name).alias("weights")) 
-            sota_df = pl.concat([sota_df, best])
-
-        else:
-            if best["SensAtSpec_best"][0] > sota_df["SensAtSpec_best"].min():
+    lock_file = sota_csv + ".lock"
+    
+    with FileLock(lock_file):
+        if os.path.exists(sota_csv):
+            name = datetime.now().strftime("%Y%m%d_%H%M%S_%f") + ".pth"
+            sota_df = pl.read_csv(sota_csv)     
+            if len(sota_df) < 5:
                 shutil.copy(best['weights'][0], dst_name + name)
                 best = best.with_columns(pl.lit(dst_name + name).alias("weights")) 
                 sota_df = pl.concat([sota_df, best])
+    
+            else:
+                if best["SensAtSpec_best"][0] > sota_df["SensAtSpec_best"].min():
+                    shutil.copy(best['weights'][0], dst_name + name)
+                    best = best.with_columns(pl.lit(dst_name + name).alias("weights")) 
+                    sota_df = pl.concat([sota_df, best])
+            
+            sota_df = (sota_df.sort("SensAtSpec_best", descending=True).head(5))
+            sota_df.write_csv(sota_csv)
+    
+        else:
+            name = datetime.now().strftime("%Y%m%d_%H%M%S_%f") + ".pth"
+            dst_name = f"{os.path.join(folder_path.replace('Current', 'SOTA'), 'weights/')}"
+            os.makedirs(dst_name, exist_ok=False)
+            shutil.copy(best['weights'][0], dst_name + name)
+            best = best.with_columns(pl.lit(dst_name + name).alias("weights")) 
+            best.write_csv(sota_csv)
+    
         
-        sota_df = (sota_df.sort("SensAtSpec_best", descending=True).head(5))
-        sota_df.write_csv(sota_csv)
-
-    else:
-        name = datetime.now().strftime("%Y%m%d_%H%M%S_%f") + ".pth"
-        dst_name = f"{os.path.join(folder_path.replace('Current', 'SOTA'), 'weights/')}"
-        os.makedirs(dst_name, exist_ok=False)
-        shutil.copy(best['weights'][0], dst_name + name)
-        best = best.with_columns(pl.lit(dst_name + name).alias("weights")) 
-        best.write_csv(sota_csv)
-
-    
-    valid_weights = set(sota_df["weights"].to_list())
-    
-    for file in os.listdir(dst_name):
-        path = os.path.join(dst_name, file)
-    
-        if path not in valid_weights:
-            os.remove(path)
+        valid_weights = set(sota_df["weights"].to_list())
+        
+        for file in os.listdir(dst_name):
+            path = os.path.join(dst_name, file)
+        
+            if path not in valid_weights:
+                os.remove(path)
     
     
     
