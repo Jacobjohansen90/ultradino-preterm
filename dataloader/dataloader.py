@@ -165,7 +165,7 @@ class PreTermDataset(Dataset):
         #Prepare image metadata
         img_data = []
         for key in self.img_data_vars:
-            img_data.append([data.get(key) or 0.0])
+            img_data.append(data.get(key) or 0.0)
         img_data = torch.tensor(img_data)
                 
         #Get patient identifier
