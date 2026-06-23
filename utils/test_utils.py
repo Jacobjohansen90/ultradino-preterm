@@ -59,7 +59,7 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
         with torch.no_grad():
             for data in tqdm(TestLoader):
                 
-                outputs = model(data['img'].to(cfg.device.type),
+                outputs = model(data['imgs'].to(cfg.device.type),
                                 data['img_data'].to(cfg.device.type),
                                 data['ehr_data'].to(cfg.device.type))
             
