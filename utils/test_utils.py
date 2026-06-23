@@ -112,25 +112,29 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
     
     best = (results_df.sort("SensAtSpec_best", descending=True).head(1))
     
-    dst_name = f"{os.path.join(folder_path.replace('Current', 'SOTA'), 'weights/')}"
-    sota_csv = os.path.join(folder_path.replace('Current', 'SOTA'), f"SOTA_{cfg.data.ga_cutoff_weeks}.csv")
+    shutil.move(folder_path, folder_path.replace('Current', 'Tested'))
+    
+    save_path, name = folder_path.split('Current')
+    name = name.replace('/','')
+    
+    sota_csv = os.path.join(save_path + f"SOTA/SOTA_{cfg.data.ga_cutoff_weeks}.csv")
     lock_file = sota_csv + ".lock"
     
     with FileLock(lock_file):
+        dst_name = save_path + 'SOTA/weights/'
         if os.path.exists(sota_csv):
-            name = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
             sota_df = pl.read_csv(sota_csv)     
             if len(sota_df) < 5:
                 shutil.copy(best['weights'][0], dst_name + name  + ".pth")
-                shutil.copy(folder_path + 'conf.yaml' , dst_name + name  + ".yaml")
-                best = best.with_columns(pl.lit(dst_name + name).alias("weights")) 
+                shutil.copy(best['weights'][0].split('weights')[0] + 'conf.yaml' , dst_name + name  + ".yaml")
+                best = best.with_columns(pl.lit(dst_name + name + '.pth').alias("weights")) 
                 sota_df = pl.concat([sota_df, best])
     
             else:
                 if best["SensAtSpec_best"][0] > sota_df["SensAtSpec_best"].min():
                     shutil.copy(best['weights'][0], dst_name + name  + ".pth")
-                    shutil.copy(folder_path + 'conf.yaml' , dst_name + name  + ".yaml")
-                    best = best.with_columns(pl.lit(dst_name + name).alias("weights")) 
+                    shutil.copy(best['weights'][0].split('weights')[0] + 'conf.yaml', dst_name + name  + ".yaml")
+                    best = best.with_columns(pl.lit(dst_name + name + '.pth').alias("weights")) 
                     sota_df = pl.concat([sota_df, best])
             
             sota_df = (sota_df.sort("SensAtSpec_best", descending=True).head(5))
@@ -142,18 +146,16 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
         
                 if path not in valid_weights:
                     os.remove(path)
+                    os.remove(path.replace('.pth', '.yaml'))
     
         else:
-            name = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-            dst_name = f"{os.path.join(folder_path.replace('Current', 'SOTA'), 'weights/')}"
             os.makedirs(dst_name, exist_ok=False)
             shutil.copy(best['weights'][0], dst_name + name  + ".pth")
-            shutil.copy(folder_path + 'conf.yaml' , dst_name + name  + ".yaml")
-            best = best.with_columns(pl.lit(dst_name + name).alias("weights")) 
+            shutil.copy(best['weights'][0].split('weights')[0] + 'conf.yaml', dst_name + name  + ".yaml")
+            best = best.with_columns(pl.lit(dst_name + name + '.pth').alias("weights")) 
             best.write_csv(sota_csv)
     
         
-    shutil.move(folder_path, folder_path.replace('Current', 'Tested'))
 
     
     
