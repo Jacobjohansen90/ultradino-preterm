@@ -108,7 +108,7 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
                                          .then(pl.lit("avg")).otherwise(pl.lit("max")).alias("best_type"))
     
     top_5 = (results_df.sort("SensAtSpec_best", descending=True).head(5))
-    top_5.write(folder_path + "top_5.csv")
+    top_5.write_csv(folder_path + "top_5.csv")
 
     shutil.move(folder_path, folder_path.replace('Current', 'Tested'))
     
