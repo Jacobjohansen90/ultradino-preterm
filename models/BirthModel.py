@@ -49,6 +49,7 @@ class BirthModel(nn.Module):
             embeddings.append(ehr_embedding)
         
         if img_data.shape[1] != 0:        
+            print(img_data.shape)
             img_data_embedding = self.img_data_transform(img_data)
             print(img_data_embedding.shape)
             embeddings.append(img_data_embedding)
