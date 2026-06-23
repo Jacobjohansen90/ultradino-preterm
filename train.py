@@ -100,7 +100,8 @@ for epoch in range(cfg.training.epochs):
                             data['img_data'].to(cfg.device.type), 
                             data['ehr_data'].to(cfg.device.type))
             
-            val_loss += loss_fns['preterm'](outputs['preterm'].cpu(), data["labels"]["preterm"].cpu()) / len(ValLoader)
+            loss += loss_fns['preterm'](outputs['preterm'].cpu(), data["labels"]["preterm"].cpu())
+            val_loss += loss.item() / len(ValLoader)
             
             dfs.append(pl.DataFrame({'cpr': data['cprs'],
                                      'pred': outputs["preterm"].cpu().squeeze(),
