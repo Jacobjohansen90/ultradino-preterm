@@ -42,7 +42,7 @@ class BirthModel(nn.Module):
             
     def forward_append(self, img, img_data, ehr):
         embeddings = []
-        # print(self.img_data_transform)
+        print(img_data.shape)
         if ehr.shape[1] != 0:
             ehr_embedding = self.ehr_model(ehr)        
             ehr_embedding = self.ehr_transform(ehr_embedding)
