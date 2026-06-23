@@ -50,6 +50,7 @@ class BirthModel(nn.Module):
         
         if img_data.shape[1] != 0:        
             img_data_embedding = self.img_data_transform(img_data)
+            print(img_data_embedding.shape)
             embeddings.append(img_data_embedding)
         
         if len(embeddings) > 0:
