@@ -100,21 +100,22 @@ for epoch in range(cfg.training.epochs):
                             data['img_data'].to(cfg.device.type), 
                             data['ehr_data'].to(cfg.device.type))
             
+            val_loss += loss_fns['preterm'](outputs['preterm'].cpu(), data["labels"]["preterm"].cpu()) / len(ValLoader)
+            
             dfs.append(pl.DataFrame({'cpr': data['cprs'],
                                      'pred': outputs["preterm"].cpu().squeeze(),
                                      'label': data["labels"]["preterm"].cpu().squeeze()}))
             
         df = pl.concat(dfs)
+        patient_df = (df.group_by("cpr").agg([pl.col("pred").mean().alias("pred_avg"),
+                                              pl.col("pred").max().alias("pred_max"),
+                                              pl.col("label").first().alias("label")]))
+        
+        
         
         df.write_csv(save_path + "df.csv")
             
         
-        
-            # output_avg = outputs['preterm'].mean().unsqueeze(0)
-            # output_max = outputs['preterm'].max().unsqueeze(0)
-            # label = data['labels']['preterm'][0].to(cfg.device.type)
-            # loss_avg = loss_fns['preterm'](output_avg, label)
-            # loss_max = loss_fns['preterm'](output_max, label)
 
             # val_loss_avg += loss_avg.item() / len(ValLoader)
             # val_loss_max += loss_max.item() / len(ValLoader) 

@@ -77,8 +77,8 @@ class PreTermDataset(Dataset):
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424       
         self.train = train
-        self.relabel = []
-        
+        self.setup_transforms()
+
         if cfg.labels.label_smoothing:
             self.label_smoothing_param = cfg.labels.label_smoothing_param
         else:
@@ -97,17 +97,7 @@ class PreTermDataset(Dataset):
                 df = df.with_columns((pl.col('relabel') | pl.col(col)).alias('relabel'))            
 
         self.df = df
-
-        self.groups = (df.with_row_index().group_by("CPR_CHILD", maintain_order=True)
-                       .agg(pl.col("index"))["index"].to_list())
         
-        self.setup_transforms()
-        
-    def __len__(self):
-        if self.train:
-            return len(self.df)
-        else:
-            return len(self.groups)
     
     def setup_transforms(self):
         if self.train:
@@ -127,12 +117,19 @@ class PreTermDataset(Dataset):
                                          A.Normalize(mean=self.norm_mean, std=self.norm_std),
                                          A.ToTensorV2()])        
     
+    
     def sigmoid(self, x):
         return 1.0/(1.0 + np.exp(-x))
         
+    
     def __getitem__(self, idx):
         return self.getitem(idx)
         
+    
+    def __len__(self):
+        return len(self.df)
+
+
     def getitem(self, idx):
                 
         #Get data as named dict
@@ -226,6 +223,8 @@ def make_train_val_split(cfg, unique_column='CPR_MOTHER'):
 
     train_df = df.filter(pl.col(unique_column).is_in(train_keys))
     val_df = df.filter(pl.col(unique_column).is_in(val_keys))
+    print(val_df)
+    print(train_df)
     
     if cfg.data.oversample:
         df_1 = train_df.filter(pl.col('GA')//7 < cfg.data.ga_cutoff_weeks)
