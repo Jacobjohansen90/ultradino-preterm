@@ -115,7 +115,7 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
     best = (results_df.sort("SensAtSpec_best", descending=True).head(1))
     
     dst_name = f"{os.path.join(folder_path.replace('Current', 'SOTA'), 'weights/')}"
-    sota_csv = os.path.join(folder_path.replace('Current', 'SOTA'), f"SOTA_{cfg.data.cutoff_weeks}.csv")
+    sota_csv = os.path.join(folder_path.replace('Current', 'SOTA'), f"SOTA_{cfg.data.ga_cutoff_weeks}.csv")
     lock_file = sota_csv + ".lock"
     
     with FileLock(lock_file):

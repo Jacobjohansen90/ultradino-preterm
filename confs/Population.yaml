@@ -12,6 +12,8 @@ population:
   types: #By default column types are strings. If not listed here, it will be kept as string
     GA: int
     BIRTHDAY: date
+    AGE: int
+    BMI: float
   tables: 
     - table: ${paths.input_dir_SDS}/mfr.csv
       columns:
@@ -21,6 +23,8 @@ population:
         BIRTHDAY: FOEDSELSDATO
         Hospital: SYGEHUS
         BIRTH_ID: FOEDSELSLOEBENUMMER
+        AGE: ALDER_MODER
+        BMI: BMI_MODER
     - table: ${paths.input_dir_SDS}/nyfoedte.csv
       columns:
         CPR_CHILD: CPRnummer_Barn
@@ -29,6 +33,8 @@ population:
         BIRTHDAY: FoedselsDato_Barn
         Hospital: SHAK_Sygehus 
         BIRTH_ID: DW_EK_Foedsel
+        AGE: Alder_Mor
+        BMI: BMI_Mor
 
 t_tables:
   adm_table: ${paths.input_dir_SDS}/t_adm.csv
