@@ -52,7 +52,7 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
     for i, weights in enumerate(dirs):
         model.load_state_dict(torch.load(folder_path + 'weights/' + weights, weights_only=True))
         model.eval()
-        
+
         epoch_results = {}
         dfs = []
 
@@ -120,16 +120,18 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
     
     with FileLock(lock_file):
         if os.path.exists(sota_csv):
-            name = datetime.now().strftime("%Y%m%d_%H%M%S_%f") + ".pth"
+            name = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
             sota_df = pl.read_csv(sota_csv)     
             if len(sota_df) < 5:
-                shutil.copy(best['weights'][0], dst_name + name)
+                shutil.copy(best['weights'][0], dst_name + name  + ".pth")
+                shutil.copy(folder_path + 'conf.yaml' , dst_name + name  + ".yaml")
                 best = best.with_columns(pl.lit(dst_name + name).alias("weights")) 
                 sota_df = pl.concat([sota_df, best])
     
             else:
                 if best["SensAtSpec_best"][0] > sota_df["SensAtSpec_best"].min():
-                    shutil.copy(best['weights'][0], dst_name + name)
+                    shutil.copy(best['weights'][0], dst_name + name  + ".pth")
+                    shutil.copy(folder_path + 'conf.yaml' , dst_name + name  + ".yaml")
                     best = best.with_columns(pl.lit(dst_name + name).alias("weights")) 
                     sota_df = pl.concat([sota_df, best])
             
@@ -144,10 +146,11 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
                     os.remove(path)
     
         else:
-            name = datetime.now().strftime("%Y%m%d_%H%M%S_%f") + ".pth"
+            name = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
             dst_name = f"{os.path.join(folder_path.replace('Current', 'SOTA'), 'weights/')}"
             os.makedirs(dst_name, exist_ok=False)
-            shutil.copy(best['weights'][0], dst_name + name)
+            shutil.copy(best['weights'][0], dst_name + name  + ".pth")
+            shutil.copy(folder_path + 'conf.yaml' , dst_name + name  + ".yaml")
             best = best.with_columns(pl.lit(dst_name + name).alias("weights")) 
             best.write_csv(sota_csv)
     
