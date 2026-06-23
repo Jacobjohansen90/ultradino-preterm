@@ -109,8 +109,6 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
     
     top_5 = (results_df.sort("SensAtSpec_best", descending=True).head(5))
     top_5.write_csv(folder_path + "top_5.csv")
-
-    shutil.move(folder_path, folder_path.replace('Current', 'Tested'))
     
     best = (results_df.sort("SensAtSpec_best", descending=True).head(1))
     
@@ -155,7 +153,8 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
             best.write_csv(sota_csv)
     
         
-    
+    shutil.move(folder_path, folder_path.replace('Current', 'Tested'))
+
     
     
     
