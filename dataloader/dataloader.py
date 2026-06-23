@@ -131,93 +131,82 @@ class PreTermDataset(Dataset):
         return 1.0/(1.0 + np.exp(-x))
         
     def __getitem__(self, idx):
-        if self.train:
-            return self.getitem([idx])
-        else:
-            return self.getitem(self.groups[int(idx)])
+        return self.getitem(idx)
         
     def getitem(self, idx):
-        
+                
+        #Get data as named dict
+        data = self.df.row(idx, named=True)
+
+        #Prepare EHR data
         ehr_data = []
-        labels = []
-        img_data = []
-        imgs = []
+        for key in self.ehr_vars:
+            ehr_data.append([data.get(key)])
+        ehr_data = torch.tensor(ehr_data)
         
-        for i in idx:
-            #Get data as named dict
-            data = self.df.row(int(i), named=True)
-
-            #Prepare EHR data
-            ehr_data_temp = []
-            for key in self.ehr_vars:
-                ehr_data_temp.append([data.get(key)])
-            ehr_data_temp = torch.Tensor(ehr_data_temp)
-            
-            #Prepare labels
-            labels_temp= {}
-            ga_weeks = data.get('GA')//7
-            
-            if self.label_smoothing_param is not None and self.train:
-                if data.get('relabel'):
-                    ga_weeks = ga_weeks - self.ga_cutoff
-                    label_preterm = torch.Tensor([1-(self.sigmoid(ga_weeks/self.label_smoothing_param))])
-                else:
-                    label_preterm = torch.Tensor([1*self.sigmoid((self.ga_cutoff-ga_weeks)/self.label_smoothing_param)])
+        #Prepare labels
+        labels= {}
+        ga_weeks = data.get('GA')//7
+        
+        if self.label_smoothing_param is not None and self.train:
+            if data.get('relabel'):
+                ga_weeks = ga_weeks - self.ga_cutoff
+                label_preterm = torch.tensor([1-(self.sigmoid(ga_weeks/self.label_smoothing_param))])
             else:
-                if data.get('relabel'):
-                    label_preterm = torch.Tensor([1])
-                else:
-                    label_preterm = torch.Tensor([1*(ga_weeks < self.ga_cutoff)])
-            
-            labels_temp['preterm'] = torch.Tensor([label_preterm])
-            labels_temp['GA_reg'] = torch.Tensor([float(ga_weeks)])
-            
-            #Prepare Image       
-            # img = torch.Tensor(np.zeros((1,224,224)))
+                label_preterm = torch.tensor([1*self.sigmoid((self.ga_cutoff-ga_weeks)/self.label_smoothing_param)])
+        else:
+            if data.get('relabel'):
+                label_preterm = torch.tensor([1.])
+            else:
+                label_preterm = torch.tensor([1*(ga_weeks < self.ga_cutoff)])
+        
+        labels['preterm'] = label_preterm
+        labels['GA_reg'] = torch.tensor([float(ga_weeks)])
+        
+        #Prepare Image       
+        img = Image.open(data.get('no_ocr_preprocessed_file_path'))
+        img = np.asarray(img)
+        img = self.transforms(image=img)['image']
 
-            img = Image.open(data.get('no_ocr_preprocessed_file_path'))
-            img = np.asarray(img)
-            img = self.transforms(image=img)['image']
+        # try:
+        #     img = self.transforms(image=img)['image']
+        # except:
+        #     print(data.get('no_ocr_preprocessed_file_path'))
+        #     img = torch.Tensor(np.zeros((1,224,224)))
+        #     labels_temp['preterm'] = torch.Tensor([0])
+        #     labels_temp['GA_reg'] = torch.Tensor([0.])
+        
+        
+        #Prepare image metadata
+        img_data = []
+        for key in self.img_data_vars:
+            img_data.append([data.get(key) or 0.0])
+        img_data = torch.tensor(img_data)
+                
+        #Get patient identifier
+        cpr = data.get("CPR_CHILD")
 
-            # try:
-            #     img = self.transforms(image=img)['image']
-            # except:
-            #     print(data.get('no_ocr_preprocessed_file_path'))
-            #     img = torch.Tensor(np.zeros((1,224,224)))
-            #     labels_temp['preterm'] = torch.Tensor([0])
-            #     labels_temp['GA_reg'] = torch.Tensor([0.])
-            
-            
-            #Prepare image metadata
-            img_data_temp = []
-            for key in self.img_data_vars:
-                img_data_temp.append([data.get(key) or 0.0])
-            img_data_temp = torch.Tensor(img_data_temp)
-            
-            ehr_data.append(ehr_data_temp)
-            labels.append(labels_temp)
-            img_data.append(img_data_temp)
-            imgs.append(img)
-
-        return {'img': imgs, 'img_data': img_data, 'ehr_data': ehr_data, 'labels': labels}
+        return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'labels': labels, 'cpr': cpr}
 
 
 def collate_fn(batch):
 
-    imgs = [img for sample in batch for img in sample["img"]]
-    img_data = [x for sample in batch for x in sample["img_data"]]
-    ehr_data = [x for sample in batch for x in sample["ehr_data"]]
+    label_keys = batch[0]["labels"].keys()
 
-    label_keys = batch[0]["labels"][0].keys()
+    labels = {key: torch.stack([sample['labels'][key] for sample in batch])
+              for key in label_keys}
+    
+    imgs = torch.stack([sample['img'] for sample in batch])
+    img_data = torch.stack([sample['img_data'] for sample in batch])
+    ehr_data = torch.stack([sample['ehr_data'] for sample in batch])
+    cprs = [sample['cpr'] for sample in batch]
 
-    labels = {k: torch.stack([lbl[k] for sample in batch
-                              for lbl in sample["labels"]])
-              for k in label_keys}
 
-    sample =  {"img": torch.stack(imgs),
-               "img_data": torch.stack(img_data),
-               "ehr_data": torch.stack(ehr_data),
-               "labels": labels}
+    sample =  {"imgs": imgs,
+               "img_data": img_data,
+               "ehr_data": ehr_data,
+               "labels": labels,
+               "cprs": cprs}
 
     return sample
    

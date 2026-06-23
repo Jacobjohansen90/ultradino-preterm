@@ -33,7 +33,7 @@ class BirthModel(nn.Module):
         
         if self.aux_method == 'append':
             """
-            Early fusion, where EHR info is appended to the patch embeddings
+            Early fusion, where EHR/Img-meta data is appended to the patch embeddings
             """
             self.forward_ = self.forward_append
         
@@ -52,11 +52,11 @@ class BirthModel(nn.Module):
             img_data_embedding = self.img_data_transform(img_data)
             embeddings.append(img_data_embedding)
         
-        # if len(embeddings) > 0:
-        #     embeddings = [torch.cat(embeddings, dim=1)] 
-        #     vision_features = self.vit_model(img, append_tokens=embeddings)
-        # else:
-        vision_features = self.vit_model(img)
+        if len(embeddings) > 0:
+            embeddings = [torch.cat(embeddings, dim=1)] 
+            vision_features = self.vit_model(img, append_tokens=embeddings)
+        else:
+            vision_features = self.vit_model(img)
         
         GA_reg, _ = self.regressor(vision_features)
         preterm_logits, preterm_pred = self.predictor(vision_features)

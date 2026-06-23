@@ -10,6 +10,7 @@ from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
 import torch
 from tqdm import tqdm
+import polars as pl
 
 from dataloader.dataloader import PreTermDataset, collate_fn, make_train_val_split
 from utils.model_utils import model_from_conf, freeze_model
@@ -48,7 +49,7 @@ TrainLoader = DataLoader(TrainData,
                          collate_fn=collate_fn)
 
 ValLoader = DataLoader(ValData,
-                       1,
+                       cfg.data.batch_size,
                        shuffle=False,
                        pin_memory=False,
                        drop_last=False,
@@ -74,7 +75,7 @@ for epoch in range(cfg.training.epochs):
     train_loss = 0
     for i, data in enumerate(tqdm(TrainLoader)):
         optimizer.zero_grad()
-        outputs = model(data['img'].to(cfg.device.type), 
+        outputs = model(data['imgs'].to(cfg.device.type), 
                         data['img_data'].to(cfg.device.type), 
                         data['ehr_data'].to(cfg.device.type))
         
@@ -90,35 +91,46 @@ for epoch in range(cfg.training.epochs):
     scheduler.step()
     model.eval()
 
-    val_loss_avg = 0
-    val_loss_max = 0
-
+    val_loss = 0
+    dfs = []
+    
     with torch.no_grad():
         for data in iter(ValLoader):
-            outputs = model(data['img'].to(cfg.device.type), 
+            outputs = model(data['imgs'].to(cfg.device.type), 
                             data['img_data'].to(cfg.device.type), 
                             data['ehr_data'].to(cfg.device.type))
-            output_avg = outputs['preterm'].mean().unsqueeze(0)
-            output_max = outputs['preterm'].max().unsqueeze(0)
-            label = data['labels']['preterm'][0].to(cfg.device.type)
-            loss_avg = loss_fns['preterm'](output_avg, label)
-            loss_max = loss_fns['preterm'](output_max, label)
-
-            val_loss_avg += loss_avg.item() / len(ValLoader)
-            val_loss_max += loss_max.item() / len(ValLoader) 
             
-            for key in metrics_avg.keys():
-                metrics_avg[key](output_avg, label.to(torch.int))
-                metrics_max[key](output_max, label.to(torch.int))
+            dfs.append(pl.DataFrame({'cpr': data['cprs'],
+                                     'pred': outputs["preterm"].cpu().squeeze(),
+                                     'label': data["labels"]["preterm"].cpu().squeeze()}))
+            
+        df = pl.concat(dfs)
+        
+        df.write_csv(save_path + "df.csv")
+            
+        
+        
+            # output_avg = outputs['preterm'].mean().unsqueeze(0)
+            # output_max = outputs['preterm'].max().unsqueeze(0)
+            # label = data['labels']['preterm'][0].to(cfg.device.type)
+            # loss_avg = loss_fns['preterm'](output_avg, label)
+            # loss_max = loss_fns['preterm'](output_max, label)
+
+            # val_loss_avg += loss_avg.item() / len(ValLoader)
+            # val_loss_max += loss_max.item() / len(ValLoader) 
+            
+            # for key in metrics_avg.keys():
+            #     metrics_avg[key](output_avg, label.to(torch.int))
+            #     metrics_max[key](output_max, label.to(torch.int))
     
 
     torch.save(model.state_dict(), save_path + '/weights/' + str(epoch).zfill(3) + '.pth')        
 
-    logger_avg.log_metrics(metrics_avg, train_loss, val_loss_avg)
-    logger_max.log_metrics(metrics_max, train_loss, val_loss_max)
+    # logger_avg.log_metrics(metrics_avg, train_loss, val_loss_avg)
+    # logger_max.log_metrics(metrics_max, train_loss, val_loss_max)
 
-    logger_avg.plot_metrics()
-    logger_max.plot_metrics()
+    # logger_avg.plot_metrics()
+    # logger_max.plot_metrics()
    
 test_model(save_path, cfg.data.test_path)
 
