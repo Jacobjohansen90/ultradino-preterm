@@ -11,9 +11,9 @@ from torch.utils.data import DataLoader
 import torch
 import os
 import polars as pl
-import csv
 import shutil
 from tqdm import tqdm
+from datetime import datetime
 
 from dataloader.dataloader import PreTermDataset, collate_fn
 from utils.model_utils import model_from_conf
@@ -25,12 +25,13 @@ warnings.filterwarnings("ignore", category=UserWarning, module="torchmetrics")
 
 #%%Main
 
-def test_model(folder_path, testdata_path, move=True):
+def test_model(folder_path, test_data_path, move=True, batch_size=128):
     cfg = OmegaConf.load(folder_path + 'conf.yaml')
-    test_df = pl.read_parquet(testdata_path)
+    
+    test_df = pl.read_parquet(test_data_path)
     TestData = PreTermDataset(test_df, cfg, train=False)
     TestLoader = DataLoader(TestData,
-                            1,
+                            batch_size,
                             shuffle=False,
                             pin_memory=False,
                             drop_last=False,
@@ -39,81 +40,115 @@ def test_model(folder_path, testdata_path, move=True):
 
     model = model_from_conf(cfg)
     
-    f_all = open(folder_path + 'test_all.csv', 'w')
-    wr_all = csv.writer(f_all)
-    wr_all.writerow(['Sens@Spec_avg', 'Sens@Spec_max', 
-                     'Sens_avg', 'Spec_avg',
-                     'Sens_max', 'Spec_max',
-                     'avg_cutoff', 'max_cutoff', 
-                     'avg_cutoff_val', 'max_cutoff_val',
-                     'weights'])
-    
-    df_avg = pl.read_csv(folder_path + 'Avg_metrics.csv')
-    df_max = pl.read_csv(folder_path + 'Max_metrics.csv')
-    
     dirs = os.listdir(folder_path + 'weights/')
     dirs.sort()
+    
+    results = []
+    thresholds = {'avg': pl.read_csv(folder_path + 'Avg_metrics.csv'),
+                  'max': pl.read_csv(folder_path + 'Max_metrics.csv')}
+
     
     for i, weights in enumerate(dirs):
         model.load_state_dict(torch.load(folder_path + 'weights/' + weights, weights_only=True))
         model.eval()
         
-        t_avg = df_avg[i]['SensAtSpec_cutoff'].item()
-        t_max = df_max[i]['SensAtSpec_cutoff'].item()
+        epoch_results = {}
+        dfs = []
 
-        metrics_avg = get_test_metrics(cfg, t_avg)
-        metrics_max = get_test_metrics(cfg, t_max)
-
-        
         with torch.no_grad():
             for data in tqdm(TestLoader):
-                outputs = model(data['img'].to(cfg.device.type), 
-                                data['img_data'].to(cfg.device.type), 
+                
+                outputs = model(data['img'].to(cfg.device.type),
+                                data['img_data'].to(cfg.device.type),
                                 data['ehr_data'].to(cfg.device.type))
-                
-                output_avg = outputs['preterm'].mean().unsqueeze(0)
-                output_max = outputs['preterm'].max().unsqueeze(0)
-                label = data['labels']['preterm'][0].to(cfg.device.type)
-                
-                
-                for key in metrics_avg.keys():
-                    metrics_avg[key](output_avg, label.to(torch.int))
-                    metrics_max[key](output_max, label.to(torch.int))
             
-            SensSpec_avg = round(metrics_avg['SensAtSpec'].compute()[0].item(), 3)
-            cutoff_avg = round(metrics_avg['SensAtSpec'].compute()[1].item(), 3)
-            Sens_avg = round(metrics_avg['Sens'].compute().item(), 3)
-            Spec_avg = round(metrics_avg['Spec'].compute().item(), 3)
+                dfs.append(pl.DataFrame({"cpr": data["cprs"],
+                                         "pred": outputs["preterm"].flatten().cpu().numpy(),
+                                         "label": data["labels"]["preterm"].flatten().cpu().numpy()}))
 
-            SensSpec_max = round(metrics_max['SensAtSpec'].compute()[0].item(), 3)
-            cutoff_max = round(metrics_max['SensAtSpec'].compute()[1].item(), 3)
-            Sens_max = round(metrics_max['Sens'].compute().item(), 3)
-            Spec_max = round(metrics_max['Spec'].compute().item(), 3)
-            
-            wr_all.writerow([SensSpec_avg, SensSpec_max, Sens_avg, Spec_avg, Sens_max, Spec_max, 
-                             cutoff_avg, cutoff_max, t_avg, t_max, weights])
+        pred_df = pl.concat(dfs)
 
-    f_all.close()
-    
-    df = pl.read_csv(folder_path + 'test_all.csv')
+        patient_df = (pred_df.group_by("cpr").agg([pl.col("pred").mean().alias("pred_avg"),
+                                                   pl.col("pred").max().alias("pred_max"),
+                                                   pl.col("label").first().alias("label")]))
         
-    top_5 =  df.with_row_index("row_id").unpivot(index="row_id",
-                                                 on=["Sens@Spec_avg", "Sens@Spec_max"],
-                                                 variable_name="column",
-                                                 value_name="value").top_k(5, by="value")
-    
-    with open(folder_path + 'test_top_5.csv', 'w') as f:
-        wr = csv.writer(f)
-        wr.writerow(['Sens@Spec', 'type', 'Sens', 'Spec', 'cutoff', 'cutoff_val', 'weights'])
+        preds = {'avg': torch.tensor(patient_df["pred_avg"].to_numpy(), dtype=torch.float32),
+                 'max': torch.tensor(patient_df["pred_max"].to_numpy(), dtype=torch.float32)}
 
-        for i in range(5):
-            idx, col, _ = top_5.row(i)
-            row = df[idx]
-            t = col.split('_')[1]
-            wr.writerow([row[col].item(), t, row['Sens_'+t].item(), row['Spec_'+t].item(),
-                         row[t+'_cutoff'].item(), row[t+'_cutoff_val'].item(), row['weights'].item()])
-       
-    if move:
-        dst = folder_path.replace('Current', 'Tested')
-        shutil.move(folder_path, dst)
+        labels = torch.tensor(patient_df["label"].to_numpy(), dtype=torch.int)
+    
+        for eval_type in ['avg', 'max']:
+            t = thresholds[eval_type][i]['SensAtSpec_cutoff'].item()
+            
+            metrics = get_test_metrics(cfg, t)
+    
+            for metric in metrics.values():
+                metric(preds[eval_type], labels)
+    
+            sens_spec, cutoff = metrics['SensAtSpec'].compute()
+            sens = metrics["Sens"].compute().item()
+            spec = metrics["Spec"].compute().item()
+            
+            epoch_results[f"SensAtSpec_{eval_type}"] = round(sens_spec.item(), 3)
+            epoch_results[f"cutoff_{eval_type}"] = round(cutoff.item(), 3)
+            epoch_results[f"Sens_{eval_type}"] = round(sens, 3)
+            epoch_results[f"Spec_{eval_type}"] = round(spec, 3)
+            epoch_results[f"cutoff_val_{eval_type}"] = round(t, 3)
+        
+        epoch_results['weights'] = folder_path.replace('Current', 'Tested') + 'weights/' + weights
+        
+        results.append(epoch_results)
+
+    results_df = pl.DataFrame(results)
+    results_df.write_csv(folder_path + "test_metrics.csv")
+    
+    results_df = results_df.with_columns(pl.when(pl.col("SensAtSpec_avg") >= pl.col("SensAtSpec_max"))
+                                         .then(pl.lit("avg")).otherwise(pl.lit("max")).alias("best_type"))
+    
+    top_5 = (results_df.sort("SensAtSpec_best", descending=True).head(5))
+    top_5.write(folder_path + "top_5.csv")
+
+    shutil.move(folder_path, folder_path.replace('Current', 'Tested'))
+    
+    best = (results_df.sort("SensAtSpec_best", descending=True).head(1))
+    
+    dst_name = f"{os.path.join(folder_path.replace('Current', 'SOTA'), 'weights/')}"
+
+    sota_csv = os.path.join(folder_path.replace('Current', 'SOTA'), f"SOTA_{cfg.data.cutoff_weeks}.csv")
+    if os.path.exists(sota_csv):
+        name = datetime.now().strftime("%Y%m%d_%H%M%S_%f") + ".pth"
+        sota_df = pl.read_csv(sota_csv)     
+        if len(sota_df) < 5:
+            shutil.copy(best['weights'][0], dst_name + name)
+            best = best.with_columns(pl.lit(dst_name + name).alias("weights")) 
+            sota_df = pl.concat([sota_df, best])
+
+        else:
+            if best["SensAtSpec_best"][0] > sota_df["SensAtSpec_best"].min():
+                shutil.copy(best['weights'][0], dst_name + name)
+                best = best.with_columns(pl.lit(dst_name + name).alias("weights")) 
+                sota_df = pl.concat([sota_df, best])
+        
+        sota_df = (sota_df.sort("SensAtSpec_best", descending=True).head(5))
+        sota_df.write_csv(sota_csv)
+
+    else:
+        name = datetime.now().strftime("%Y%m%d_%H%M%S_%f") + ".pth"
+        dst_name = f"{os.path.join(folder_path.replace('Current', 'SOTA'), 'weights/')}"
+        os.makedirs(dst_name, exist_ok=False)
+        shutil.copy(best['weights'][0], dst_name + name)
+        best = best.with_columns(pl.lit(dst_name + name).alias("weights")) 
+        best.write_csv(sota_csv)
+
+    
+    valid_weights = set(sota_df["weights"].to_list())
+    
+    for file in os.listdir(dst_name):
+        path = os.path.join(dst_name, file)
+    
+        if path not in valid_weights:
+            os.remove(path)
+    
+    
+    
     

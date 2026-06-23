@@ -111,27 +111,22 @@ for epoch in range(cfg.training.epochs):
                                               pl.col("pred").max().alias("pred_max"),
                                               pl.col("label").first().alias("label")]))
         
-        
-        
-        df.write_csv(save_path + "df.csv")
-            
-        
+        avg_preds = torch.tensor(patient_df['pred_avg'].to_numpy(), dtype=torch.float32)
+        max_preds = torch.tensor(patient_df['pred_max'].to_numpy(), dtype=torch.float32)
+        labels = torch.tensor(patient_df["label"].to_numpy(), dtype=torch.int)
 
-            # val_loss_avg += loss_avg.item() / len(ValLoader)
-            # val_loss_max += loss_max.item() / len(ValLoader) 
-            
-            # for key in metrics_avg.keys():
-            #     metrics_avg[key](output_avg, label.to(torch.int))
-            #     metrics_max[key](output_max, label.to(torch.int))
+        for key in metrics_avg.keys():
+            metrics_avg[key](avg_preds, labels)
+            metrics_max[key](max_preds, labels)
     
 
     torch.save(model.state_dict(), save_path + '/weights/' + str(epoch).zfill(3) + '.pth')        
 
-    # logger_avg.log_metrics(metrics_avg, train_loss, val_loss_avg)
-    # logger_max.log_metrics(metrics_max, train_loss, val_loss_max)
+    logger_avg.log_metrics(metrics_avg, train_loss, val_loss)
+    logger_max.log_metrics(metrics_max, train_loss, val_loss)
 
-    # logger_avg.plot_metrics()
-    # logger_max.plot_metrics()
+    logger_avg.plot_metrics()
+    logger_max.plot_metrics()
    
 test_model(save_path, cfg.data.test_path)
 

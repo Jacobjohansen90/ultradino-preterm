@@ -84,18 +84,6 @@ class PreTermDataset(Dataset):
         else:
             self.label_smoothing_param = None
 
-        df = df.with_columns(pl.lit(False).alias('relabel'))
-
-        for col, cond in cfg.dataset.items():
-            if cond == 'ignore':
-                continue
-            elif cond == 'remove':
-                df = df.filter(~pl.col(col))
-            elif cond == 'remove_on_GA':
-                df = df.filter(~(pl.col(col) & (pl.col('GA') // 7 < cfg.data.ga_cutoff_weeks)))
-            elif cond == 'label':
-                df = df.with_columns((pl.col('relabel') | pl.col(col)).alias('relabel'))            
-
         self.df = df
         
     
@@ -210,7 +198,19 @@ def collate_fn(batch):
 
 def make_train_val_split(cfg, unique_column='CPR_MOTHER'):
     df = pl.read_parquet(cfg.data.path)
-                
+    
+    df = df.with_columns(pl.lit(False).alias('relabel'))
+
+    for col, cond in cfg.dataset.items():
+        if cond == 'ignore':
+            continue
+        elif cond == 'label':
+            df = df.with_columns((pl.col('relabel') | pl.col(col)).alias('relabel'))       
+        elif cond == 'remove':
+            df = df.filter(~pl.col(col))
+        elif cond == 'remove_on_GA':
+            df = df.filter(~(pl.col(col) & (pl.col('GA') // 7 < cfg.data.ga_cutoff_weeks)))
+
     unique_keys = df.select(unique_column).unique()
 
     rng = np.random.default_rng()
@@ -223,8 +223,6 @@ def make_train_val_split(cfg, unique_column='CPR_MOTHER'):
 
     train_df = df.filter(pl.col(unique_column).is_in(train_keys))
     val_df = df.filter(pl.col(unique_column).is_in(val_keys))
-    print(val_df)
-    print(train_df)
     
     if cfg.data.oversample:
         df_1 = train_df.filter(pl.col('GA')//7 < cfg.data.ga_cutoff_weeks)
