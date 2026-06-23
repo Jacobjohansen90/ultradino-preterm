@@ -29,5 +29,4 @@ class Transform(nn.Module):
         
     def forward(self, x):
         features = self.fc(x)
-        features = features.unsqueeze(1)
         return features
