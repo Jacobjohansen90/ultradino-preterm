@@ -160,7 +160,7 @@ class PreTermDataset(Dataset):
             else:
                 label_preterm = torch.tensor([1*(ga_weeks < self.ga_cutoff)])
         
-        labels['preterm'] = label_preterm
+        labels['preterm'] = label_preterm.type(torch.float32)
         labels['GA_reg'] = torch.tensor([float(ga_weeks)])
         
         #Prepare Image       
