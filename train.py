@@ -23,6 +23,8 @@ from utils.test_utils import test_model
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
 warnings.filterwarnings("ignore", category=UserWarning, module="torchmetrics")
+warnings.filterwarnings("ignore", message=".*xFormers.*")
+
 
 #%%Load config and setup logger(s)
 cfg = OmegaConf.load("/projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/training_confs/append_tokens_vitb16.yaml")

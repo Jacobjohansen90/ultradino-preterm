@@ -103,6 +103,7 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
     results_df = pl.DataFrame(results)
     results_df.write_csv(folder_path + "test_metrics.csv")
     
+    results_df = results_df.with_columns(pl.max_horizontal("SensAtSpec_avg", "SensAtSpec_max").alias("SensAtSpec_best"))
     results_df = results_df.with_columns(pl.when(pl.col("SensAtSpec_avg") >= pl.col("SensAtSpec_max"))
                                          .then(pl.lit("avg")).otherwise(pl.lit("max")).alias("best_type"))
     
