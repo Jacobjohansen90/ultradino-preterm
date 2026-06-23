@@ -54,6 +54,7 @@ class BirthModel(nn.Module):
         
         if len(embeddings) > 0:
             embeddings = [torch.cat(embeddings, dim=1)] 
+            print(embeddings)
             vision_features = self.vit_model(img, append_tokens=embeddings)
         else:
             vision_features = self.vit_model(img)
