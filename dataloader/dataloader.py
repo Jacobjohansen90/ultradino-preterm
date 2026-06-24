@@ -188,14 +188,14 @@ def collate_fn(batch):
     imgs = torch.stack([sample['img'] for sample in batch])
     img_data = torch.stack([sample['img_data'] for sample in batch])
     ehr_data = torch.stack([sample['ehr_data'] for sample in batch])
-    cprs = [sample['cpr'] for sample in batch]
+    IDs = [sample['ID'] for sample in batch]
 
 
     sample =  {"imgs": imgs,
                "img_data": img_data,
                "ehr_data": ehr_data,
                "labels": labels,
-               "cprs": cprs}
+               "IDs": IDs}
 
     return sample
    
