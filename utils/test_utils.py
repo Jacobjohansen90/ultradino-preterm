@@ -13,7 +13,6 @@ import os
 import polars as pl
 import shutil
 from tqdm import tqdm
-from datetime import datetime
 from filelock import FileLock
 
 from dataloader.dataloader import PreTermDataset, collate_fn
@@ -63,7 +62,7 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
                                 data['img_data'].to(cfg.device.type),
                                 data['ehr_data'].to(cfg.device.type))
             
-                dfs.append(pl.DataFrame({"cpr": data["ID"],
+                dfs.append(pl.DataFrame({"cpr": data["IDs"],
                                          "pred": outputs["preterm"].flatten().cpu().numpy(),
                                          "label": data["labels"]["preterm"].flatten().cpu().numpy()}))
 

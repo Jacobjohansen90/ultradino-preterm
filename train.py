@@ -104,7 +104,7 @@ for epoch in range(cfg.training.epochs):
             loss = loss_fns['preterm'](outputs['preterm'].cpu(), data["labels"]["preterm"].cpu())
             val_loss += loss.item() / len(ValLoader)
             
-            dfs.append(pl.DataFrame({'cpr': data['ID'],
+            dfs.append(pl.DataFrame({'cpr': data['IDs'],
                                      'pred': outputs["preterm"].cpu().squeeze(),
                                      'label': data["labels"]["preterm"].cpu().squeeze()}))
             

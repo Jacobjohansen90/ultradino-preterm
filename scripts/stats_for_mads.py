@@ -47,3 +47,4 @@ print(f"X < 32: {count}")
 
 
 
+    
