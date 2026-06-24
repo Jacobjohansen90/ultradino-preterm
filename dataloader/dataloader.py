@@ -66,7 +66,7 @@ class DummySet(Dataset):
         return {'img': img, 'img_data': pixel_spacing, 'ehr_data': ehr_data, 'label': label}
         
 class PreTermDataset(Dataset):
-    def __init__(self, df, cfg, train):
+    def __init__(self, df, cfg, train, ID='CPR_CHILD'):
 
         super().__init__()
         self.img_size = cfg.data.img_size
@@ -78,6 +78,7 @@ class PreTermDataset(Dataset):
         self.norm_std = 0.2187705424       
         self.train = train
         self.setup_transforms()
+        self.ID_var = ID
 
         if cfg.labels.label_smoothing:
             self.label_smoothing_param = cfg.labels.label_smoothing_param
@@ -172,9 +173,9 @@ class PreTermDataset(Dataset):
         img_data = img_data.unsqueeze(0)
                 
         #Get patient identifier
-        cpr = data.get("CPR_CHILD")
+        ID = data.get(self.ID_var)
 
-        return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'labels': labels, 'cpr': cpr}
+        return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'labels': labels, 'ID': ID}
 
 
 def collate_fn(batch):
@@ -199,7 +200,7 @@ def collate_fn(batch):
     return sample
    
 
-def make_train_val_split(cfg, unique_column='CPR_MOTHER'):
+def make_train_val_split(cfg, unique_column='CPR_MOTHER', is_test=False):
     df = pl.read_parquet(cfg.data.path)
     
     df = df.with_columns(pl.lit(False).alias('relabel'))
@@ -213,32 +214,37 @@ def make_train_val_split(cfg, unique_column='CPR_MOTHER'):
             df = df.filter(~pl.col(col))
         elif cond == 'remove_on_GA':
             df = df.filter(~(pl.col(col) & (pl.col('GA') // 7 < cfg.data.ga_cutoff_weeks)))
-
-    unique_keys = df.select(unique_column).unique()
-
-    rng = np.random.default_rng()
-    keys = unique_keys.to_series().to_list()
-    rng.shuffle(keys)
-
-    split_idx = int(len(keys) * (1 - cfg.data.val_frac))
-    train_keys = keys[:split_idx]
-    val_keys = keys[split_idx:]
-
-    train_df = df.filter(pl.col(unique_column).is_in(train_keys))
-    val_df = df.filter(pl.col(unique_column).is_in(val_keys))
     
-    if cfg.data.oversample:
-        df_1 = train_df.filter(pl.col('GA')//7 < cfg.data.ga_cutoff_weeks)
-        df_0 = train_df.filter(pl.col('GA')//7 >= cfg.data.ga_cutoff_weeks)
-        n1 = df_1.height
-        n0 = df_0.height
-        if n1 > n0:
-            df_0 = df_0.sample(n=n1*cfg.data.oversample_ratio, with_replacement=True)
-        else:
-            df_1 = df_1.sample(n=n0*cfg.data.oversample_ratio, with_replacement=True)
-        train_df = pl.concat([df_1, df_0])
-        train_df = train_df.sample(fraction=1.0, shuffle=True)
-    if (train_df[unique_column].is_in(val_df[unique_column].implode())).any():
-        raise Exception(f"Traindata and Validation data overlap on column {unique_column}")
+    if not is_test:
+    
+        unique_keys = df.select(unique_column).unique()
+    
+        rng = np.random.default_rng()
+        keys = unique_keys.to_series().to_list()
+        rng.shuffle(keys)
+    
+        split_idx = int(len(keys) * (1 - cfg.data.val_frac))
+        train_keys = keys[:split_idx]
+        val_keys = keys[split_idx:]
+    
+        train_df = df.filter(pl.col(unique_column).is_in(train_keys))
+        val_df = df.filter(pl.col(unique_column).is_in(val_keys))
         
-    return train_df, val_df
+        if cfg.data.oversample:
+            df_1 = train_df.filter(pl.col('GA')//7 < cfg.data.ga_cutoff_weeks)
+            df_0 = train_df.filter(pl.col('GA')//7 >= cfg.data.ga_cutoff_weeks)
+            n1 = df_1.height
+            n0 = df_0.height
+            if n1 > n0:
+                df_0 = df_0.sample(n=n1*cfg.data.oversample_ratio, with_replacement=True)
+            else:
+                df_1 = df_1.sample(n=n0*cfg.data.oversample_ratio, with_replacement=True)
+            train_df = pl.concat([df_1, df_0])
+            train_df = train_df.sample(fraction=1.0, shuffle=True)
+        if (train_df[unique_column].is_in(val_df[unique_column].implode())).any():
+            raise Exception(f"Traindata and Validation data overlap on column {unique_column}")
+        
+        return train_df, val_df
+    
+    else:
+        return df
