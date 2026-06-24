@@ -27,7 +27,7 @@ result_df = pl.read_csv(path + 'test_all.csv')
 
 row = (result_df.with_columns(max_val=pl.max_horizontal("Sens@Spec_avg", "Sens@Spec_max")).sort("max_val", descending=True).head(1))
 
-weights = path + 'weights/' + row['weights']
+weights = path + 'weights/' + row['weights'].item()
 
 print(weights)
 
