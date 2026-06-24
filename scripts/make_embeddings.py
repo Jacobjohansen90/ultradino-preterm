@@ -29,6 +29,8 @@ row = (result_df.with_columns(max_val=pl.max_horizontal("Sens@Spec_avg", "Sens@S
 
 weights = path + 'weights/' + row['weights']
 
+print(weights)
+
 cfg.data.val_frac = 0
 cfg.data.oversample = False
 
