@@ -201,14 +201,17 @@ def collate_fn(batch):
    
 
 def make_train_val_split(cfg, unique_column='CPR_MOTHER', is_test=False):
-    df = pl.read_parquet(cfg.data.path)
+    if is_test:
+        df = pl.read_parquet(cfg.data.test_path)
+    else:
+        df = pl.read_parquet(cfg.data.path)
     
     df = df.with_columns(pl.lit(False).alias('relabel'))
 
     for col, cond in cfg.dataset.items():
         if cond == 'ignore':
             continue
-        elif cond == 'label':
+        elif cond == 'relabel':
             df = df.with_columns((pl.col('relabel') | pl.col(col)).alias('relabel'))       
         elif cond == 'remove':
             df = df.filter(~pl.col(col))
