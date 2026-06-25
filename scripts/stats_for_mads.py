@@ -9,10 +9,10 @@ Created on Fri Jun 12 13:43:18 2026
 import polars as pl
 
 
-path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/'
+path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/'
 
 #Full pop
-df = pl.read_csv(path + 'OnlyFirstPreg_June_v2/data_dump/population.csv')
+df = pl.read_csv(path + 'Data/OnlyFirstPreg_June_v2/data_dump/population.csv')
 df = df.unique(subset=['CPR_CHILD'])
 
 print("Full population:")
@@ -29,8 +29,7 @@ count = df.select((pl.col("GA") < 32*7).sum()).item()
 print(f"X < 32: {count}")
 
 #Cervix pop
-path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/'
-df = pl.read_csv(path + 'AnyPreg_June_v2/data_dump/filtered_population.csv', ignore_errors=True)
+df = pl.read_csv(path + 'Data/AnyPreg_June_v2/data_dump/filtered_population.csv', ignore_errors=True)
 df = df.unique(subset=['CPR_CHILD'])
 
 print ("Cervix scan pop:")
@@ -44,6 +43,7 @@ count = df.select(((pl.col("GA") < 34*7) & (pl.col("GA") >= 32*7)).sum()).item()
 print(f"34 > X >= 32: {count}")
 count = df.select((pl.col("GA") < 32*7).sum()).item()
 print(f"X < 32: {count}")
+
 
 
 
