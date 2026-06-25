@@ -48,7 +48,7 @@ auxiliary:
 model:
   vit:
     type: vitb16
-    weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/oversampled_vitb16.rank_0.pth #VitB
+    weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/oversampled_vitb16.pth #VitB
     #weights_path: /projects/users/data/UCPH/DeepFetal/projects/UltraDino/experiments/vitb16_dinus_preterm_rct/20260424-093943/pretrain/model_final_rank_0.pth #Oversampled
     #weights_path: /projects/users/data/UCPH/DeepFetal/projects/UltraDino/experiments/vitl16_dinus_preterm_rct_5m/20260518-081332/pretrain/model_final.rank_0.pth #VitL oversampled
     dropout: 0.2
