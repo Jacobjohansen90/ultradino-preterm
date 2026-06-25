@@ -30,8 +30,7 @@ cfg = OmegaConf.load("/projects/users/data/UCPH/DeepFetal/projects/preterm/ultra
 
 save_path = setup(cfg)
 
-logger_avg = Logger(save_path, name='Avg')
-logger_max = Logger(save_path, name='Max')
+logger = Logger(save_path)
 
 #%% Setup dataloaders and models
 
@@ -66,8 +65,7 @@ optimizer = get_optimizer(model, cfg)
 scheduler = get_cosine_schedule_with_warmup(optimizer, cfg, cfg.training.epochs)
 loss_fns = get_loss(cfg)
 
-metrics_avg = get_metrics(cfg)
-metrics_max = get_metrics(cfg)
+metrics = {'max': get_metrics(cfg), 'avg': get_metrics(cfg)}
 
 for epoch in range(cfg.training.epochs):
     freeze_model(model, epoch, cfg)
@@ -94,7 +92,7 @@ for epoch in range(cfg.training.epochs):
 
     val_loss = 0
     dfs = []
-    
+    preds = {}
     with torch.no_grad():
         for data in iter(ValLoader):
             outputs = model(data['imgs'].to(cfg.device.type), 
@@ -113,22 +111,20 @@ for epoch in range(cfg.training.epochs):
                                               pl.col("pred").max().alias("pred_max"),
                                               pl.col("label").first().alias("label")]))
         
-        avg_preds = torch.tensor(patient_df['pred_avg'].to_numpy(), dtype=torch.float32)
-        max_preds = torch.tensor(patient_df['pred_max'].to_numpy(), dtype=torch.float32)
+        preds['avg'] = torch.tensor(patient_df['pred_avg'].to_numpy(), dtype=torch.float32)
+        preds['max'] = torch.tensor(patient_df['pred_max'].to_numpy(), dtype=torch.float32)
+        
         labels = torch.tensor(patient_df["label"].to_numpy(), dtype=torch.int)
 
-        for key in metrics_avg.keys():
-            metrics_avg[key](avg_preds, labels)
-            metrics_max[key](max_preds, labels)
+        for eval_type in metrics.keys():
+            for metric in metrics[eval_type]:
+                metrics[eval_type][metric](preds[eval_type], labels)
     
 
     torch.save(model.state_dict(), save_path + '/weights/' + str(epoch).zfill(3) + '.pth')        
 
-    logger_avg.log_metrics(metrics_avg, train_loss, val_loss)
-    logger_max.log_metrics(metrics_max, train_loss, val_loss)
+    logger.log_metrics(metrics, train_loss, val_loss)
 
-    logger_avg.plot_metrics()
-    logger_max.plot_metrics()
    
 test_model(save_path, cfg.data.test_path)
 
