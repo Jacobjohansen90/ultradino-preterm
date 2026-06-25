@@ -20,6 +20,16 @@ def read_dataframe(path):
         return pl.read_parquet(path)
     raise ValueError(f"Unsupported data file format: {path}")
 
+
+def prepare_dataframe(df, cfg):
+    """Cast numeric CSV columns."""
+    df = df.clone()
+    numeric_cols = ['GA', *cfg.data.img_data, *cfg.data.ehr_data]
+    for col in numeric_cols:
+        if col in df.columns:
+            df = df.with_columns(pl.col(col).cast(pl.Float64, strict=False))
+    return df
+
 FUS13M_MEAN = 0.1842924807
 FUS13M_STD = 0.2187705424
 
@@ -80,7 +90,6 @@ class PreTermDataset(Dataset):
         self.ehr_vars = cfg.data.ehr_data
         self.img_data_vars = cfg.data.img_data
         self.ga_cutoff = cfg.data.ga_cutoff_weeks
-        self.prefix = cfg.data.prefix
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424       
         self.train = train
@@ -92,8 +101,7 @@ class PreTermDataset(Dataset):
         else:
             self.label_smoothing_param = None
 
-        self.df = df
-        
+        self.df = prepare_dataframe(df, cfg)
     
     def setup_transforms(self):
         if self.train:
@@ -141,7 +149,7 @@ class PreTermDataset(Dataset):
         
         #Prepare labels
         labels= {}
-        ga_weeks = data.get('GA')//7
+        ga_weeks = data.get('GA') // 7
         
         if self.label_smoothing_param is not None and self.train:
             if data.get('relabel'):
@@ -208,7 +216,7 @@ def collate_fn(batch):
    
 
 def make_train_val_split(cfg, unique_column='CPR_MOTHER', is_test=False):
-    df = read_dataframe(cfg.data.path)
+    df = prepare_dataframe(read_dataframe(cfg.data.path), cfg)
     
     df = df.with_columns(pl.lit(False).alias('relabel'))
 
