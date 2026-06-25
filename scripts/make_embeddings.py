@@ -28,7 +28,7 @@ def make_embeddings(path, save_path):
     
     row = (result_df.with_columns(max_val=pl.max_horizontal("SensAtSpec_avg", "SensAtSpec_max")).sort("max_val", descending=True).head(1))
     
-    weights = path + 'weights/' + row['weights'].item()
+    weights = row['weights'].item()
     
         
     model = model_from_conf(cfg)
