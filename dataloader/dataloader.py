@@ -73,7 +73,6 @@ class PreTermDataset(Dataset):
         self.ehr_vars = cfg.data.ehr_data
         self.img_data_vars = cfg.data.img_data
         self.ga_cutoff = cfg.data.ga_cutoff_weeks
-        self.prefix = cfg.data.prefix
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424       
         self.train = train
