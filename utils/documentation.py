@@ -7,67 +7,59 @@ Created on Tue Mar 17 15:14:24 2026
 """
 
 from omegaconf import OmegaConf
-from datetime import datetime
 import os
-import csv
+import polars as pl
 import matplotlib.pyplot as plt
 
-def setup(conf):
+def setup(cfg):
+    if cfg.info.name is None:
+        raise Exception("Model experiment must be named")
     
-    timestamp =  datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    path = "../Training_runs/Current/" + timestamp + '/'
-    os.makedirs(path, exist_ok=False)
+    path = "../training_runs/Running/" + cfg.info.name + '/'
     os.makedirs(path + 'weights/', exist_ok=False)
-    OmegaConf.save(conf, path + 'conf.yaml')
-        
+    OmegaConf.save(cfg, path + 'conf.yaml')        
     return path
 
 class Logger():
-    def __init__(self, save_path, name):
-        self.name = name
+    def __init__(self, save_path):
         self.save_path = save_path
-        self.first_log = True
-        self.metrics = []
-        self.headers = ['train_loss', 'val_loss']
-
+        self.metrics = pl.DataFrame()
     def log_metrics(self, metrics_dict, train_loss, val_loss):
-        if self.first_log:
-            for key in metrics_dict.keys():
+        metrics = {}
+        for eval_type in metrics_dict.keys():
+            metrics[eval_type] = {}
+            for key in metrics_dict[eval_type].keys():
                 if key == 'SensAtSpec' or key == 'SpecAtSens':
-                    self.headers.append(key)
-                    self.headers.append(key + '_cutoff')
+                    metric, cutoff = metrics_dict[eval_type][key].compute().item()
+                    metrics[eval_type][key] = round(metric, 3)
+                    metrics[eval_type][key + '_cutoff'] = round(cutoff, 3)
                 else:
-                    self.headers.append(key)
-
-            with open(self.save_path + self.name + '_metrics.csv', 'w') as file:
-                writer = csv.writer(file)
-                writer.writerow(self.headers)
-            self.first_log = False
-
-        metrics = [round(train_loss, 3), round(val_loss, 3)]
+                    metrics[eval_type][key] = round(metrics_dict[eval_type][key].compute().item(), 3)
         
-        for key in metrics_dict.keys():
-            if key == 'SensAtSpec' or key == 'SpecAtSens':
-                metrics.append(round(metrics_dict[key].compute()[0].item(), 3))
-                metrics.append(round(metrics_dict[key].compute()[1].item(), 3))
-            else:
-                metrics.append(round(metrics_dict[key].compute().item(), 3))
-            metrics_dict[key].reset()
-            
-        with open(self.save_path + self.name + '_metrics.csv', 'a') as file:
-            writer = csv.writer(file)
-            writer.writerow(metrics)
-        self.metrics.append(metrics)    
+        flat_df = {f"{metric}_{eval_type}": value for eval_type, metrics in metrics.items() for metric, value in metrics.items()}
+
+        self.metrics = pl.concat((self.metrics, pl.DataFrame(flat_df))) 
+
+        self.metrics.write_csv(self.save_path + 'metrics.csv')
         
+        self.plot_metrics(metrics_dict.keys())
     
-    def plot_metrics(self):
-        plt.plot(self.metrics, label=self.headers)
-        plt.legend(loc='upper left')
-        plt.xlabel('Epoch')
-        plt.ylabel('Metric Value')
-        plt.ylim(0,1.05)
-        plt.savefig(self.save_path + self.name + '_metrics_plot.png')
-        plt.close()
+    def plot_metrics(self, keys):
+        fig, axes = plt.subplots(1, len(keys), squeeze=False)
+        axes = axes.ravel()
+        for i, key in enumerate(keys):
+            cols = [c for c in self.metrics.columns if key in c]
+            for col in cols:
+                axes[i].plot(self.metrics[col], label=col)
+            axes[i].set_title(key)
+            axes[i].legend(loc='upper left')
+            axes[i].set_xlabel('Epoch')
+            axes[i].set_ylabel('Metric Value')
+            axes[i].set_ylim(0,1.05)
+
+        plt.tight_layout()
+        fig.savefig(self.save_path + 'metrics_plot.png', dpi=300)
+        plt.close(fig)
                 
               
     

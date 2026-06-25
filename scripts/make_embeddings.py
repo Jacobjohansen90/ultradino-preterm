@@ -72,7 +72,7 @@ def make_embeddings(path, save_path):
         name = '_'.join(parquet.split('/')[-2:])
         df_final.write_parquet(save_path + name)
     
-        with open(save_path + name.replace('.parquet', '.json')) as f:
+        with open(save_path + name.replace('.parquet', '.json'), 'w') as f:
             json.dump(embeddings, f)
 
 if __name__ == "__main__":

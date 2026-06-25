@@ -1,8 +1,3 @@
-# @package _global_
-
-defaults:
-  - ../base/base
-  - _self_
 info:
   name: 
   description: 
@@ -17,12 +12,11 @@ data:
   ehr_data: [progesterone]
   img_data: [physical_delta_x, physical_delta_y]
   img_size: [224, 224]
-  prefix: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_processed_no_OCR/
   oversample: True
   oversample_ratio: 2
 
-#label / remove / ignore / remove_on_GA 
-#(Label as true if cond is true / remove from DF if cond is true / ignore / remove if GA < GA_cutoff)
+#relabel / remove / ignore / remove_on_GA 
+#(Relabel as true if cond is true / remove from DF if cond is true / ignore / remove if GA < GA_cutoff)
 dataset: 
     progesterone: ignore 
     c-section: remove_on_GA
@@ -43,7 +37,6 @@ training:
 
 auxiliary:
   method: append
-  strategy: sum
 
 model:
   vit:
@@ -78,7 +71,7 @@ optimizer:
 scheduler:
   type: cosine_warmup
   num_warmup_steps: 10
-  num_cycles: 2 #A multiplier for the cosine scheduler. 2 means two cycles over training
+  num_cycles: 1 #A multiplier for the cosine scheduler. 2 means two cycles over training
   
 device:
   type: cuda
