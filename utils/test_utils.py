@@ -17,7 +17,7 @@ from filelock import FileLock
 
 from dataloader.dataloader import PreTermDataset, collate_fn
 from utils.model_utils import model_from_conf
-from utils.metric_loader import get_test_metrics
+from utils.metric_loader import get_metrics
 
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
@@ -80,7 +80,7 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
         for eval_type in ['avg', 'max']:
             t = thresholds[eval_type][i]['SensAtSpec_cutoff'].item()
             
-            metrics = get_test_metrics(cfg, t)
+            metrics = get_metrics(cfg, t)
     
             for metric in metrics.values():
                 metric(preds[eval_type], labels)
