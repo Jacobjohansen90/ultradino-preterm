@@ -7,6 +7,7 @@ Created on Fri Jun 12 13:43:18 2026
 """
 
 import polars as pl
+from scripts.make_embeddings import make_embeddings
 
 
 path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/'
@@ -44,6 +45,8 @@ print(f"34 > X >= 32: {count}")
 count = df.select((pl.col("GA") < 32*7).sum()).item()
 print(f"X < 32: {count}")
 
+print()
+print("AUCs")
 
 
 

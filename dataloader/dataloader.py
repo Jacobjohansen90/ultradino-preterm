@@ -113,6 +113,10 @@ class PreTermDataset(Dataset):
     def __getitem__(self, idx):
         return self.getitem(idx)
         
+    def patient_count(self):
+        preterm = self.df.filter(pl.col("GA")//7 < self.ga_cutoff)["CPR_CHILD"].n_unique()
+        patients = self.df["CPR_CHILD"].n_unique()
+        return preterm, patients
     
     def __len__(self):
         return len(self.df)
