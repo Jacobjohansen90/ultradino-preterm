@@ -24,9 +24,9 @@ save_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/misc/"
 
 def make_embeddings(path, save_path):
     cfg = OmegaConf.load(path + "conf.yaml")
-    result_df = pl.read_csv(path + 'test_all.csv')
+    result_df = pl.read_csv(path + 'test_metrics.csv')
     
-    row = (result_df.with_columns(max_val=pl.max_horizontal("Sens@Spec_avg", "Sens@Spec_max")).sort("max_val", descending=True).head(1))
+    row = (result_df.with_columns(max_val=pl.max_horizontal("SensAtSpec_avg", "SensAtSpec_max")).sort("max_val", descending=True).head(1))
     
     weights = path + 'weights/' + row['weights'].item()
     
