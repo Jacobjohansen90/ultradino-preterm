@@ -8,14 +8,14 @@ info:
   description: 
 
 data:
-  path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/AnyPreg_June_v2/train.parquet
-  test_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/OnlyFirstPreg_June_v2/test.parquet
+  path: /projects/users/data/UCPH/DeepFetal/projects/common/populations/preterm/preterm_P1_noMP_34_img_34/preterm_P1_noMP_34_img_34_population_train.csv
+  test_path: /projects/users/data/UCPH/DeepFetal/projects/common/populations/preterm/preterm_P1_noMP_34_img_34/preterm_P1_noMP_34_img_34_population_test.csv
   batch_size: 128
   val_frac: 0.05
   workers: 64
   ga_cutoff_weeks: 34 #Sharp cutoff (GA < GA_cutoff)
-  ehr_data: [progesterone]
-  img_data: [physical_delta_x, physical_delta_y]
+  ehr_data: []
+  img_data: [PDX, PDY]
   img_size: [224, 224]
   prefix: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_processed_no_OCR/
   oversample: True
@@ -25,8 +25,8 @@ data:
 #(Label as true if cond is true / remove from DF if cond is true / ignore / remove if GA < GA_cutoff)
 dataset: 
     progesterone: ignore 
-    c-section: remove_on_GA
-    induced: remove_on_GA
+    c-section: ignore #remove_on_GA # handle in population creation. 
+    induced: ignore #remove_on_GA
 
 labels: #Task: [Type of task, loss multiplier]
   tasks:

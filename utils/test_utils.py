@@ -15,7 +15,7 @@ import shutil
 from tqdm import tqdm
 from filelock import FileLock
 
-from dataloader.dataloader import PreTermDataset, collate_fn
+from dataloader.dataloader import PreTermDataset, collate_fn, read_dataframe
 from utils.model_utils import model_from_conf
 from utils.metric_loader import get_test_metrics
 
@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="torchmetrics")
 def test_model(folder_path, test_data_path, move=True, batch_size=128):
     cfg = OmegaConf.load(folder_path + 'conf.yaml')
     
-    test_df = pl.read_parquet(test_data_path)
+    test_df = read_dataframe(test_data_path)
     TestData = PreTermDataset(test_df, cfg, train=False)
     TestLoader = DataLoader(TestData,
                             batch_size,

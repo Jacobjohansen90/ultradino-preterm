@@ -13,6 +13,13 @@ from PIL import Image
 import albumentations as A
 import polars as pl
 
+def read_dataframe(path):
+    if path.endswith('.csv'):
+        return pl.read_csv(path)
+    if path.endswith('.parquet'):
+        return pl.read_parquet(path)
+    raise ValueError(f"Unsupported data file format: {path}")
+
 FUS13M_MEAN = 0.1842924807
 FUS13M_STD = 0.2187705424
 
@@ -201,7 +208,7 @@ def collate_fn(batch):
    
 
 def make_train_val_split(cfg, unique_column='CPR_MOTHER', is_test=False):
-    df = pl.read_parquet(cfg.data.path)
+    df = read_dataframe(cfg.data.path)
     
     df = df.with_columns(pl.lit(False).alias('relabel'))
 
