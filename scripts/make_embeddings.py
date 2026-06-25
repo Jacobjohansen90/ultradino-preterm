@@ -35,7 +35,7 @@ def make_embeddings(path, save_path):
     model.load_state_dict(torch.load(weights, weights_only=True))
     model.eval()
     
-    for parquet in [cfg.data.path, cfg.data.test_path]:
+    for parquet in [cfg.data.test_path]: #[cfg.data.path, cfg.data.test_path]:
     
         df = make_train_val_split(cfg, unique_column='CPR_MOTHER', is_test=True)
     
@@ -59,11 +59,11 @@ def make_embeddings(path, save_path):
                             data['img_data'].to(cfg.device.type),
                             data['ehr_data'].to(cfg.device.type))
         
-            dfs.append(pl.DataFrame({"img": data["ID"],
+            dfs.append(pl.DataFrame({"img": data["IDs"],
                                      "preterm_pred": outputs["preterm"].flatten().cpu().numpy(),
                                      "preterm_label": data["labels"]["preterm"].flatten().cpu().numpy()}))
             
-            embeddings.update({id_: emb for id_, emb in zip(data["ID"], outputs['vision_features'].to('cpu').tolist())})
+            embeddings.update({id_: emb for id_, emb in zip(data["IDs"], outputs['vision_features'].to('cpu').tolist())})
     
         pred_df = pl.concat(dfs)
         
