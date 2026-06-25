@@ -17,13 +17,18 @@ logger = logging.getLogger("model_loader")
 
 def vit_from_conf(cfg, **kwargs):
     # First create randomly initialized encoder
-    model = vit_load.load_from_scratch(cfg.type, **kwargs)
+    if 'vitb16' in cfg.weights_path:
+        model = vit_load.load_from_scratch('vitb16', **kwargs)
+    elif 'vitl16'  in cfg.weights_path:
+        model = vit_load.load_from_scratch('vitl16', **kwargs)
+    else:
+        raise Exception(f"No model type found for {cfg.weights_path}")
+        
     
     # Load pretrained weights if specified
     if cfg.weights_path is not None:
         logger.info('Loading pretrained encoder from %s', cfg.weights_path)
-        vit_load.load_pretrained_weights(model,
-                                         cfg.weights_path)
+        vit_load.load_pretrained_weights(model, cfg.weights_path)
     else:
         logger.info('No pretrained weights provided - encoder initialized randomly.')
     

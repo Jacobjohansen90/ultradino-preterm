@@ -12,7 +12,7 @@ import torch
 from tqdm import tqdm
 import polars as pl
 
-from dataloader.dataloader import PreTermDataset, collate_fn, make_train_val_split
+from dataloader.dataloader import PreTermDataset, collate_fn, make_data_split
 from utils.model_utils import model_from_conf, freeze_model
 from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
 from utils.loss_loader import get_loss
@@ -35,7 +35,7 @@ logger = Logger(save_path)
 #%% Setup dataloaders and models
 
 
-train_df, val_df = make_train_val_split(cfg, unique_column='CPR_MOTHER')
+train_df, val_df = make_data_split(cfg, unique_column='CPR_MOTHER')
 TrainData = PreTermDataset(train_df, cfg, train=True)
 ValData = PreTermDataset(val_df, cfg, train=False)
     

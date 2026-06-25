@@ -30,9 +30,9 @@ class Logger():
             metrics[eval_type] = {}
             for key in metrics_dict[eval_type].keys():
                 if key == 'SensAtSpec' or key == 'SpecAtSens':
-                    metric, cutoff = metrics_dict[eval_type][key].compute().item()
-                    metrics[eval_type][key] = round(metric, 3)
-                    metrics[eval_type][key + '_cutoff'] = round(cutoff, 3)
+                    metric, cutoff = metrics_dict[eval_type][key].compute()
+                    metrics[eval_type][key] = round(metric.item(), 3)
+                    metrics[eval_type][key + '_cutoff'] = round(cutoff.item(), 3)
                 else:
                     metrics[eval_type][key] = round(metrics_dict[eval_type][key].compute().item(), 3)
         

@@ -199,7 +199,7 @@ def collate_fn(batch):
     return sample
    
 
-def make_train_val_split(cfg, unique_column='CPR_MOTHER', is_test=False):
+def make_data_split(cfg, unique_column='CPR_MOTHER', is_test=False):
     if is_test:
         df = pl.read_parquet(cfg.data.test_path)
     else:

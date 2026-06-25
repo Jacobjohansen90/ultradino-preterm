@@ -8,11 +8,11 @@ data:
   val_frac: 0.05
   workers: 64
   ga_cutoff_weeks: 34 #Sharp cutoff (GA < GA_cutoff)
-  ehr_data: [progesterone]
+  ehr_data: []
   img_data: [physical_delta_x, physical_delta_y]
   img_size: [224, 224]
   oversample: True
-  oversample_ratio: 2
+  oversample_ratio: 1
 
 #relabel / remove / ignore / remove_on_GA 
 #(Relabel as true if cond is true / remove from DF if cond is true / ignore / remove if GA < GA_cutoff)
@@ -26,10 +26,10 @@ labels: #Task: [Type of task, loss multiplier]
     preterm: ['bce', 1]
     GA_reg: ['l2', 0.01]
   label_smoothing: True
-  label_smoothing_param: 0.5
+  label_smoothing_param: 2
 
 training:
-  epochs: 100
+  epochs: 40
   vit_frozen_until: 5  #VIT is frozen until this epoch
   ehr_frozen_until: 5 #EHR is frozen until this epoch
   strategy: 'all'
@@ -69,8 +69,8 @@ optimizer:
   
 scheduler:
   type: cosine_warmup
-  num_warmup_steps: 10
-  num_cycles: 1 #A multiplier for the cosine scheduler. 2 means two cycles over training
+  num_warmup_steps: 15
+  num_cycles: 0.5 #A multiplier for the cosine scheduler. 2 means two cycles over training
   
 device:
   type: cuda
