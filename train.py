@@ -37,7 +37,7 @@ def main(config_path):
 
     #%% Setup dataloaders and models
 
-    train_df, val_df = make_train_val_split(cfg, unique_column='CPR_MOTHER')
+    train_df, val_df = make_train_val_split(cfg, unique_column='CPR_MOR')
     TrainData = PreTermDataset(train_df, cfg, train=True)
     ValData = PreTermDataset(val_df, cfg, train=False)
 

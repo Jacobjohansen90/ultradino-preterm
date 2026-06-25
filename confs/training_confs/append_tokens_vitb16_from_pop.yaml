@@ -8,8 +8,8 @@ info:
   description: 
 
 data:
-  path: /projects/users/data/UCPH/DeepFetal/projects/common/populations/preterm/preterm_P1_noMP_34_img_v4/preterm_P1_noMP_34_img_34_population_train.csv
-  test_path: /projects/users/data/UCPH/DeepFetal/projects/common/populations/preterm/preterm_P1_noMP_34_img_v4/preterm_P1_noMP_34_img_34_population_test.csv
+  path: /projects/users/data/UCPH/DeepFetal/projects/common/populations/preterm/preterm_P1_noMP_34_img_v4/preterm_P1_noMP_34_img_v4_population_train.csv
+  test_path: /projects/users/data/UCPH/DeepFetal/projects/common/populations/preterm/preterm_P1_noMP_34_img_v4/preterm_P1_noMP_34_img_v4_population_test.csv
   batch_size: 128
   val_frac: 0.05
   workers: 64
