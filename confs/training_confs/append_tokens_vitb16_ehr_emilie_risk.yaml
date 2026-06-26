@@ -14,9 +14,10 @@ data:
   val_frac: 0.05
   workers: 64
   ga_cutoff_weeks: 34 #Sharp cutoff (GA < GA_cutoff)
-  ehr_train_path: ../EHR_extract/outputs/tables/table_EHR_SP_SDS_P1_noMP_v4.yaml.csv
-  ehr_test_path: ../EHR_extract/outputs/tables/table_EHR_SP_SDS_P1_noMP_v4.yaml.csv  # same file if EHR is combined
-  ehr_data: ['GA_days']  # columns to read from EHR file after merge
+  ehr_train_path: ../ptb_simple/outputs/predictions/xgb/EHR_SDS_SP_P1_noMP_34_train.csv
+  ehr_test_path: ../ptb_simple/outputs/predictions/xgb/EHR_SDS_SP_P1_noMP_34_test.csv  # same file if EHR is combined
+  ehr_data: ['ehr_pred']  # columns to read from EHR file after merge
+  drop_missing_ehr: false  # if true, drop rows with no EHR match and print % unique CHILD_IDs removed
   img_data: [PDX, PDY]
   img_size: [224, 224]
   prefix: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_processed_no_OCR/

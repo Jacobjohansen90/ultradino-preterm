@@ -43,15 +43,40 @@ def read_dataframe(path, columns=None):
     raise ValueError(f"Unsupported data file format: {path}")
 
 
-def load_dataframe(path, cfg):
+def resolve_ehr_path(cfg, split):
+    """Return EHR file path for train or test split."""
+    if split == 'train':
+        return cfg.data.get('ehr_train_path')
+    if split == 'test':
+        return cfg.data.get('ehr_test_path')
+    raise ValueError(f"split must be 'train' or 'test', got {split!r}")
+
+
+def drop_rows_missing_ehr(df, cfg, child_id, split):
+    """Drop rows with null EHR features and report unique child IDs removed."""
+    ehr_cols = list(cfg.data.ehr_data)
+    n_children_before = df.select(child_id).unique().height
+    has_ehr = pl.all_horizontal([pl.col(col).is_not_null() for col in ehr_cols])
+    df = df.filter(has_ehr)
+    n_children_after = df.select(child_id).unique().height
+    dropped = n_children_before - n_children_after
+    pct = 100.0 * dropped / n_children_before if n_children_before else 0.0
+    print(
+        f"[{split}] Dropped {dropped}/{n_children_before} unique {child_id} "
+        f"({pct:.1f}%) with missing EHR data"
+    )
+    return df
+
+
+def load_dataframe(path, cfg, split='train'):
     """Load population data and optionally merge EHR features on CHILD_ID."""
     df = read_dataframe(path)
-    ehr_path = cfg.data.get('ehr_path')
+    ehr_path = resolve_ehr_path(cfg, split)
     if not ehr_path:
         return df
 
     if not cfg.data.ehr_data:
-        raise ValueError("ehr_path is set but ehr_data is empty")
+        raise ValueError("EHR path is set but ehr_data is empty")
 
     cols = resolve_naming(cfg)
     child_id = cols['CHILD_ID']
@@ -64,9 +89,14 @@ def load_dataframe(path, cfg):
         raise ValueError(f"EHR data missing join column '{ehr_child_id}'")
 
     if ehr_child_id == child_id:
-        return df.join(ehr_df, on=child_id, how='left')
+        df = df.join(ehr_df, on=child_id, how='left')
+    else:
+        df = df.join(ehr_df, left_on=child_id, right_on=ehr_child_id, how='left')
 
-    return df.join(ehr_df, left_on=child_id, right_on=ehr_child_id, how='left')
+    if cfg.data.get('drop_missing_ehr', False):
+        df = drop_rows_missing_ehr(df, cfg, child_id, split)
+
+    return df
 
 
 def prepare_dataframe(df, cfg):
@@ -281,7 +311,8 @@ def make_train_val_split(cfg, unique_column=None, is_test=False):
         unique_column = cols['MOTHER_ID']
     ga_weeks_col = cols['GA_WEEKS']
 
-    df = prepare_dataframe(load_dataframe(cfg.data.path, cfg), cfg)
+    split = 'test' if is_test else 'train'
+    df = prepare_dataframe(load_dataframe(cfg.data.path, cfg, split=split), cfg)
     
     df = df.with_columns(pl.lit(False).alias('relabel'))
 

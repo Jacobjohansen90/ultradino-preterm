@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="torchmetrics")
 def test_model(folder_path, test_data_path, move=True, batch_size=128):
     cfg = OmegaConf.load(folder_path + 'conf.yaml')
     
-    test_df = load_dataframe(test_data_path, cfg)
+    test_df = load_dataframe(test_data_path, cfg, split='test')
     TestData = PreTermDataset(test_df, cfg, train=False)
     TestLoader = DataLoader(TestData,
                             batch_size,
