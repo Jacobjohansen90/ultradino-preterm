@@ -13,7 +13,7 @@ import torch
 import json
 import polars as pl
 
-from dataloader.dataloader import PreTermDataset, collate_fn, make_train_val_split
+from dataloader.dataloader import PreTermDataset, collate_fn, make_data_split
 from utils.model_utils import model_from_conf
 
 import warnings
@@ -37,7 +37,7 @@ def make_embeddings(path, save_path):
     
     for parquet in [cfg.data.path, cfg.data.test_path]:
     
-        df = make_train_val_split(cfg, unique_column='CPR_MOTHER', is_test=True)
+        df = make_data_split(cfg, unique_column='CPR_MOTHER', is_test=True)
     
         DataSet = PreTermDataset(df, cfg, train=False, ID='no_ocr_preprocessed_file_path')
     
