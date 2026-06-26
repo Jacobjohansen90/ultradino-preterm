@@ -15,6 +15,7 @@ import polars as pl
 
 DEFAULT_NAMING = {
     'CHILD_ID': 'CPR_CHILD',
+    'EHR_CHILD_ID': None,
     'MOTHER_ID': 'CPR_MOTHER',
     'GA_WEEKS': 'GA_weeks',
     'GA_DAYS': 'GA',
@@ -29,6 +30,8 @@ def resolve_naming(cfg):
     if cfg.get('naming', {}).get('IMGAGE_PATH') and not cfg.naming.get('IMAGE_PATH'):
         naming['IMAGE_PATH'] = cfg.naming.IMGAGE_PATH
     naming.pop('IMGAGE_PATH', None)
+    if naming['EHR_CHILD_ID'] is None:
+        naming['EHR_CHILD_ID'] = naming['CHILD_ID']
     return naming
 
 
@@ -38,6 +41,35 @@ def read_dataframe(path):
     if path.endswith('.parquet'):
         return pl.read_parquet(path)
     raise ValueError(f"Unsupported data file format: {path}")
+
+
+def load_dataframe(path, cfg):
+    """Load population data and optionally merge EHR features on CHILD_ID."""
+    df = read_dataframe(path)
+    ehr_path = cfg.data.get('ehr_path')
+    if not ehr_path:
+        return df
+
+    if not cfg.data.ehr_data:
+        raise ValueError("ehr_path is set but ehr_data is empty")
+
+    cols = resolve_naming(cfg)
+    child_id = cols['CHILD_ID']
+    ehr_child_id = cols['EHR_CHILD_ID']
+    ehr_df = read_dataframe(ehr_path).select([ehr_child_id, *cfg.data.ehr_data])
+
+    if child_id not in df.columns:
+        raise ValueError(f"Population data missing join column '{child_id}'")
+    if ehr_child_id not in ehr_df.columns:
+        raise ValueError(f"EHR data missing join column '{ehr_child_id}'")
+
+    if ehr_child_id == child_id:
+        return df.join(ehr_df, on=child_id, how='left')
+
+    df = df.join(ehr_df, left_on=child_id, right_on=ehr_child_id, how='left')
+    if ehr_child_id != child_id:
+        df = df.drop(ehr_child_id)
+    return df
 
 
 def prepare_dataframe(df, cfg):
@@ -252,7 +284,7 @@ def make_train_val_split(cfg, unique_column=None, is_test=False):
         unique_column = cols['MOTHER_ID']
     ga_weeks_col = cols['GA_WEEKS']
 
-    df = prepare_dataframe(read_dataframe(cfg.data.path), cfg)
+    df = prepare_dataframe(load_dataframe(cfg.data.path, cfg), cfg)
     
     df = df.with_columns(pl.lit(False).alias('relabel'))
 

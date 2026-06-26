@@ -14,7 +14,8 @@ data:
   val_frac: 0.05
   workers: 64
   ga_cutoff_weeks: 34 #Sharp cutoff (GA < GA_cutoff)
-  ehr_data: []
+  ehr_path: ../EHR_extract/outputs/tables/table_EHR_SP_SDS_P1_noMP_v4.yaml.csv # optional: EHR features csv, joined to population on CHILD_ID / EHR_CHILD_ID
+  ehr_data: ['GA_days']  # columns to read from ehr_path after merge
   img_data: [PDX, PDY]
   img_size: [224, 224]
   prefix: /projects/users/data/UCPH/DeepFetal/ultrasound/PNG_processed_no_OCR/
@@ -22,7 +23,8 @@ data:
   oversample_ratio: 2
 
 naming:
-  CHILD_ID: CPR_CHILD
+  CHILD_ID: CPR_BARN
+  EHR_CHILD_ID: b_cpr  # join key in ehr_path; defaults to CHILD_ID if omitted
   MOTHER_ID: CPR_MOR
   GA_DAYS: GA              # gestational age at birth, always in days
   GA_WEEKS: GA_weeks        # derived in code as GA_DAYS // 7
