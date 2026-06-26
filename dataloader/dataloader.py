@@ -37,7 +37,7 @@ def resolve_naming(cfg):
 
 def read_dataframe(path):
     if path.endswith('.csv'):
-        return pl.read_csv(path)
+        return pl.read_csv(path, infer_schema=1000000)
     if path.endswith('.parquet'):
         return pl.read_parquet(path)
     raise ValueError(f"Unsupported data file format: {path}")
