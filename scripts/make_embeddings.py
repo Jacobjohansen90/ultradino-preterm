@@ -67,7 +67,7 @@ def make_embeddings(path, save_path):
         
         pred_df = pl.concat(dfs)
         
-        df_final = df.join(pred_df, left_on='no_ocr_preprocessed_file_path', right_on='img', how='left')
+        df_final = df.join(pred_df, left_on='no_ocr_preprocessed_file_path', right_on='img', how='right')
         
         name = '_'.join(data_path.split('/')[-2:])
         df_final.write_parquet(save_path + name)
