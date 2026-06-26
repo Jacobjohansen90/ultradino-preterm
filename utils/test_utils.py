@@ -114,8 +114,8 @@ def test_model(folder_path, move=True, batch_size=128):
                         best_epoch[population]['Epoch'] = i
                         best_epoch[population]['SensAtSpec'] = sens_spec.item()
                         best_epoch[population]['Type'] = eval_type
-                        best_epoch[population]['Sens'] = metrics["Sens"].compute().item()
-                        best_epoch[population]['Spec'] = metrics["Spec"].compute().item()
+                        best_epoch[population]['Sensitivity'] = metrics["Recall"].compute().item()
+                        best_epoch[population]['Specificity'] = metrics["Specificity"].compute().item()
                         best_epoch[population]['SensAtSpec_cutoff'] = cutoff.item()
                         best_epoch[population]['Val_Cutoff'] = t
                         best_epoch[population]['weights'] = weight_path.replace('Running', 'Evaluated')
