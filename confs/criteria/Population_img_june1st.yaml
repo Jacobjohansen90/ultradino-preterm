@@ -15,6 +15,16 @@ image_criteria:
         operator: "=="
         value: "14"
 
+  - name: Image must be no_ocr processed
+    action: exclude
+    filter_on: file_path
+    function: filter_df_internal
+    conditions:
+      - condition:
+        column: no_ocr_preprocessed_file_path
+        operator: "is_null"
+        value: 
+
   - name: GA at scan
     action: include
     filter_on: [file_path, CPR_CHILD]
