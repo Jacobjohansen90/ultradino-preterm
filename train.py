@@ -37,7 +37,7 @@ def main(config_path):
 
     #%% Setup dataloaders and models
 
-    train_df, val_df = make_train_val_split(cfg, unique_column='CPR_MOR')
+    train_df, val_df = make_train_val_split(cfg)
     TrainData = PreTermDataset(train_df, cfg, train=True)
     ValData = PreTermDataset(val_df, cfg, train=False)
 
@@ -114,11 +114,11 @@ def main(config_path):
 
             avg_preds = torch.tensor(patient_df['pred_avg'].to_numpy(), dtype=torch.float32)
             max_preds = torch.tensor(patient_df['pred_max'].to_numpy(), dtype=torch.float32)
-            labels = torch.tensor(patient_df["label"].to_numpy(), dtype=torch.int)
+            labels = torch.tensor(patient_df["label"].to_numpy()).round().long()
 
             for key in metrics_avg.keys():
-                metrics_avg[key](avg_preds, labels)
-                metrics_max[key](max_preds, labels)
+                metrics_avg[key](avg_preds.to(cfg.device.type), labels.to(cfg.device.type))
+                metrics_max[key](max_preds.to(cfg.device.type), labels.to(cfg.device.type))
 
         torch.save(model.state_dict(), save_path + '/weights/' + str(epoch).zfill(3) + '.pth')
 

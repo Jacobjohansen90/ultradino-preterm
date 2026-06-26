@@ -13,6 +13,25 @@ from PIL import Image
 import albumentations as A
 import polars as pl
 
+DEFAULT_NAMING = {
+    'CHILD_ID': 'CPR_CHILD',
+    'MOTHER_ID': 'CPR_MOTHER',
+    'GA_WEEKS': 'GA_weeks',
+    'GA_DAYS': 'GA',
+    'IMAGE_PATH': 'NO_OCR_FILE_PATH',
+}
+
+
+def resolve_naming(cfg):
+    naming = dict(DEFAULT_NAMING)
+    if cfg.get('naming'):
+        naming.update(dict(cfg.naming))
+    if cfg.get('naming', {}).get('IMGAGE_PATH') and not cfg.naming.get('IMAGE_PATH'):
+        naming['IMAGE_PATH'] = cfg.naming.IMGAGE_PATH
+    naming.pop('IMGAGE_PATH', None)
+    return naming
+
+
 def read_dataframe(path):
     if path.endswith('.csv'):
         return pl.read_csv(path)
@@ -22,12 +41,23 @@ def read_dataframe(path):
 
 
 def prepare_dataframe(df, cfg):
-    """Cast numeric CSV columns."""
+    """Cast numeric columns and derive GA weeks from GA days."""
+    cols = resolve_naming(cfg)
+    ga_weeks_col = cols['GA_WEEKS']
+    ga_days_col = cols['GA_DAYS']
+
     df = df.clone()
-    numeric_cols = ['GA', *cfg.data.img_data, *cfg.data.ehr_data]
+
+    if ga_days_col not in df.columns:
+        raise ValueError(f"Missing GA column '{ga_days_col}' in dataframe")
+
+    numeric_cols = [ga_days_col, *cfg.data.img_data, *cfg.data.ehr_data]
     for col in numeric_cols:
         if col in df.columns:
             df = df.with_columns(pl.col(col).cast(pl.Float64, strict=False))
+
+    df = df.with_columns((pl.col(ga_days_col) // 7).alias(ga_weeks_col))
+
     return df
 
 FUS13M_MEAN = 0.1842924807
@@ -83,9 +113,10 @@ class DummySet(Dataset):
         return {'img': img, 'img_data': pixel_spacing, 'ehr_data': ehr_data, 'label': label}
         
 class PreTermDataset(Dataset):
-    def __init__(self, df, cfg, train, ID='CPR_CHILD'):
+    def __init__(self, df, cfg, train, ID=None):
 
         super().__init__()
+        self.cols = resolve_naming(cfg)
         self.img_size = cfg.data.img_size
         self.ehr_vars = cfg.data.ehr_data
         self.img_data_vars = cfg.data.img_data
@@ -94,7 +125,7 @@ class PreTermDataset(Dataset):
         self.norm_std = 0.2187705424       
         self.train = train
         self.setup_transforms()
-        self.ID_var = ID
+        self.ID_var = ID or self.cols['CHILD_ID']
 
         if cfg.labels.label_smoothing:
             self.label_smoothing_param = cfg.labels.label_smoothing_param
@@ -149,7 +180,7 @@ class PreTermDataset(Dataset):
         
         #Prepare labels
         labels= {}
-        ga_weeks = data.get('GA') // 7
+        ga_weeks = data.get(self.cols['GA_WEEKS'])
         
         if self.label_smoothing_param is not None and self.train:
             if data.get('relabel'):
@@ -167,7 +198,7 @@ class PreTermDataset(Dataset):
         labels['GA_reg'] = torch.tensor([float(ga_weeks)])
         
         #Prepare Image       
-        img = Image.open(data.get('NO_OCR_FILE_PATH'))
+        img = Image.open(data.get(self.cols['IMAGE_PATH']))
         img = np.asarray(img)
         img = self.transforms(image=img)['image']
 
@@ -215,7 +246,12 @@ def collate_fn(batch):
     return sample
    
 
-def make_train_val_split(cfg, unique_column='CPR_MOTHER', is_test=False):
+def make_train_val_split(cfg, unique_column=None, is_test=False):
+    cols = resolve_naming(cfg)
+    if unique_column is None:
+        unique_column = cols['MOTHER_ID']
+    ga_weeks_col = cols['GA_WEEKS']
+
     df = prepare_dataframe(read_dataframe(cfg.data.path), cfg)
     
     df = df.with_columns(pl.lit(False).alias('relabel'))
@@ -228,7 +264,7 @@ def make_train_val_split(cfg, unique_column='CPR_MOTHER', is_test=False):
         elif cond == 'remove':
             df = df.filter(~pl.col(col))
         elif cond == 'remove_on_GA':
-            df = df.filter(~(pl.col(col) & (pl.col('GA') // 7 < cfg.data.ga_cutoff_weeks)))
+            df = df.filter(~(pl.col(col) & (pl.col(ga_weeks_col) < cfg.data.ga_cutoff_weeks)))
     
     if not is_test:
     
@@ -246,8 +282,8 @@ def make_train_val_split(cfg, unique_column='CPR_MOTHER', is_test=False):
         val_df = df.filter(pl.col(unique_column).is_in(val_keys))
         
         if cfg.data.oversample:
-            df_1 = train_df.filter(pl.col('GA')//7 < cfg.data.ga_cutoff_weeks)
-            df_0 = train_df.filter(pl.col('GA')//7 >= cfg.data.ga_cutoff_weeks)
+            df_1 = train_df.filter(pl.col(ga_weeks_col) < cfg.data.ga_cutoff_weeks)
+            df_0 = train_df.filter(pl.col(ga_weeks_col) >= cfg.data.ga_cutoff_weeks)
             n1 = df_1.height
             n0 = df_0.height
             if n1 > n0:

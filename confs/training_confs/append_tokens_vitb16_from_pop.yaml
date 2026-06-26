@@ -21,6 +21,13 @@ data:
   oversample: True
   oversample_ratio: 2
 
+naming:
+  CHILD_ID: CPR_CHILD
+  MOTHER_ID: CPR_MOR
+  GA_DAYS: GA              # gestational age at birth, always in days
+  GA_WEEKS: GA_weeks        # derived in code as GA_DAYS // 7
+  IMAGE_PATH: NO_OCR_FILE_PATH
+
 #label / remove / ignore / remove_on_GA 
 #(Label as true if cond is true / remove from DF if cond is true / ignore / remove if GA < GA_cutoff)
 dataset: 
