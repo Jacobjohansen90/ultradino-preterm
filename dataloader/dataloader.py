@@ -66,10 +66,7 @@ def load_dataframe(path, cfg):
     if ehr_child_id == child_id:
         return df.join(ehr_df, on=child_id, how='left')
 
-    df = df.join(ehr_df, left_on=child_id, right_on=ehr_child_id, how='left')
-    if ehr_child_id != child_id:
-        df = df.drop(ehr_child_id)
-    return df
+    return df.join(ehr_df, left_on=child_id, right_on=ehr_child_id, how='left')
 
 
 def prepare_dataframe(df, cfg):
