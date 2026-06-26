@@ -5,6 +5,10 @@ Created on Sat May  9 09:56:33 2026
 
 @author: jacob
 """
+import warnings
+warnings.filterwarnings("ignore", message="The image is already gray.")
+warnings.filterwarnings("ignore", message=".*xFormers.*")
+
 
 from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
@@ -12,12 +16,11 @@ from tqdm import tqdm
 import torch
 import json
 import polars as pl
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 from dataloader.dataloader import PreTermDataset, collate_fn, make_data_split
 from utils.model_utils import model_from_conf
 
-import warnings
-warnings.filterwarnings("ignore", message="The image is already gray.")
 
 path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/Training_runs/Tested/2026-06-24 07:18:48/'
 save_path = "/projects/users/data/UCPH/DeepFetal/projects/preterm/misc/"

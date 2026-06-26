@@ -47,7 +47,7 @@ class Logger():
         self.plot_metrics(metrics_dict.keys())
     
     def plot_metrics(self, keys):
-        fig, axes = plt.subplots(1, len(keys), squeeze=False)
+        fig, axes = plt.subplots(len(keys), 1, squeeze=False)
         axes = axes.ravel()
         for i, key in enumerate(keys):
             cols = [c for c in self.metrics.columns if key in c]
@@ -57,7 +57,7 @@ class Logger():
             axes[i].legend(loc='upper left')
             axes[i].set_xlabel('Epoch')
             axes[i].set_ylabel('Metric Value')
-            axes[i].set_ylim(0,1.05)
+            axes[i].set_ylim(0, 1.05)
 
         plt.tight_layout()
         fig.savefig(self.save_path + 'metrics_plot.png', dpi=300)

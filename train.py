@@ -35,7 +35,7 @@ logger = Logger(save_path)
 #%% Setup dataloaders and models
 
 
-train_df, val_df = make_data_split(cfg, unique_column='CPR_MOTHER')
+train_df, val_df = make_data_split(cfg, cfg.data.path, unique_column='CPR_MOTHER')
 TrainData = PreTermDataset(train_df, cfg, train=True)
 ValData = PreTermDataset(val_df, cfg, train=False)
     
