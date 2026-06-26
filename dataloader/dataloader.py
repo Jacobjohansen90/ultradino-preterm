@@ -35,11 +35,11 @@ def resolve_naming(cfg):
     return naming
 
 
-def read_dataframe(path):
+def read_dataframe(path, columns=None):
     if path.endswith('.csv'):
-        return pl.read_csv(path, infer_schema=1000000)
+        return pl.read_csv(path, infer_schema=False, columns=columns)
     if path.endswith('.parquet'):
-        return pl.read_parquet(path)
+        return pl.read_parquet(path, columns=columns)
     raise ValueError(f"Unsupported data file format: {path}")
 
 
@@ -56,7 +56,7 @@ def load_dataframe(path, cfg):
     cols = resolve_naming(cfg)
     child_id = cols['CHILD_ID']
     ehr_child_id = cols['EHR_CHILD_ID']
-    ehr_df = read_dataframe(ehr_path).select([ehr_child_id, *cfg.data.ehr_data])
+    ehr_df = read_dataframe(ehr_path, columns=[ehr_child_id, *cfg.data.ehr_data])
 
     if child_id not in df.columns:
         raise ValueError(f"Population data missing join column '{child_id}'")
