@@ -203,11 +203,8 @@ def collate_fn(batch):
     return sample
    
 
-def make_data_split(cfg, unique_column='CPR_MOTHER', is_test=False):
-    if is_test:
-        df = pl.read_parquet(cfg.data.test_path)
-    else:
-        df = pl.read_parquet(cfg.data.path)
+def make_data_split(cfg, data_path, unique_column='CPR_MOTHER', training=True):
+    df = pl.read_parquet(data_path)
     
     df = df.with_columns(pl.lit(False).alias('relabel'))
 
@@ -221,7 +218,7 @@ def make_data_split(cfg, unique_column='CPR_MOTHER', is_test=False):
         elif cond == 'remove_on_GA':
             df = df.filter(~(pl.col(col) & (pl.col('GA') // 7 < cfg.data.ga_cutoff_weeks)))
     
-    if not is_test:
+    if training:
     
         unique_keys = df.select(unique_column).unique()
     

@@ -35,9 +35,9 @@ def make_embeddings(path, save_path):
     model.load_state_dict(torch.load(weights, weights_only=True))
     model.eval()
     
-    for parquet in [cfg.data.path, cfg.data.test_path]:
+    for data_path in [cfg.data.path, cfg.data.test_path]:
     
-        df = make_data_split(cfg, unique_column='CPR_MOTHER', is_test=True)
+        df = make_data_split(cfg, data_path, unique_column='CPR_MOTHER', Training=False)
     
         DataSet = PreTermDataset(df, cfg, train=False, ID='no_ocr_preprocessed_file_path')
     
@@ -69,7 +69,7 @@ def make_embeddings(path, save_path):
         
         df_final = df.join(pred_df, left_on='no_ocr_preprocessed_file_path', right_on='img', how='left')
         
-        name = '_'.join(parquet.split('/')[-2:])
+        name = '_'.join(data_path.split('/')[-2:])
         df_final.write_parquet(save_path + name)
     
         with open(save_path + name.replace('.parquet', '.json'), 'w') as f:

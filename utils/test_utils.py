@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="torchmetrics")
 def test_model(folder_path, move=True, batch_size=128):
     cfg = OmegaConf.load(folder_path + 'conf.yaml')
     
-    df = make_data_split(cfg, is_test=True)
+    df = make_data_split(cfg, cfg.data.test_path, training=False)
     TestDataProg = PreTermDataset(df, cfg, train=False)
     TestLoaderProg = DataLoader(TestDataProg,
                                 batch_size,
@@ -40,7 +40,7 @@ def test_model(folder_path, move=True, batch_size=128):
 
     
     cfg.dataset.progesterone = 'remove'
-    df = make_data_split(cfg, is_test=True)
+    df = make_data_split(cfg, cfg.data.test_path, training=False)
     TestDataNoProg = PreTermDataset(df, cfg, train=False)
     TestLoaderNoProg = DataLoader(TestDataNoProg,
                                   batch_size,
