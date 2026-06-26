@@ -37,7 +37,7 @@ def make_embeddings(path, save_path):
     
     for data_path in [cfg.data.path, cfg.data.test_path]:
     
-        df = make_data_split(cfg, data_path, unique_column='CPR_MOTHER', Training=False)
+        df = make_data_split(cfg, data_path, unique_column='CPR_MOTHER', training=False)
     
         DataSet = PreTermDataset(df, cfg, train=False, ID='no_ocr_preprocessed_file_path')
     
