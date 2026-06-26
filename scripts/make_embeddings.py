@@ -35,7 +35,7 @@ def make_embeddings(path, save_path):
     model.load_state_dict(torch.load(weights, weights_only=True))
     model.eval()
     
-    for parquet in [cfg.data.test_path]: #[cfg.data.path, cfg.data.test_path]:
+    for parquet in [cfg.data.path, cfg.data.test_path]:
     
         df = make_train_val_split(cfg, unique_column='CPR_MOTHER', is_test=True)
     
