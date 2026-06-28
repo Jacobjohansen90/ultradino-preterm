@@ -47,7 +47,7 @@ labels: #Task: [Type of task, loss multiplier]
   label_smoothing_param: 0.5
 
 training:
-  epochs: 100
+  epochs: 50
   vit_frozen_until: 5  #VIT is frozen until this epoch
   ehr_frozen_until: 5 #EHR is frozen until this epoch
   strategy: 'all'

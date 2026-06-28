@@ -139,13 +139,16 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
             sota_df = (sota_df.sort("SensAtSpec_best", descending=True).head(5))
             sota_df.write_csv(sota_csv)
 
-            valid_weights = set(sota_df["weights"].to_list())        
+            valid_weights = set(sota_df["weights"].to_list())
             for file in os.listdir(dst_name):
+                if not file.endswith('.pth'):
+                    continue
                 path = os.path.join(dst_name, file)
-        
                 if path not in valid_weights:
-                    os.remove(path)
-                    os.remove(path.replace('.pth', '.yaml'))
+                    yaml_path = path.replace('.pth', '.yaml')
+                    for stale_path in (path, yaml_path):
+                        if os.path.exists(stale_path):
+                            os.remove(stale_path)
     
         else:
             os.makedirs(dst_name, exist_ok=False)
