@@ -142,30 +142,32 @@ def run_embeddings(run_path, output_dir=None, batch_size=None, workers=None):
         embeddings = {}
 
         for data in tqdm(loader, desc=split):
-            outputs = model(
-                data["imgs"].to(cfg.device.type),
-                data["img_data"].to(cfg.device.type),
-                data["ehr_data"].to(cfg.device.type),
-            )
+            with torch.no_grad():
+                outputs = model(
+                    data["imgs"].to(cfg.device.type),
+                    data["img_data"].to(cfg.device.type),
+                    data["ehr_data"].to(cfg.device.type),
+                )
 
-            dfs.append(
-                pl.DataFrame(
+                dfs.append(
+                    pl.DataFrame(
+                        {
+                            "img": data["IDs"],
+                            "preterm_pred": outputs["preterm"].detach().flatten().cpu().numpy(),
+                            "preterm_label": data["labels"]["preterm"].flatten().cpu().numpy(),
+                        }
+                    )
+                )
+
+                embeddings.update(
                     {
-                        "img": data["IDs"],
-                        "preterm_pred": outputs["preterm"].flatten().cpu().numpy(),
-                        "preterm_label": data["labels"]["preterm"].flatten().cpu().numpy(),
+                        img_id: emb
+                        for img_id, emb in zip(
+                            data["IDs"],
+                            outputs["vision_features"].detach().to("cpu").tolist(),
+                        )
                     }
                 )
-            )
-
-            embeddings.update(
-                {
-                    img_id: emb
-                    for img_id, emb in zip(
-                        data["IDs"], outputs["vision_features"].to("cpu").tolist()
-                    )
-                }
-            )
 
         pred_df = pl.concat(dfs)
         df_final = df.join(pred_df, left_on=image_path_col, right_on="img", how="left")
