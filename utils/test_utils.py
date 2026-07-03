@@ -60,7 +60,8 @@ def test_model(folder_path, test_data_path, move=True, batch_size=128):
                 
                 outputs = model(data['imgs'].to(cfg.device.type),
                                 data['img_data'].to(cfg.device.type),
-                                data['ehr_data'].to(cfg.device.type))
+                                data['ehr_data'].to(cfg.device.type),
+                                patient_ids=data['IDs'])
             
                 dfs.append(pl.DataFrame({"cpr": data["IDs"],
                                          "pred": outputs["preterm"].flatten().cpu().numpy(),

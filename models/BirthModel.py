@@ -39,11 +39,26 @@ class BirthModel(nn.Module):
         
         else:
             raise RuntimeError(f'Unknown fusion type f"{self.fusion}"')
-            
-    def forward_append(self, img, img_data, ehr):
-        embeddings = []
+
+    def _run_ehr_model(self, ehr, patient_ids):
+        if self.ehr_model is None:
+            return None
+
+        if self.ehr_model.input_type == "patient_id":
+            if patient_ids is None:
+                return None
+            return self.ehr_model(patient_ids)
+
         if ehr.shape[1] != 0:
-            ehr_embedding = self.ehr_model(ehr)        
+            return self.ehr_model(ehr)
+
+        return None
+            
+    def forward_append(self, img, img_data, ehr, patient_ids=None):
+        embeddings = []
+
+        ehr_embedding = self._run_ehr_model(ehr, patient_ids)
+        if ehr_embedding is not None:
             ehr_embedding = self.ehr_transform(ehr_embedding)
             embeddings.append(ehr_embedding)
         
@@ -73,6 +88,5 @@ class BirthModel(nn.Module):
         for n, p in model.named_parameters():
             p.requires_grad = True
 
-    def forward(self, img, img_data, ehr):
-        return self.forward_(img, img_data, ehr) 
-    
+    def forward(self, img, img_data, ehr, patient_ids=None):
+        return self.forward_(img, img_data, ehr, patient_ids)

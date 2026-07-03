@@ -16,7 +16,10 @@ data:
   ga_cutoff_weeks: 34 #Sharp cutoff (GA < GA_cutoff)
   ehr_train_path: ../ptb_simple/outputs/predictions/xgb/EHR_SDS_SP_P1_noMP_34_train.csv
   ehr_test_path: ../ptb_simple/outputs/predictions/xgb/EHR_SDS_SP_P1_noMP_34_test.csv  # same file if EHR is combined
-  ehr_data: ['ehr_pred']  # columns to read from EHR file after merge
+  ehr_data: ['ehr_pred']  # columns to read from EHR file after merge; use [] with JSON encodings
+  # ehr_encoding_train_path: path/to/train_encodings.json
+  # ehr_encoding_test_path: path/to/test_encodings.json
+  # ehr_encoding_dim: 128  # optional; inferred from JSON if omitted
   drop_missing_ehr: false  # if true, drop rows with no EHR match and print % unique CHILD_IDs removed
   img_data: [PDX, PDY]
   img_size: [224, 224]
@@ -65,7 +68,8 @@ model:
     dropout: 0.2
   
   ehr:
-    weights_path: 
+    type: tabular  # tabular | patient_lookup
+    weights_path:
   
   transform:
     layer_dims: [256]

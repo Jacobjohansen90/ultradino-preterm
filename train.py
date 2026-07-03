@@ -77,7 +77,8 @@ def main(config_path):
             optimizer.zero_grad()
             outputs = model(data['imgs'].to(cfg.device.type),
                             data['img_data'].to(cfg.device.type),
-                            data['ehr_data'].to(cfg.device.type))
+                            data['ehr_data'].to(cfg.device.type),
+                            patient_ids=data['IDs'])
 
             loss = 0
             for task, (_, weight) in cfg.labels.tasks.items():
@@ -98,7 +99,8 @@ def main(config_path):
             for data in iter(ValLoader):
                 outputs = model(data['imgs'].to(cfg.device.type),
                                 data['img_data'].to(cfg.device.type),
-                                data['ehr_data'].to(cfg.device.type))
+                                data['ehr_data'].to(cfg.device.type),
+                                patient_ids=data['IDs'])
 
                 loss = loss_fns['preterm'](outputs['preterm'].cpu(), data["labels"]["preterm"].cpu())
                 val_loss += loss.item() / len(ValLoader)

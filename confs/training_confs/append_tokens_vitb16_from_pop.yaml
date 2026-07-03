@@ -64,7 +64,8 @@ model:
     dropout: 0.2
   
   ehr:
-    weights_path: 
+    type: tabular  # tabular | patient_lookup
+    weights_path:
   
   transform:
     layer_dims: [256]

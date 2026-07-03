@@ -147,6 +147,7 @@ def run_embeddings(run_path, output_dir=None, batch_size=None, workers=None):
                     data["imgs"].to(cfg.device.type),
                     data["img_data"].to(cfg.device.type),
                     data["ehr_data"].to(cfg.device.type),
+                    patient_ids=data["IDs"],
                 )
 
                 dfs.append(
