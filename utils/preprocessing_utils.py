@@ -136,7 +136,7 @@ def mark_df_external(df, criteria):
         mark = (df.join(table, on=criteria.filter_on, how="left")
                 .filter((pl.col("cond_col") <= pl.col("BIRTHDAY")) &
                         (pl.col("cond_col") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
-                .select([criteria.filter_on, "BIRTHDAY"])).with_columns(pl.lit(True).alias('mark'))
+                .select([criteria.filter_on, "BIRTHDAY"])).unique().with_columns(pl.lit(True).alias('mark'))
 
         df = df.join(mark, on=[criteria.filter_on, 'BIRTHDAY'], how='left')
 
