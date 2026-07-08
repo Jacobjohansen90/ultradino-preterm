@@ -102,7 +102,11 @@ def apply_inclusion_exclusion(df, cfg):
     
     for criteria in cfg.conditional_criteria:
         fn = custom_funcs[criteria.function]
+        print(criteria.name)
+        print(len(df))
         df = fn(df, criteria)
+        print(len(df))
+        print()
         conditioned = condition(conditioned, df, criteria)
     
     return df, discards, conditioned
