@@ -119,18 +119,34 @@ def mark_df_external(df, criteria):
         table = filter_conditions(df_temp, condition, criteria.filter_on, table, criteria.action)
            
     if criteria.action == 'include':
-        df = df.with_columns(pl.col(criteria.filter_on).is_in(table[criteria.filter_on]).alias(criteria.mark_name))
-    elif criteria.action == 'exclude':
-        df = df.with_columns(~pl.col(criteria.filter_on).is_in(table[criteria.filter_on]).alias(criteria.mark_name))
-    elif criteria.action == 'exclude_birth':
-        matches = (df.join(table, on=criteria.filter_on, how="left")
-                   .filter((pl.col("cond_col") <= pl.col("BIRTHDAY")) &
-                           (pl.col("cond_col") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
-                   .select([criteria.filter_on, "BIRTHDAY"]))
+        mark = pl.col(criteria.filter_on).is_in(table[criteria.filter_on])
+        if criteria.mark_name in df.columns:
+            df = df.with_columns((pl.col(criteria.mark_name) | mark).alias(criteria.mark_name))
+        else:
+            df = df.with_columns(mark.alias(criteria.mark_name))
 
-        df = df.with_columns(pl.col(criteria.filter_on).is_in(matches[criteria.filter_on]).alias(criteria.mark_name))
+    elif criteria.action == 'exclude':
+        mark = ~pl.col(criteria.filter_on).is_in(table[criteria.filter_on])
+        if criteria.mark_name in df.columns:
+            df = df.with_columns((pl.col(criteria.mark_name) | mark).alias(criteria.mark_name))
+        else:
+            df = df.with_columns(mark.alias(criteria.mark_name))
+   
+    elif criteria.action == 'exclude_birth':
+        mark = (df.join(table, on=criteria.filter_on, how="left")
+                .filter((pl.col("cond_col") <= pl.col("BIRTHDAY")) &
+                        (pl.col("cond_col") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
+                .select([criteria.filter_on, "BIRTHDAY"])).with_columns(pl.lit(True).alias('mark'))
+
+        df = df.join(mark, on=[criteria.filter_on, 'BIRTHDAY'], how='left')
+
+        if criteria.mark_name in df.columns:
+            df = df.with_columns((pl.col(criteria.mark_name) | pl.col('mark').fill_null(False)).alias(criteria.mark_name))
+        else:
+            df = df.with_columns((pl.col('mark').fill_null(False)).alias(criteria.mark_name))
         
-        
+        df = df.drop('mark')
+
     return df
 
 def find_close_births(df, criteria):

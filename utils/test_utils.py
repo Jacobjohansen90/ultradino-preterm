@@ -28,6 +28,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="torchmetrics")
 def test_model(folder_path, move=True, batch_size=128):
     cfg = OmegaConf.load(folder_path + 'conf.yaml')
     
+    cfg.dataset.progesterone = 'ignore'
     df = make_data_split(cfg, cfg.data.test_path, training=False)
     TestDataProg = PreTermDataset(df, cfg, train=False)
     TestLoaderProg = DataLoader(TestDataProg,
@@ -59,13 +60,13 @@ def test_model(folder_path, move=True, batch_size=128):
                   'max': metrics_df['SensAtSpec_cutoff_max']}
 
     
-    patients_all, preterm_all = TestDataProg.patient_count()
-    patients_np, preterm_np = TestDataNoProg.patient_count() 
+    preterm_all, population_all = TestDataProg.population_count()
+    preterm_np, population_np = TestDataNoProg.population_count() 
     
-    best_epoch = {'all': {'patients': patients_all,
+    best_epoch = {'all': {'population': population_all,
                           'preterm': preterm_all,
                           'SensAtSpec': 0.},
-                  'np': {'patients': patients_np,
+                  'np': {'population': population_np,
                          'preterm': preterm_np,
                          'SensAtSpec': 0.}}
 
