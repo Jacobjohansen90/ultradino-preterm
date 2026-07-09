@@ -29,8 +29,8 @@ class Logger():
     def log_metrics(self, metrics_dict, train_loss, val_loss):
         metrics = {}
         for eval_type in metrics_dict.keys():
-            metrics[eval_type] = {'train_loss': train_loss,
-                                  'val_loss': val_loss}
+            metrics[eval_type] = {'train_loss': round(train_loss,5),
+                                  'val_loss': round(val_loss,5)}
             for key in metrics_dict[eval_type].keys():
                 if key == 'SensAtSpec' or key == 'SpecAtSens':
                     metric, cutoff = metrics_dict[eval_type][key].compute()
