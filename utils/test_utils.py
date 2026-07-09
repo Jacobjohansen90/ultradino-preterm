@@ -124,11 +124,11 @@ def test_model(folder_path, move=True, batch_size=128):
     with open(folder_path + 'test_results.txt', 'w') as f:
         f.write('--All patients--\n')
         for key in best_epoch['all'].keys():
-            f.write(f"\t {key} : {best_epoch['all'][key]}\n")
+            f.write(f"\t {key} : {round(best_epoch['all'][key], 3)}\n")
         f.write('\n')
         f.write('--No Progesterone patients--\n')
         for key in best_epoch['np'].keys():
-            f.write(f"\t {key} : {best_epoch['np'][key]}\n")
+            f.write(f"\t {key} : {round(best_epoch['np'][key], 3)}\n")
     
     sota_path = folder_path.split('Running')[0] + 'SOTA/SOTA.csv'
     
