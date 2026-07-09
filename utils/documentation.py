@@ -29,7 +29,8 @@ class Logger():
     def log_metrics(self, metrics_dict, train_loss, val_loss):
         metrics = {}
         for eval_type in metrics_dict.keys():
-            metrics[eval_type] = {}
+            metrics[eval_type] = {'train_loss': train_loss,
+                                  'val_loss': val_loss}
             for key in metrics_dict[eval_type].keys():
                 if key == 'SensAtSpec' or key == 'SpecAtSens':
                     metric, cutoff = metrics_dict[eval_type][key].compute()
@@ -45,6 +46,8 @@ class Logger():
         self.metrics.write_csv(self.save_path + 'metrics.csv')
         
         self.plot_metrics(metrics_dict.keys())
+        
+        self.reset_metrics(metrics_dict)
     
     def plot_metrics(self, keys):
         fig, axes = plt.subplots(len(keys), 1, squeeze=False)
@@ -63,6 +66,10 @@ class Logger():
         fig.savefig(self.save_path + 'metrics_plot.png', dpi=300)
         plt.close(fig)
                 
-              
+    def reset_metrics(self, metrics_dict):
+        for eval_type in metrics_dict:
+            for key in metrics_dict[eval_type]:
+                metrics_dict[eval_type][key].reset()
+        
     
         
