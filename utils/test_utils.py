@@ -156,12 +156,7 @@ def test_model(folder_path, move=True, batch_size=128):
                                        "GA": [cfg.data.ga_cutoff_weeks],
                                        "Weight_path": [best_epoch[population]['weights']]})
                 
-                if existing.height == 0:
-                    df = pl.concat([df, result], how="vertical")
-                else:
-                    for col in df.columns:
-                        print(col, repr(result[col][0]), type(result[col][0]))
-                    df = df.with_columns([pl.when(cond).then(result[col][0]).otherwise(pl.col(col)).alias(col) for col in df.columns])
+                df = (pl.concat([df.filter(~cond), result]).sort(["GA", "population"]))
 
                 os.makedirs(folder_path.split('Running')[0] + f"SOTA/{cfg.data.ga_cutoff_weeks}",
                             exist_ok=True)
@@ -170,7 +165,6 @@ def test_model(folder_path, move=True, batch_size=128):
                                 folder_path.split('Running')[0] + f"SOTA/{cfg.data.ga_cutoff_weeks}/{population}/",
                                 dirs_exist_ok=True)
 
-        df = df.sort(["GA", "population"])
         df.write_csv(sota_path)
                 
 
