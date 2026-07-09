@@ -159,6 +159,8 @@ def test_model(folder_path, move=True, batch_size=128):
                 if existing.height == 0:
                     df = pl.concat([df, result], how="vertical")
                 else:
+                    for col in df.columns:
+                        print(col, repr(result[col][0]), type(result[col][0]))
                     df = df.with_columns([pl.when(cond).then(result[col][0]).otherwise(pl.col(col)).alias(col) for col in df.columns])
 
                 os.makedirs(folder_path.split('Running')[0] + f"SOTA/{cfg.data.ga_cutoff_weeks}",
