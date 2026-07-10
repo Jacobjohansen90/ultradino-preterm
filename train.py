@@ -17,7 +17,7 @@ from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
 from utils.loss_utils import get_loss, fix_labels
 from utils.metrics import Metrics
 from utils.utils import setup
-from utils.test_utils import test_model
+# from utils.test_utils import test_model
 
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
@@ -129,4 +129,4 @@ for epoch in range(cfg.training.epochs):
         torch.save(model.state_dict(), save_path + '/weights/' + str(epoch).zfill(3) + '.pth')        
 
 #%%Test model and log results
-test_model(save_path, cfg.data.test_path)
+# test_model(save_path, cfg.data.test_path)
