@@ -7,27 +7,29 @@ data:
   batch_size: 128
   val_frac: 0.05
   workers: 64
-  ga_cutoff_weeks: 34 #Sharp cutoff (GA < GA_cutoff)
   ehr_data: []
   img_data: [physical_delta_x, physical_delta_y]
   img_size: [224, 224]
-  oversample: True
-  oversample_ratio: 1
+  oversample_ratio: 1 #0 = No oversampling
+  label_smoothing_param: 2 #0 = No label smoothing
 
-#relabel / remove / ignore / remove_on_GA 
-#(Relabel as true if cond is true / remove from DF if cond is true / ignore / remove if GA < GA_cutoff)
+#remove / ignore / remove_on_GA 
+#(Remove from DF if cond is true / ignore / remove if GA < GA_cutoff)
 dataset: 
     progesterone: ignore 
     c-section: remove_on_GA
     induced: remove_on_GA
 
-labels: #Task: [Type of task, loss multiplier]
-  tasks:
-    preterm: ['bce', 1]
-    GA_reg: ['l2', 0.01]
-  label_smoothing: True
-  label_smoothing_param: 2
-
+tasks:
+  preterm:
+    cutoffs: [30,31,32,33,34,35,36,37] #Sharp cutoff (GA < GA_cutoff)
+    loss: 'bce'
+    weights: [1,1,1,1,1,1,1,1]
+  regression:
+    - var: GA
+      loss: 'l2'
+      weight: 0.01
+  
 training:
   epochs: 60
   vit_frozen_until: 10  #VIT is frozen until this epoch

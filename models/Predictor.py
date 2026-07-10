@@ -32,6 +32,7 @@ class FCPredictor(nn.Module):
         x = self.dropout(x)
         x = self.fc(x)
         logits = self.pred(x)
-        pred = self.act(logits)
+        preds = self.act(logits)
 
-        return logits, pred
+        return {'logits': logits,
+                'preds': preds}

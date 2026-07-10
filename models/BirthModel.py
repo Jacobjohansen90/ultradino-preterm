@@ -15,8 +15,8 @@ class BirthModel(nn.Module):
                  ehr_model, 
                  ehr_transform,
                  img_data_transform,
-                 predictor,
-                 regressor,
+                 predictors,
+                 regressors,
                  aux_method='append',
                  aux_strategy='sum'):
         
@@ -26,8 +26,8 @@ class BirthModel(nn.Module):
         self.ehr_transform = ehr_transform
         self.img_data_transform = img_data_transform
         self.vit_model = vit_model
-        self.predictor = predictor
-        self.regressor = regressor
+        self.predictors = predictors
+        self.regressors = regressors
         self.aux_method = aux_method
         self.aux_strategy = aux_strategy
         
@@ -57,13 +57,16 @@ class BirthModel(nn.Module):
         else:
             vision_features = self.vit_model(img)
         
-        GA_reg, _ = self.regressor(vision_features)
-        preterm_logits, preterm_pred = self.predictor(vision_features)
+        outputs = {'preterm': {},
+                   'regression': {}}
         
-        return {'preterm': preterm_pred,
-                'preterm_logits': preterm_logits,
-                'vision_features': vision_features,
-                'GA_reg': GA_reg}
+        for GA, predictor in self.predictors:
+            outputs['preterm'][GA] = predictor(vision_features)
+            
+        for var, regressor in self.regressors:
+            outputs['regression'][var] = regressor(vision_features)
+
+        return outputs, vision_features
             
     def freeze_model(self, model):
         for n, p in model.named_parameters():

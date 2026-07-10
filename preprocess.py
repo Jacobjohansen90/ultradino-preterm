@@ -14,13 +14,13 @@ import polars as pl
 import json
 
 from utils.calc_stats import calc_stats
-from utils.utils import pack_df_to_dict
-from utils.preprocessing_functions import (merge_population_tables, 
-                                           merge_population_and_image_df, 
-                                           apply_inclusion_exclusion, 
-                                           link_t_tables,
-                                           make_train_test_split,
-                                           sqlite_extractor)
+from utils.preprocessing_utils import (merge_population_tables, 
+                                       merge_population_and_image_df, 
+                                       apply_inclusion_exclusion, 
+                                       link_t_tables,
+                                       make_train_test_split,
+                                       sqlite_extractor)
+
 #%%Load variable YAML and setup logger and dirs
 cfg = OmegaConf.load('./confs/Population.yaml')
 cfg_incl_excl = OmegaConf.load(cfg.paths.incl_excl_cfg)

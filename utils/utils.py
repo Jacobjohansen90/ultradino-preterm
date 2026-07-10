@@ -6,45 +6,16 @@ Created on Sun Apr 19 11:30:20 2026
 @author: jacob
 """
 
-import polars as pl
+from omegaconf import OmegaConf
+import os
 
-def unpack_dict_to_list(dict, dict_key):
-    # This function unpacks the list under dict_key
-    # and returns a list of entries instead of a dict
-    result = []
-    first_iter = True
-    for key, subdict in dict.items():
-        for item in subdict.get(dict_key):
-            if first_iter:
-                headers =  ['CPR_CHILD'] + [k for k in subdict.keys() if k != dict_key] + list(item.keys())
-                result.append(headers)
-                first_iter = False
-            new_list = [key] +  [v for k, v in subdict.items() if k != dict_key] + list(item.values())
-            result.append(new_list)
-    return result
-
-def unpack_dict_to_DF(dict, dict_key):
-    temp_list = unpack_dict_to_list(dict, dict_key)
-    df = pl.DataFrame(temp_list[1:], schema=temp_list[0], orient='row')
-    return df
-
-
-
-def pack_df_to_dict(df, EHR_columns, population_key):
-    df = df.with_columns([pl.col(c).dt.date().cast(pl.Utf8).alias(c)
-                          if df.schema[c] in (pl.Date, pl.Datetime)
-                          else pl.col(c)
-                          for c in df.columns])
-
-    img_cols = [c for c in df.columns if c not in EHR_columns + [population_key]]
-
-    grouped = (df.group_by(population_key).agg(
-                [pl.first(col).alias(col) for col in EHR_columns if col!= population_key]
-                +
-                [pl.struct(img_cols).alias("imgs")]))
-
-    final_dict = {row[population_key]: {**{col: row[col] for col in EHR_columns if col != population_key},
-                                        "imgs": row["imgs"]} for row in grouped.to_dicts()}
-
-    return final_dict
-
+def setup(cfg):
+    if cfg.info.name is None:
+        raise Exception("Model experiment must be named")
+    
+    path = f"/projects/users/data/UCPH/DeepFetal/projects/preterm/training_runs/Running/{cfg.info.name}_{str(cfg.data.ga_cutoff_weeks)}/"
+    os.makedirs(path + 'weights/', exist_ok=False)
+    if os.path.exists(path.replace('Running', 'Evaluated')):
+        raise Exception("Model experiment exists in Evaluated folder.")
+    OmegaConf.save(cfg, path + 'conf.yaml')        
+    return path

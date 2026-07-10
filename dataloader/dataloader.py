@@ -104,12 +104,7 @@ class PreTermDataset(Dataset):
                                          A.ToGray(p=1.0, num_output_channels=1),
                                          A.Normalize(mean=self.norm_mean, std=self.norm_std),
                                          A.ToTensorV2()])        
-    
-    
-    def sigmoid(self, x):
-        return 1.0/(1.0 + np.exp(-x))
         
-    
     def __getitem__(self, idx):
         return self.getitem(idx)
         
@@ -136,38 +131,16 @@ class PreTermDataset(Dataset):
 
         
         #Prepare labels
-        labels= {}
-        ga_weeks = data.get('GA')//7
+        GA_weeks = data.get('GA')//7
+        GA_weeks = torch.tensor([float(GA_weeks)])
+
         
-        if self.label_smoothing_param is not None and self.train:
-            if data.get('relabel'):
-                ga_weeks = ga_weeks - self.ga_cutoff
-                label_preterm = torch.tensor([1-(self.sigmoid(ga_weeks/self.label_smoothing_param))])
-            else:
-                label_preterm = torch.tensor([1*self.sigmoid((self.ga_cutoff-ga_weeks)/self.label_smoothing_param)])
-        else:
-            if data.get('relabel'):
-                label_preterm = torch.tensor([1.])
-            else:
-                label_preterm = torch.tensor([1*(ga_weeks < self.ga_cutoff)])
-        
-        labels['preterm'] = label_preterm.type(torch.float32)
-        labels['GA_reg'] = torch.tensor([float(ga_weeks)])
         
         #Prepare Image       
         img = Image.open(data.get('no_ocr_preprocessed_file_path'))
         img = np.asarray(img)
         img = self.transforms(image=img)['image']
 
-        # try:
-        #     img = self.transforms(image=img)['image']
-        # except:
-        #     print(data.get('no_ocr_preprocessed_file_path'))
-        #     img = torch.Tensor(np.zeros((1,224,224)))
-        #     labels_temp['preterm'] = torch.Tensor([0])
-        #     labels_temp['GA_reg'] = torch.Tensor([0.])
-        
-        
         #Prepare image metadata
         img_data = []
         for key in self.img_data_vars:
@@ -178,26 +151,22 @@ class PreTermDataset(Dataset):
         #Get patient identifier
         ID = data.get(self.ID_var)
 
-        return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'labels': labels, 'ID': ID}
+        return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'GA_weeks': GA_weeks, 'ID': ID}
 
 
 def collate_fn(batch):
 
-    label_keys = batch[0]["labels"].keys()
 
-    labels = {key: torch.stack([sample['labels'][key] for sample in batch])
-              for key in label_keys}
-    
     imgs = torch.stack([sample['img'] for sample in batch])
     img_data = torch.stack([sample['img_data'] for sample in batch])
     ehr_data = torch.stack([sample['ehr_data'] for sample in batch])
+    GA_weeks = torch.stack([sample['GA_weeks'] for sample in batch])
     IDs = [sample['ID'] for sample in batch]
-
 
     sample =  {"imgs": imgs,
                "img_data": img_data,
                "ehr_data": ehr_data,
-               "labels": labels,
+               "GA_weeks": GA_weeks,
                "IDs": IDs}
 
     return sample
@@ -206,20 +175,7 @@ def collate_fn(batch):
 def make_data_split(cfg, data_path, unique_column='CPR_MOTHER', training=True):
     df = pl.read_parquet(data_path)
     
-    df = df.with_columns(pl.lit(False).alias('relabel'))
-
-    for col, cond in cfg.dataset.items():
-        if cond == 'ignore':
-            continue
-        elif cond == 'relabel':
-            df = df.with_columns((pl.col('relabel') | pl.col(col)).alias('relabel'))       
-        elif cond == 'remove':
-            df = df.filter(~pl.col(col))
-        elif cond == 'remove_on_GA':
-            df = df.filter(~(pl.col(col) & (pl.col('GA') // 7 < cfg.data.ga_cutoff_weeks)))
-    
     if training:
-    
         unique_keys = df.select(unique_column).unique()
     
         rng = np.random.default_rng()
@@ -233,9 +189,9 @@ def make_data_split(cfg, data_path, unique_column='CPR_MOTHER', training=True):
         train_df = df.filter(pl.col(unique_column).is_in(train_keys))
         val_df = df.filter(pl.col(unique_column).is_in(val_keys))
         
-        if cfg.data.oversample:
-            df_1 = train_df.filter(pl.col('GA')//7 < cfg.data.ga_cutoff_weeks)
-            df_0 = train_df.filter(pl.col('GA')//7 >= cfg.data.ga_cutoff_weeks)
+        if cfg.data.oversample_ratio != 0:
+            df_1 = train_df.filter(pl.col('GA')//7 < max(cfg.tasks.preterm.ctuoffs))
+            df_0 = train_df.filter(pl.col('GA')//7 >= max(cfg.tasks.preterm.ctuoffs))
             n1 = df_1.height
             n0 = df_0.height
             if n1 > n0:
