@@ -58,7 +58,7 @@ model = model_from_conf(cfg)
 optimizer = get_optimizer(model, cfg)
 scheduler = get_cosine_schedule_with_warmup(optimizer, cfg, cfg.training.epochs)
 loss_fns = get_loss(cfg)
-metrics = Metrics(cfg)
+metrics = Metrics(cfg, save_path)
 
 for epoch in range(cfg.training.epochs):
     freeze_model(model, epoch, cfg)
