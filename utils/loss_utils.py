@@ -9,7 +9,7 @@ import torch
 
 def get_loss(cfg):
     losses = {}
-    for name, config in cfg.tasks.items.items():
+    for name, config in cfg.tasks.items():
         loss = config['loss']
         if loss == 'bce':
             losses[name] = torch.nn.BCEWithLogitsLoss(reduction="none")
