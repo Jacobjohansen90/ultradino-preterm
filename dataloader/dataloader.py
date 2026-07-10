@@ -78,6 +78,10 @@ class PreTermDataset(Dataset):
         self.setup_transforms()
         self.ID_var = ID
         self.df = df
+        self.remove_on_GA_vars = []
+        for var, cond in cfg.dataset.items():
+            if cond == 'remove_on_GA':
+                self.remove_on_GA_vars.append(var)
         
     
     def setup_transforms(self):
@@ -127,8 +131,11 @@ class PreTermDataset(Dataset):
         GA_weeks = data.get('GA')//7
         GA_weeks = torch.tensor([float(GA_weeks)])
 
-        
-        
+        remove_on_GA = 0
+        for var in self.remove_on_GA_vars:
+            if data.get(var):
+                remove_on_GA = 1
+                
         #Prepare Image       
         img = Image.open(data.get('no_ocr_preprocessed_file_path'))
         img = np.asarray(img)
@@ -144,7 +151,7 @@ class PreTermDataset(Dataset):
         #Get patient identifier
         ID = data.get(self.ID_var)
 
-        return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'GA_weeks': GA_weeks, 'ID': ID}
+        return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'GA_weeks': GA_weeks, 'ID': ID, 'remove_on_GA': remove_on_GA}
 
 
 def collate_fn(batch):
@@ -155,12 +162,14 @@ def collate_fn(batch):
     ehr_data = torch.stack([sample['ehr_data'] for sample in batch])
     GA_weeks = torch.stack([sample['GA_weeks'] for sample in batch])
     IDs = [sample['ID'] for sample in batch]
+    remove_on_GA = [sample['remove_on_GA'] for sample in batch]
 
     sample =  {"imgs": imgs,
                "img_data": img_data,
                "ehr_data": ehr_data,
                "GA_weeks": GA_weeks,
-               "IDs": IDs}
+               "IDs": IDs,
+               "remove_on_GA": remove_on_GA}
 
     return sample
    
