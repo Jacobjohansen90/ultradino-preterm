@@ -190,8 +190,8 @@ def make_data_split(cfg, data_path, unique_column='CPR_MOTHER', training=True):
         val_df = df.filter(pl.col(unique_column).is_in(val_keys))
         
         if cfg.data.oversample_ratio != 0:
-            df_1 = train_df.filter(pl.col('GA')//7 < max(cfg.tasks.preterm.ctuoffs))
-            df_0 = train_df.filter(pl.col('GA')//7 >= max(cfg.tasks.preterm.ctuoffs))
+            df_1 = train_df.filter(pl.col('GA')//7 < max(cfg.tasks.preterm.cutoffs))
+            df_0 = train_df.filter(pl.col('GA')//7 >= max(cfg.tasks.preterm.cutoffs))
             n1 = df_1.height
             n0 = df_0.height
             if n1 > n0:
