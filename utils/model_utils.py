@@ -84,7 +84,7 @@ def model_from_conf(cfg, **kwargs):
                                                       cfg.model.pred_head.dropout,
                                                       cfg.model.pred_head.layer_dims)
         
-    for task in cfg.tasks.regresion:
+    for task in cfg.tasks.regression:
         regressors[task['var']] = FCPredictor(vit_model.embed_dim,  
                                               cfg.model.reg_head.dropout,
                                               cfg.model.reg_head.layer_dims)
