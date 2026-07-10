@@ -77,12 +77,6 @@ class PreTermDataset(Dataset):
         self.train = train
         self.setup_transforms()
         self.ID_var = ID
-
-        if cfg.labels.label_smoothing:
-            self.label_smoothing_param = cfg.labels.label_smoothing_param
-        else:
-            self.label_smoothing_param = None
-
         self.df = df
         
     
