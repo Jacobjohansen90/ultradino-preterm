@@ -6,11 +6,12 @@ Created on Wed Mar 11 12:08:41 2026
 @author: jacob
 """
 import torch 
+from omegaconf import ListConfig
 
 def get_loss(cfg):
     losses = {}
     for config in cfg.tasks.values():
-        if type(config) is list:
+        if isinstance(config, (list, ListConfig)):
             for task in config:
                 name = task['var']
                 loss = task['loss']
