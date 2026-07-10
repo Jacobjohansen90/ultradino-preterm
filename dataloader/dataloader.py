@@ -72,7 +72,6 @@ class PreTermDataset(Dataset):
         self.img_size = cfg.data.img_size
         self.ehr_vars = cfg.data.ehr_data
         self.img_data_vars = cfg.data.img_data
-        self.ga_cutoff = cfg.data.ga_cutoff_weeks
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424       
         self.train = train
@@ -108,8 +107,8 @@ class PreTermDataset(Dataset):
     def __getitem__(self, idx):
         return self.getitem(idx)
         
-    def population_count(self):
-        preterm = self.df.filter(pl.col("GA")//7 < self.ga_cutoff)["CPR_CHILD"].n_unique()
+    def population_count(self, ga_cutoff):
+        preterm = self.df.filter(pl.col("GA")//7 < ga_cutoff)["CPR_CHILD"].n_unique()
         population = self.df["CPR_CHILD"].n_unique()
         return preterm, population
     
