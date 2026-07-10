@@ -82,7 +82,7 @@ for epoch in range(cfg.training.epochs):
                     labels = labels.to(cfg.device.type)
                     preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
                     loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
-            elif task == 'regression':
+            else:
                 for reg_task in cfg.tasks[task]:
                     var, loss_fn, weight = reg_task.values()
                     labels = data[var].to(cfg.device.type)

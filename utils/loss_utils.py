@@ -9,16 +9,17 @@ import torch
 
 def get_loss(cfg):
     losses = {}
-    for name, config in cfg.tasks.items():
-        loss = config['loss']
-        if loss == 'bce':
-            losses[name] = torch.nn.BCEWithLogitsLoss(reduction="none")
-        elif loss == 'l2':
-            losses[name] = torch.nn.MSELoss()
-        elif loss == 'l1':
-            losses[name] = torch.nn.L1Loss() 
-        else:
-            raise Exception(f"Loss type {loss} not implemented")
+    for name, configs in cfg.tasks.items():
+        for config in configs:
+            loss = config['loss']
+            if loss == 'bce':
+                losses[name] = torch.nn.BCEWithLogitsLoss(reduction="none")
+            elif loss == 'l2':
+                losses[name] = torch.nn.MSELoss()
+            elif loss == 'l1':
+                losses[name] = torch.nn.L1Loss() 
+            else:
+                raise Exception(f"Loss type {loss} not implemented")
             
     return losses
 
