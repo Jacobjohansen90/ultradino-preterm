@@ -72,7 +72,7 @@ for epoch in range(cfg.training.epochs):
                            data['ehr_data'].to(cfg.device.type))
         
         loss = 0
-        
+                
         for task in cfg.tasks.keys():
             if task == 'preterm':
                 cutoffs, loss_fn, weights = cfg.tasks[task].values()
@@ -83,8 +83,8 @@ for epoch in range(cfg.training.epochs):
                     preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
                     loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
             else:
-                for reg_task in cfg.tasks[task]:
-                    var, loss_fn, weight = reg_task.values()
+                for aux_task in cfg.tasks[task]:
+                    var, loss_fn, weight = aux_task.values()
                     labels = data[var].to(cfg.device.type)
                     loss += loss_fns[loss_fn](outputs[task][var]['preds'], labels)*weight
                     
@@ -116,9 +116,10 @@ for epoch in range(cfg.training.epochs):
                     labels = labels.to(cfg.device.type)
                     preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
                     loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
-            elif task == 'regression':
-                for reg_task in cfg.tasks[task]:
-                    var, loss_fn, weight = reg_task.values()
+            
+            else:
+                for aux_task in cfg.tasks[task]:
+                    var, loss_fn, weight = aux_task.values()
                     labels = data[var].to(cfg.device.type)
                     loss += loss_fns[loss_fn](outputs[task][var]['preds'], labels)*weight
 

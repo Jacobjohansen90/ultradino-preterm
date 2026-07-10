@@ -76,26 +76,27 @@ def model_from_conf(cfg, **kwargs):
                               vit_model.embed_dim,
                               layer_dims=cfg.model.transform.layer_dims)
     
-    predictors = nn.ModuleDict({})
-    regressors = nn.ModuleDict({})
+    preterm_heads = nn.ModuleDict({})
+    aux_task_heads = nn.ModuleDict({})
     
     for cutoff in cfg.tasks.preterm.cutoffs:
-        predictors[str(cutoff)] = FCPredictor(vit_model.embed_dim,
-                                                      cfg.model.pred_head.dropout,
-                                                      cfg.model.pred_head.layer_dims)
+        preterm_heads[str(cutoff)] = FCPredictor(vit_model.embed_dim,
+                                                 cfg.model.head.dropout,
+                                                 cfg.model.head.layer_dims)
+    
+    
+    for task in cfg.tasks.aux_tasks:
+        aux_task_heads[task['var']] = FCPredictor(vit_model.embed_dim,
+                                                  cfg.model.head.dropout,
+                                                  cfg.model.head.layer_dims)
         
-    for task in cfg.tasks.regression:
-        regressors[task['var']] = FCPredictor(vit_model.embed_dim,  
-                                              cfg.model.reg_head.dropout,
-                                              cfg.model.reg_head.layer_dims)
-
 
     model = BirthModel(vit_model,
                        ehr_model,
                        ehr_transform,
                        img_data_transform,
-                       predictors,
-                       regressors,
+                       preterm_heads,
+                       aux_task_heads,
                        aux_method=cfg.auxiliary.method)
     
     model.freeze_model(model.vit_model)

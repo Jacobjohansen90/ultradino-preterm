@@ -22,13 +22,14 @@ dataset:
 
 tasks:
   preterm:
-    - cutoffs: [30,31,32,33,34,35,36,37] #Sharp cutoff (GA < GA_cutoff)
-      loss: 'bce'
-      weights: [1,1,1,1,1,1,1,1]
-  regression:
-    - var: GA
+    cutoffs: [30,31,32,33,34,35,36,37] #Sharp cutoff (GA < GA_cutoff)
+    loss: 'bce'
+    weights: [1,1,1,1,1,1,1,1]
+  aux_tasks:
+    - type: regression
+      var: GA
       loss: 'l2'
-      weight: 0.01
+      weights: 0.01
   
 training:
   epochs: 60
@@ -53,10 +54,7 @@ model:
   transform:
     layer_dims: []
 
-  pred_head:
-    layer_dims: []
-    dropout: 0.2
-  reg_head:
+  head:
     layer_dims: []
     dropout: 0.2
     

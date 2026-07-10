@@ -15,10 +15,9 @@ class BirthModel(nn.Module):
                  ehr_model, 
                  ehr_transform,
                  img_data_transform,
-                 predictors,
-                 regressors,
-                 aux_method='append',
-                 aux_strategy='sum'):
+                 preterm_heads,
+                 aux_task_heads,
+                 aux_method='append'):
         
         super().__init__()
         
@@ -26,10 +25,9 @@ class BirthModel(nn.Module):
         self.ehr_transform = ehr_transform
         self.img_data_transform = img_data_transform
         self.vit_model = vit_model
-        self.predictors = predictors
-        self.regressors = regressors
+        self.preterm_heads = preterm_heads
+        self.aux_task_heads = aux_task_heads
         self.aux_method = aux_method
-        self.aux_strategy = aux_strategy
         
         if self.aux_method == 'append':
             """
@@ -58,13 +56,13 @@ class BirthModel(nn.Module):
             vision_features = self.vit_model(img)
         
         outputs = {'preterm': {},
-                   'regression': {}}
+                   'aux_task': {}}
         
-        for GA, predictor in self.predictors:
-            outputs['preterm'][GA] = predictor(vision_features)
+        for GA, preterm_head in self.preterm_heads:
+            outputs['preterm'][GA] = preterm_head(vision_features)
             
-        for var, regressor in self.regressors:
-            outputs['regression'][var] = regressor(vision_features)
+        for var, aux_task_head in self.aux_task_heads:
+            outputs['aux_task'][var] = aux_task_head(vision_features)
 
         return outputs, vision_features
             

@@ -9,18 +9,24 @@ import torch
 
 def get_loss(cfg):
     losses = {}
-    for name, configs in cfg.tasks.items():
-        for config in configs:
+    for config in cfg.tasks.values():
+        if type(config) is list:
+            for task in config:
+                name = task['var']
+                loss = task['loss']
+        else:
+            name = 'preterm'
             loss = config['loss']
-            if loss == 'bce':
-                losses[name] = torch.nn.BCEWithLogitsLoss(reduction="none")
-            elif loss == 'l2':
-                losses[name] = torch.nn.MSELoss()
-            elif loss == 'l1':
-                losses[name] = torch.nn.L1Loss() 
-            else:
-                raise Exception(f"Loss type {loss} not implemented")
-            
+
+        if loss == 'bce':
+            losses[name] = torch.nn.BCEWithLogitsLoss(reduction="none")
+        elif loss == 'l2':
+            losses[name] = torch.nn.MSELoss()
+        elif loss == 'l1':
+            losses[name] = torch.nn.L1Loss() 
+        else:
+            raise Exception(f"Loss type {loss} not implemented")
+        
     return losses
 
 
