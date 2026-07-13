@@ -58,12 +58,10 @@ class Metrics():
 
         for cutoff in self.cutoffs:
             df = pl.concat(self.dfs[str(cutoff)])
-            print(df)
             patient_df = (df.group_by("cpr").agg([pl.col('preds').mean().alias('avg'),
                                                   pl.col('preds').max().alias('max'),
                                                   pl.col('label').first().alias('label')]))
-            print('PATIENT_DF')
-            print(patient_df)
+
             labels = torch.tensor(patient_df['label'].to_numpy(), dtype=torch.int32)
             
             for agg in ['avg', 'max']:
