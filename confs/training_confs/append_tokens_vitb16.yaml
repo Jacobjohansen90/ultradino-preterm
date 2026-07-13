@@ -26,8 +26,7 @@ tasks:
     loss: 'bce'
     weights: [1,1,1,1,1,1,1,1]
   aux_tasks:
-    - type: regression
-      var: GA
+    - var: GA
       loss: 'l2'
       weights: 0.01
   
