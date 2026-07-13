@@ -31,7 +31,7 @@ class Metrics():
     def update(self, outputs, data):
         for cutoff in self.cutoffs:
             self.dfs[str(cutoff)].append(pl.DataFrame({'cpr': data['IDs'],
-                                                       'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
+                                                       'preds': outputs['preterm'][str(cutoff)]['preds'].cpu().numpy(),
                                                        'label': (data['GA_weeks'] < float(cutoff)).cpu().numpy()}))
     
     def plot_metrics(self):

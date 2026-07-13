@@ -119,30 +119,30 @@ def test_model(folder_path, move=True, batch_size=128):
                             best['Epoch'] = i
                             best['SensAtSpec'] = sens_spec.item()
                             best['Type'] = eval_type
-                            best['Sensitivity'] = metrics["Recall"].compute().item()
-                            best['Specificity'] = metrics["Specificity"].compute().item()
+                            best['Sensitivity'] = metrics['Recall'].compute().item()
+                            best['Specificity'] = metrics['Specificity'].compute().item()
                             best['SensAtSpec_cutoff'] = sens_spec_cutoff.item()
                             best['Val_Cutoff'] = t
                             best['weights'] = weight_path.replace('Running', 'Evaluated')
 
     with open(folder_path + 'test_results.txt', 'w') as f:
-        f.write('--All patients--\n')
-        for key in best_epoch['all'].keys():
-            f.write(f"\t {key} : {round(best_epoch['all'][key], 3)}\n")
-        f.write('\n')
-        f.write('--No Progesterone patients--\n')
-        for key in best_epoch['np'].keys():
-            f.write(f"\t {key} : {round(best_epoch['np'][key], 3)}\n")
+        for cutoff in cutoffs:
+            f.write(f"--GA {str(cutoff)}")
+            f.write('\t--All patients--\n')
+            for key in best_epoch[str(cutoff)]['all'].keys():
+                f.write(f"\t\t {key} : {round(best_epoch[str(cutoff)]['all'][key], 3)}\n")
+            f.write('\n')
+            f.write('\t--No Progesterone patients--\n')
+            for key in best_epoch[str(cutoff)]['no_prog'].keys():
+                f.write(f"\t {key} : {round(best_epoch[str(cutoff)]['no_prog'][key], 3)}\n")
     
-    sota_path = folder_path.split('Running')[0] + 'SOTA/SOTA.csv'
+    
+    sota_path = folder_path.split('Running')[0] + 'SOTA.csv'
     
     lock_file = sota_path + ".lock"
-    
     with FileLock(lock_file):
-    
         if os.path.exists(sota_path):
             df = pl.read_csv(sota_path)
-                
         else:
             df = pl.DataFrame({"SensAtSpec": pl.Series([], dtype=pl.Float64),
                                "population": pl.Series([], dtype=pl.String),
