@@ -134,7 +134,7 @@ class PreTermDataset(Dataset):
         remove_on_GA = 0
         for var in self.remove_on_GA_vars:
             if data.get(var):
-                remove_on_GA = 1
+                remove_on_GA = torch.tensor([1], dtype=torch.float32)
                 
         #Prepare Image       
         img = Image.open(data.get('no_ocr_preprocessed_file_path'))

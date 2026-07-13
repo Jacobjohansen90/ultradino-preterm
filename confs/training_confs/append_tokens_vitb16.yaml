@@ -26,9 +26,9 @@ tasks:
     loss: 'bce'
     weights: [1,1,1,1,1,1,1,1]
   aux_tasks:
-    - var: GA_weeks
-      loss: 'l2'
-      weights: 0.01
+    #- var: GA_weeks
+     # loss: 'l2'
+      #weights: 0.01
   
 training:
   epochs: 60

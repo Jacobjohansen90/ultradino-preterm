@@ -34,9 +34,9 @@ def fix_labels(data, cutoff, label_smoothing_param):
         labels = torch.sigmoid((cutoff-data['GA_weeks'])/label_smoothing_param)
     else:
         labels = (data['GA_weeks'] < cutoff)
-    labels = torch.tensor(labels, dtype=torch.float32)
-    remove_on_GA = torch.tensor(data['remove_on_GA'], dtype=torch.float32)
-    mask = (labels*remove_on_GA) != 0
+        labels = labels.float()
+
+    mask = (labels*data['remove_on_GA']) != 0
 
     return labels, mask
     

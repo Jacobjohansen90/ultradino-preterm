@@ -84,11 +84,11 @@ def model_from_conf(cfg, **kwargs):
                                                  cfg.model.head.dropout,
                                                  cfg.model.head.layer_dims)
     
-    
-    for task in cfg.tasks.aux_tasks:
-        aux_task_heads[task['var']] = FCPredictor(vit_model.embed_dim,
-                                                  cfg.model.head.dropout,
-                                                  cfg.model.head.layer_dims)
+    if cfg.tasks.aux_tasks is not None:
+        for task in cfg.tasks.aux_tasks:
+            aux_task_heads[task['var']] = FCPredictor(vit_model.embed_dim,
+                                                      cfg.model.head.dropout,
+                                                      cfg.model.head.layer_dims)
         
 
     model = BirthModel(vit_model,
