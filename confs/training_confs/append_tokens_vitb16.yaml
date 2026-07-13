@@ -29,7 +29,7 @@ tasks:
     - var: GA_weeks
       loss: 'l2'
       weights: 0.01
-    - var: GA_weeks
+    - var: remove_on_GA
       loss: 'l1'
       weights: 0.01
 training:
