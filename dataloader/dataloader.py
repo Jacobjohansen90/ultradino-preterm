@@ -156,8 +156,6 @@ class PreTermDataset(Dataset):
 
 
 def collate_fn(batch):
-
-
     imgs = torch.stack([sample['img'] for sample in batch])
     img_data = torch.stack([sample['img_data'] for sample in batch])
     ehr_data = torch.stack([sample['ehr_data'] for sample in batch])
@@ -177,6 +175,10 @@ def collate_fn(batch):
 
 def make_data_split(cfg, data_path, unique_column='CPR_MOTHER', training=True):
     df = pl.read_parquet(data_path)
+    
+    for col, cond in cfg.dataset.values():
+        if cond == 'remove':
+            df = df.filter(~pl.col(col))
     
     if training:
         unique_keys = df.select(unique_column).unique()

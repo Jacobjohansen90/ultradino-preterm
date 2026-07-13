@@ -72,7 +72,7 @@ for epoch in range(cfg.training.epochs):
                            data['ehr_data'].to(cfg.device.type))
                 
         loss = 0
-                
+        print(outputs)
         for task in cfg.tasks.keys():
             if task == 'preterm':
                 cutoffs, loss_fn, weights = cfg.tasks[task].values()
