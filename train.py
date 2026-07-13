@@ -72,7 +72,6 @@ for epoch in range(cfg.training.epochs):
                            data['ehr_data'].to(cfg.device.type))
                 
         loss = 0
-        print(outputs)
         for task in cfg.tasks.keys():
             if task == 'preterm':
                 cutoffs, loss_fn, weights = cfg.tasks[task].values()
@@ -113,7 +112,7 @@ for epoch in range(cfg.training.epochs):
                 cutoffs, loss_fn, weights = cfg.tasks[task].values()
                 for cutoff, weight in zip(cutoffs, weights):
                     labels, mask = fix_labels(data, cutoff, cfg.data.label_smoothing_param)
-                    mask = mask.float().to(cfg.device.type)
+                    mask = mask.to(cfg.device.type)
                     labels = labels.to(cfg.device.type)     
                     preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
                     loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
