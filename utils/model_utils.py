@@ -85,11 +85,11 @@ def model_from_conf(cfg, **kwargs):
                 preterm_heads[str(cutoff)] = FCPredictor(vit_model.embed_dim,
                                                          cfg.model.head.dropout,
                                                          cfg.model.head.layer_dims)
-            else:
-                for task in cfg.tasks[task]:
-                    aux_task_heads[task['var']] = FCPredictor(vit_model.embed_dim,
-                                                              cfg.model.head.dropout,
-                                                              cfg.model.head.layer_dims)
+        else:
+            for task in cfg.tasks[task]:
+                aux_task_heads[task['var']] = FCPredictor(vit_model.embed_dim,
+                                                          cfg.model.head.dropout,
+                                                          cfg.model.head.layer_dims)
         
     model = BirthModel(vit_model,
                        ehr_model,
