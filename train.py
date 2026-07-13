@@ -71,6 +71,8 @@ for epoch in range(cfg.training.epochs):
                            data['img_data'].to(cfg.device.type), 
                            data['ehr_data'].to(cfg.device.type))
         
+        print(outputs)
+        
         loss = 0
                 
         for task in cfg.tasks.keys():
