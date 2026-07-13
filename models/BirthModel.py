@@ -56,13 +56,13 @@ class BirthModel(nn.Module):
             vision_features = self.vit_model(img)
         
         outputs = {'preterm': {},
-                   'aux_task': {}}
+                   'aux_tasks': {}}
         
         for GA, preterm_head in self.preterm_heads.items():
             outputs['preterm'][GA] = preterm_head(vision_features)
             
         for var, aux_task_head in self.aux_task_heads.items():
-            outputs['aux_task'][var] = aux_task_head(vision_features)
+            outputs['aux_tasks'][var] = aux_task_head(vision_features)
 
         return outputs, vision_features
             
