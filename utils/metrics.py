@@ -68,7 +68,10 @@ class Metrics():
             for agg in ['avg', 'max']:
                 preds = torch.tensor(patient_df[agg].to_numpy(), dtype=torch.float32)
 
-                self.metric.reset()                
+                self.metric.reset()          
+                result = self.metric(preds, labels)
+                print(result)
+                print(type(result))
                 sens_spec, sens_spec_cutoff = self.metric(preds, labels)
                 
                 self.metrics[agg][str(cutoff)]['SensAtSpec'].append(sens_spec.item())
