@@ -106,9 +106,11 @@ class PreTermDataset(Dataset):
         return self.getitem(idx)
         
     def population_count(self, ga_cutoff):
-        preterm = self.df.filter(pl.col("GA")//7 < ga_cutoff)["CPR_CHILD"].n_unique()
+        not_preterm = self.df.filter(pl.col("GA")//7 >= ga_cutoff)["CPR_CHILD"].n_unique()
+        preterm = self.df.filter((pl.col("GA")//7 < ga_cutoff) & (pl.all_horizontal(~pl.col(self.remove_on_GA_vars))))["CPR_CHILD"].n_unique()
         population = self.df["CPR_CHILD"].n_unique()
-        return preterm, population
+   
+        return preterm, not_preterm, population
     
     def __len__(self):
         return len(self.df)

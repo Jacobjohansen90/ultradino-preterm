@@ -55,13 +55,10 @@ def test_model(folder_path, move=True, batch_size=128):
     
     dirs = os.listdir(folder_path + 'weights/')
     dirs.sort()
-    metrics_df =  pl.read_csv(folder_path + 'metrics.csv')
-    thresholds = {'avg': metrics_df['SensAtSpec_cutoff_avg'],
-                  'max': metrics_df['SensAtSpec_cutoff_max']}
-
     
-    preterm_all, population_all = TestDataProg.population_count()
-    preterm_np, population_np = TestDataNoProg.population_count() 
+    for cutoff in cfg.tasks.preterm.cutoffs:
+        preterm_all, population_all = TestDataProg.population_count()
+        preterm_np, population_np = TestDataNoProg.population_count() 
     
     best_epoch = {'all': {'population': population_all,
                           'preterm': preterm_all,
@@ -69,6 +66,15 @@ def test_model(folder_path, move=True, batch_size=128):
                   'np': {'population': population_np,
                          'preterm': preterm_np,
                          'SensAtSpec': 0.}}
+
+    metrics = 
+    
+    for cutoff in cfg.tasks.preterm.cutoffs:
+        metrics = {'all'str(cutoff): }
+    
+    metrics_df =  pl.read_csv(folder_path + 'metrics.csv')
+    thresholds = {'avg': metrics_df['SensAtSpec_cutoff_avg'],
+                  'max': metrics_df['SensAtSpec_cutoff_max']}
 
 
     for i, weights in enumerate(dirs):
