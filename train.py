@@ -80,6 +80,8 @@ for epoch in range(cfg.training.epochs):
                     labels, mask = fix_labels(data, cutoff, cfg.data.label_smoothing_param)
                     mask = mask.float().to(cfg.device.type)
                     labels = labels.to(cfg.device.type)
+                    print(type(outputs[task][str(cutoff)]['logits']))
+                    print(type(labels))
                     preterm_loss = loss_fns[task](outputs[task][str(cutoff)]['logits'], labels)*weight
                     loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
             else:
