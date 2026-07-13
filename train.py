@@ -70,7 +70,6 @@ for epoch in range(cfg.training.epochs):
         outputs, _ = model(data['imgs'].to(cfg.device.type), 
                            data['img_data'].to(cfg.device.type), 
                            data['ehr_data'].to(cfg.device.type))
-        print(outputs)
         loss = 0
         for task in cfg.tasks.keys():
             if task == 'preterm':
@@ -96,13 +95,12 @@ for epoch in range(cfg.training.epochs):
     
     model.eval()
     val_loss = 0
-
     with torch.no_grad():
         for data in iter(ValLoader):
             outputs, _ = model(data['imgs'].to(cfg.device.type), 
                                data['img_data'].to(cfg.device.type), 
                                data['ehr_data'].to(cfg.device.type))
-            
+            print(outputs)
             metrics.update(outputs, data)
 
         loss = 0
