@@ -25,11 +25,13 @@ tasks:
     cutoffs: [30,31,32,33,34,35,36,37] #Sharp cutoff (GA < GA_cutoff)
     loss: 'bce'
     weights: [1,1,1,1,1,1,1,1]
-  #aux_tasks:
-    #- var: GA_weeks
-     # loss: 'l2'
-      #weights: 0.01
-  
+  aux_tasks:
+    - var: GA_weeks
+      loss: 'l2'
+      weights: 0.01
+    - var: GA_weeks
+      loss: 'l1'
+      weights: 0.01
 training:
   epochs: 60
   vit_frozen_until: 10  #VIT is frozen until this epoch
