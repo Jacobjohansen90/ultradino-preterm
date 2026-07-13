@@ -56,45 +56,43 @@ def test_model(folder_path, move=True, batch_size=128):
     dirs = os.listdir(folder_path + 'weights/')
     dirs.sort()
     
-    for cutoff in cfg.tasks.preterm.cutoffs:
-        preterm_all, population_all = TestDataProg.population_count()
-        preterm_np, population_np = TestDataNoProg.population_count() 
-    
-    best_epoch = {'all': {'population': population_all,
-                          'preterm': preterm_all,
-                          'SensAtSpec': 0.},
-                  'np': {'population': population_np,
-                         'preterm': preterm_np,
-                         'SensAtSpec': 0.}}
-
-    metrics = 
-    
-    for cutoff in cfg.tasks.preterm.cutoffs:
-        metrics = {'all'str(cutoff): }
-    
     metrics_df =  pl.read_csv(folder_path + 'metrics.csv')
-    thresholds = {'avg': metrics_df['SensAtSpec_cutoff_avg'],
-                  'max': metrics_df['SensAtSpec_cutoff_max']}
-
-
+    best_epoch = {}
+    thresholds = {}
+    cutoffs = cfg.tasks.preterm.cutoffs
+    for cutoff in cutoffs:
+        pt_all, not_pt_all, pop_all = TestDataProg.population_count(cutoff)
+        pt_no_prog, not_pt_no_prog, pop_no_prog = TestDataNoProg.population_count(cutoff)
+    
+        best_epoch[str(cutoff)] = {'all': {'population': pop_all,
+                                           'preterm': pt_all,
+                                           'not_preterm': not_pt_all,
+                                           'SensAtSpec': 0.},
+                                   'no_prog': {'population': pop_no_prog,
+                                               'preterm': pt_no_prog,
+                                               'not_preterm': not_pt_no_prog,
+                                               'SensAtSpec': 0.}}
+        
+        thresholds[str(cutoff)] = {'avg': metrics_df[''],
+                                   'max': metrics_df['']}
+        
     for i, weights in enumerate(dirs):
         weight_path = folder_path + 'weights/' + weights
         model.load_state_dict(torch.load(weight_path, weights_only=True))
         model.eval()
         
-        
         with torch.no_grad():
-            for loader, population in [[TestLoaderProg, 'all'], [TestLoaderNoProg, 'np']]:
-                dfs = []
+            for loader, population in [[TestLoaderProg, 'all'], [TestLoaderNoProg, 'no_prog']]:
+                dfs = {str(c): [] for c in cutoffs}
                 for data in tqdm(loader):
-                    
-                    outputs = model(data['imgs'].to(cfg.device.type),
-                                    data['img_data'].to(cfg.device.type),
-                                    data['ehr_data'].to(cfg.device.type))
-                
-                    dfs.append(pl.DataFrame({"cpr": data["IDs"],
-                                             "pred": outputs["preterm"].flatten().cpu().numpy(),
-                                             "label": data["labels"]["preterm"].flatten().cpu().numpy()}))
+                    outputs, _ = model(data['imgs'].to(cfg.device.type),
+                                       data['img_data'].to(cfg.device.type),
+                                       data['ehr_data'].to(cfg.device.type))
+                    for cutoff in cutoffs:
+                        dfs[str(cutoff)].append(pl.DataFrame({'cpr': data['IDs'],
+                                                              'preds': outputs['preterm'][str(cutoff)]['preds'].cpu(),
+                                                              'label': (data['GA_weeks'] < float(cutoff)).cpu()}))
+    
     
                 pred_df = pl.concat(dfs)
     
