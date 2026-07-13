@@ -11,22 +11,21 @@ from omegaconf import ListConfig
 def get_loss(cfg):
     losses = {}
     for config in cfg.tasks.values():
-        if config is not None:
-            if isinstance(config, (list, ListConfig)):
-                for task in config:
-                    loss = task['loss']
-            else:
-                loss = config['loss']
+        if isinstance(config, (list, ListConfig)):
+            for task in config:
+                loss = task['loss']
+        else:
+            loss = config['loss']
+
+        if loss == 'bce':
+            losses[loss] = torch.nn.BCEWithLogitsLoss(reduction="none")
+        elif loss == 'l2':
+            losses[loss] = torch.nn.MSELoss()
+        elif loss == 'l1':
+            losses[loss] = torch.nn.L1Loss() 
+        else:
+            raise Exception(f"Loss type {loss} not implemented")
     
-            if loss == 'bce':
-                losses[loss] = torch.nn.BCEWithLogitsLoss(reduction="none")
-            elif loss == 'l2':
-                losses[loss] = torch.nn.MSELoss()
-            elif loss == 'l1':
-                losses[loss] = torch.nn.L1Loss() 
-            else:
-                raise Exception(f"Loss type {loss} not implemented")
-        
     return losses
 
 

@@ -79,18 +79,18 @@ def model_from_conf(cfg, **kwargs):
     preterm_heads = nn.ModuleDict({})
     aux_task_heads = nn.ModuleDict({})
     
-    for cutoff in cfg.tasks.preterm.cutoffs:
-        preterm_heads[str(cutoff)] = FCPredictor(vit_model.embed_dim,
-                                                 cfg.model.head.dropout,
-                                                 cfg.model.head.layer_dims)
-    
-    if cfg.tasks.aux_tasks is not None:
-        for task in cfg.tasks.aux_tasks:
-            aux_task_heads[task['var']] = FCPredictor(vit_model.embed_dim,
-                                                      cfg.model.head.dropout,
-                                                      cfg.model.head.layer_dims)
+    for task in cfg.tasks.keys():
+        if task == 'preterm':
+            for cutoff in cfg.tasks[task].cutoffs:
+                preterm_heads[str(cutoff)] = FCPredictor(vit_model.embed_dim,
+                                                         cfg.model.head.dropout,
+                                                         cfg.model.head.layer_dims)
+            else:
+                for task in cfg.tasks[task]:
+                    aux_task_heads[task['var']] = FCPredictor(vit_model.embed_dim,
+                                                              cfg.model.head.dropout,
+                                                              cfg.model.head.layer_dims)
         
-
     model = BirthModel(vit_model,
                        ehr_model,
                        ehr_transform,
