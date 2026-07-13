@@ -29,12 +29,10 @@ class Metrics():
         self.save_path = save_path
         
     def update(self, outputs, data):
-        print(outputs)
-        print(data)
         for cutoff in self.cutoffs:
             self.dfs[str(cutoff)].append(pl.DataFrame({'cpr': data['IDs'],
-                                                       'preds': outputs['preterm'][str(cutoff)]['preds'].cpu().numpy(),
-                                                       'label': (data['GA_weeks'] < float(cutoff)).cpu().numpy()}))
+                                                       'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
+                                                       'label': (data['GA_weeks'] < float(cutoff)).flatten().cpu().numpy()}))
     
     def plot_metrics(self):
         for agg in ["avg", "max"]:
@@ -70,8 +68,9 @@ class Metrics():
             
             for agg in ['avg', 'max']:
                 preds = torch.tensor(patient_df[agg].to_numpy(), dtype=torch.float32)
+
                 self.metric.reset()          
-                result = self.metric(preds, labels)
+
                 sens_spec, sens_spec_cutoff = self.metric(preds, labels)
                 
                 self.metrics[agg][str(cutoff)]['SensAtSpec'].append(sens_spec.item())

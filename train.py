@@ -63,44 +63,44 @@ metrics = Metrics(cfg, save_path)
 for epoch in range(cfg.training.epochs):
     freeze_model(model, epoch, cfg)
 
-    model.train(True)
-    train_loss = 0
-    for i, data in enumerate(tqdm(TrainLoader)):
-        optimizer.zero_grad()
-        outputs, _ = model(data['imgs'].to(cfg.device.type), 
-                           data['img_data'].to(cfg.device.type), 
-                           data['ehr_data'].to(cfg.device.type))
-        loss = 0
-        for task in cfg.tasks.keys():
-            if task == 'preterm':
-                cutoffs, loss_fn, weights = cfg.tasks[task].values()
-                for cutoff, weight in zip(cutoffs, weights):
-                    labels, mask = fix_labels(data, cutoff, cfg.data.label_smoothing_param)
-                    mask = mask.to(cfg.device.type)
-                    labels = labels.to(cfg.device.type)
-                    preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
-                    loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
-            else:
-                for aux_task in cfg.tasks[task]:
-                    var, loss_fn, weight = aux_task.values()
-                    labels = data[var].to(cfg.device.type)
-                    loss += loss_fns[loss_fn](outputs[task][var]['preds'], labels)*weight
+    # model.train(True)
+    # train_loss = 0
+    # for i, data in enumerate(tqdm(TrainLoader)):
+    #     optimizer.zero_grad()
+    #     outputs, _ = model(data['imgs'].to(cfg.device.type), 
+    #                        data['img_data'].to(cfg.device.type), 
+    #                        data['ehr_data'].to(cfg.device.type))
+    #     loss = 0
+    #     for task in cfg.tasks.keys():
+    #         if task == 'preterm':
+    #             cutoffs, loss_fn, weights = cfg.tasks[task].values()
+    #             for cutoff, weight in zip(cutoffs, weights):
+    #                 labels, mask = fix_labels(data, cutoff, cfg.data.label_smoothing_param)
+    #                 mask = mask.to(cfg.device.type)
+    #                 labels = labels.to(cfg.device.type)
+    #                 preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
+    #                 loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
+    #         else:
+    #             for aux_task in cfg.tasks[task]:
+    #                 var, loss_fn, weight = aux_task.values()
+    #                 labels = data[var].to(cfg.device.type)
+    #                 loss += loss_fns[loss_fn](outputs[task][var]['preds'], labels)*weight
                     
-        loss.backward()
+    #     loss.backward()
 
-        train_loss += loss.item() / len(TrainLoader)
-        optimizer.step()
+    #     train_loss += loss.item() / len(TrainLoader)
+    #     optimizer.step()
         
-    scheduler.step()
+    # scheduler.step()
     
     model.eval()
     val_loss = 0
+    
     with torch.no_grad():
         for data in iter(ValLoader):
             outputs, _ = model(data['imgs'].to(cfg.device.type), 
                                data['img_data'].to(cfg.device.type), 
                                data['ehr_data'].to(cfg.device.type))
-            print(outputs)
             metrics.update(outputs, data)
 
         loss = 0
