@@ -176,7 +176,7 @@ def collate_fn(batch):
 def make_data_split(cfg, data_path, unique_column='CPR_MOTHER', training=True):
     df = pl.read_parquet(data_path)
     
-    for col, cond in cfg.dataset.values():
+    for col, cond in cfg.dataset.items():
         if cond == 'remove':
             df = df.filter(~pl.col(col))
     
