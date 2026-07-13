@@ -162,7 +162,7 @@ def collate_fn(batch):
     ehr_data = torch.stack([sample['ehr_data'] for sample in batch])
     GA_weeks = torch.stack([sample['GA_weeks'] for sample in batch])
     IDs = [sample['ID'] for sample in batch]
-    remove_on_GA = [sample['remove_on_GA'] for sample in batch]
+    remove_on_GA = torch.stack([sample['remove_on_GA'] for sample in batch])
 
     sample =  {"imgs": imgs,
                "img_data": img_data,
