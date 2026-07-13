@@ -1,5 +1,5 @@
 info:
-  name: baseline
+  name: test
 
 data:
   path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/AnyPreg_June_v2/train.parquet
