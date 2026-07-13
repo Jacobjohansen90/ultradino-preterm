@@ -75,18 +75,18 @@ for epoch in range(cfg.training.epochs):
                 
         for task in cfg.tasks.keys():
             if task == 'preterm':
-                cutoffs, _, weights = cfg.tasks[task].values()
+                cutoffs, loss_fn, weights = cfg.tasks[task].values()
                 for cutoff, weight in zip(cutoffs, weights):
                     labels, mask = fix_labels(data, cutoff, cfg.data.label_smoothing_param)
                     mask = mask.to(cfg.device.type)
                     labels = labels.to(cfg.device.type)
-                    preterm_loss = loss_fns[task](outputs[task][str(cutoff)]['logits'], labels)*weight
+                    preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
                     loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
             else:
                 for aux_task in cfg.tasks[task]:
-                    var, _, weight = aux_task.values()
+                    var, loss_fn, weight = aux_task.values()
                     labels = data[var].to(cfg.device.type)
-                    loss += loss_fns[task](outputs[task][var]['preds'], labels)*weight
+                    loss += loss_fns[loss_fn](outputs[task][var]['preds'], labels)*weight
                     
         loss.backward()
 
@@ -110,19 +110,19 @@ for epoch in range(cfg.training.epochs):
         
         for task in cfg.tasks.keys():
             if task == 'preterm':
-                cutoffs, _, weights = cfg.tasks[task].values()
+                cutoffs, loss_fn, weights = cfg.tasks[task].values()
                 for cutoff, weight in zip(cutoffs, weights):
                     labels, mask = fix_labels(data, cutoff, cfg.data.label_smoothing_param)
                     mask = mask.float().to(cfg.device.type)
                     labels = labels.to(cfg.device.type)     
-                    preterm_loss = loss_fns[task](outputs[task][str(cutoff)]['logits'], labels)*weight
+                    preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
                     loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
             
             else:
                 for aux_task in cfg.tasks[task]:
-                    var, _, weight = aux_task.values()
+                    var, loss_fn, weight = aux_task.values()
                     labels = data[var].to(cfg.device.type)
-                    loss += loss_fns[aux_task](outputs[task][var]['preds'], labels)*weight
+                    loss += loss_fns[loss_fn](outputs[task][var]['preds'], labels)*weight
 
         val_loss += loss.item() / len(ValLoader)
         

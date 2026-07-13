@@ -13,18 +13,16 @@ def get_loss(cfg):
     for config in cfg.tasks.values():
         if isinstance(config, (list, ListConfig)):
             for task in config:
-                name = task['var']
                 loss = task['loss']
         else:
-            name = 'preterm'
             loss = config['loss']
 
         if loss == 'bce':
-            losses[name] = torch.nn.BCEWithLogitsLoss(reduction="none")
+            losses[loss] = torch.nn.BCEWithLogitsLoss(reduction="none")
         elif loss == 'l2':
-            losses[name] = torch.nn.MSELoss()
+            losses[loss] = torch.nn.MSELoss()
         elif loss == 'l1':
-            losses[name] = torch.nn.L1Loss() 
+            losses[loss] = torch.nn.L1Loss() 
         else:
             raise Exception(f"Loss type {loss} not implemented")
         
