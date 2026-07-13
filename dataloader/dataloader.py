@@ -106,8 +106,11 @@ class PreTermDataset(Dataset):
         return self.getitem(idx)
         
     def population_count(self, ga_cutoff):
+        #Non preterm births
         not_preterm = self.df.filter(pl.col("GA")//7 >= ga_cutoff)["CPR_CHILD"].n_unique()
+        #Preterm births - also filtered on remove_on_GA vars
         preterm = self.df.filter((pl.col("GA")//7 < ga_cutoff) & (pl.all_horizontal(~pl.col(self.remove_on_GA_vars))))["CPR_CHILD"].n_unique()
+        #Total population, no filter applied. OBS! not_preterm + preterm =/= population, unless no remove_on_GA is applied.
         population = self.df["CPR_CHILD"].n_unique()
    
         return preterm, not_preterm, population
