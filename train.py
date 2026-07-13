@@ -59,7 +59,7 @@ optimizer = get_optimizer(model, cfg)
 scheduler = get_cosine_schedule_with_warmup(optimizer, cfg, cfg.training.epochs)
 loss_fns = get_loss(cfg)
 metrics = Metrics(cfg, save_path)
-
+print(loss_fns)
 for epoch in range(cfg.training.epochs):
     freeze_model(model, epoch, cfg)
 
@@ -113,7 +113,8 @@ for epoch in range(cfg.training.epochs):
                 cutoffs, loss_fn, weights = cfg.tasks[task].values()
                 for cutoff, weight in zip(cutoffs, weights):
                     labels, mask = fix_labels(data, cutoff, cfg.data.label_smoothing_param)
-                    labels = labels.to(cfg.device.type)
+                    mask = mask.float().to(cfg.device.type)
+                    labels = labels.to(cfg.device.type)     
                     preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
                     loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
             
