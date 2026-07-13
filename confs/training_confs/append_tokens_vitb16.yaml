@@ -6,7 +6,7 @@ data:
   test_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/OnlyFirstPreg_June_v2/test.parquet
   batch_size: 128
   val_frac: 0.05
-  workers: 64
+  workers: 32
   ehr_data: []
   img_data: [physical_delta_x, physical_delta_y]
   img_size: [224, 224]
