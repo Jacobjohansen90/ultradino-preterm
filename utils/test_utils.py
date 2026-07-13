@@ -73,8 +73,8 @@ def test_model(folder_path, move=True, batch_size=128):
                                                'not_preterm': not_pt_no_prog,
                                                'SensAtSpec': 0.}}
         
-        thresholds[str(cutoff)] = {'avg': metrics_df[''],
-                                   'max': metrics_df['']}
+        thresholds[str(cutoff)] = {'avg': metrics_df[f"SensAtSpec_cutoff_{cutoff}_avg"],
+                                   'max': metrics_df[f"SensAtSpec_cutoff_{cutoff}_max"]}
         
     for i, weights in enumerate(dirs):
         weight_path = folder_path + 'weights/' + weights
@@ -102,7 +102,7 @@ def test_model(folder_path, move=True, batch_size=128):
                     preds = {'avg': torch.tensor(patient_df['pred_avg'].to_numpy(), dtype=torch.float32),
                              'max': torch.tensor(patient_df['pred_max'].to_numpy(), dtype=torch.float32)}
         
-                    labels = torch.tensor(patient_df["label"].to_numpy(), dtype=torch.int)
+                    labels = torch.tensor(patient_df["label"].to_numpy(), dtype=torch.int32)
                 
                     for eval_type in ['avg', 'max']: 
                         t = thresholds[str(cutoff)][eval_type].item(i)
@@ -127,14 +127,18 @@ def test_model(folder_path, move=True, batch_size=128):
 
     with open(folder_path + 'test_results.txt', 'w') as f:
         for cutoff in cutoffs:
-            f.write(f"--GA {str(cutoff)}")
+            f.write(f"--GA {str(cutoff)}\n")
             f.write('\t--All patients--\n')
-            for key in best_epoch[str(cutoff)]['all'].keys():
-                f.write(f"\t\t {key} : {round(best_epoch[str(cutoff)]['all'][key], 3)}\n")
+            for key, value in best_epoch[str(cutoff)]['all'].items():
+                if isinstance(value, float):
+                    value = round(value, 3)
+                f.write(f"\t\t {key} : {value}\n")
             f.write('\n')
             f.write('\t--No Progesterone patients--\n')
-            for key in best_epoch[str(cutoff)]['no_prog'].keys():
-                f.write(f"\t {key} : {round(best_epoch[str(cutoff)]['no_prog'][key], 3)}\n")
+            for key, value in best_epoch[str(cutoff)]['no_prog'].items():
+                if isinstance(value, float):
+                    value = round(value, 3)
+                f.write(f"\t\t {key} : {value}\n")
     
     
     sota_path = folder_path.split('Running')[0] + 'SOTA.csv'
@@ -148,26 +152,23 @@ def test_model(folder_path, move=True, batch_size=128):
                                "population": pl.Series([], dtype=pl.String),
                                "GA": pl.Series([], dtype=pl.Int64),
                                "Weight_path": pl.Series([], dtype=pl.String)})
+            
     
-        for population in ['all', 'np']:
-            cond = (pl.col("GA") == cfg.data.ga_cutoff_weeks) & (pl.col("population") == population)
-            existing = df.filter(cond)
-            value = existing["SensAtSpec"].item() if existing.height == 1 else 0
-        
-            if value < best_epoch[population]['SensAtSpec']:
-                result = pl.DataFrame({"SensAtSpec": [best_epoch[population]['SensAtSpec']],
-                                       "population": [population],
-                                       "GA": [cfg.data.ga_cutoff_weeks],
-                                       "Weight_path": [best_epoch[population]['weights']]})
+        for cutoff in cutoffs:
+            for population in ['all', 'no_prog']:
+                best = best_epoch[str(cutoff)][population]
                 
-                df = (pl.concat([df.filter(~cond), result]).sort(["GA", "population"]))
-
-                os.makedirs(folder_path.split('Running')[0] + f"SOTA/{cfg.data.ga_cutoff_weeks}",
-                            exist_ok=True)
+                cond = (pl.col("GA") == cutoff) & (pl.col("population") == population)
+                existing = df.filter(cond)
+                current_best = (existing["SensAtSpec"].item() if existing.height == 1 else 0.0)
                 
-                shutil.copytree(folder_path, 
-                                folder_path.split('Running')[0] + f"SOTA/{cfg.data.ga_cutoff_weeks}/{population}/",
-                                dirs_exist_ok=True)
+                if best['SensAtSpec'] > current_best:
+                    result = pl.DataFrame({"SensAtSpec": [best['SensAtSpec']],
+                                           "population": [population],
+                                           "GA": [cutoff],
+                                           "Weight_path": [best['weights']]})
+                
+                    df = (pl.concat([df.filter(~cond), result]).sort(["GA", "population"]))
 
         df.write_csv(sota_path)
                 
