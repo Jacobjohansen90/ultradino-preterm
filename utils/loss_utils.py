@@ -36,8 +36,6 @@ def fix_labels(data, cutoff, label_smoothing_param):
     else:
         labels = (data['GA_weeks'] < cutoff)
         labels = labels.float()
-    print(labels.dtype)
-    print(data['remove_on_GA'].dtype)
     mask = (labels*data['remove_on_GA']) != 0
 
     return labels, mask
