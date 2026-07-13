@@ -70,7 +70,7 @@ for epoch in range(cfg.training.epochs):
         outputs, _ = model(data['imgs'].to(cfg.device.type), 
                            data['img_data'].to(cfg.device.type), 
                            data['ehr_data'].to(cfg.device.type))
-                
+        print(outputs)
         loss = 0
         for task in cfg.tasks.keys():
             if task == 'preterm':
