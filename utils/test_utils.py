@@ -90,40 +90,40 @@ def test_model(folder_path, move=True, batch_size=128):
                                        data['ehr_data'].to(cfg.device.type))
                     for cutoff in cutoffs:
                         dfs[str(cutoff)].append(pl.DataFrame({'cpr': data['IDs'],
-                                                              'preds': outputs['preterm'][str(cutoff)]['preds'].cpu(),
-                                                              'label': (data['GA_weeks'] < float(cutoff)).cpu()}))
-    
-    
-                pred_df = pl.concat(dfs)
-    
-                patient_df = (pred_df.group_by("cpr").agg([pl.col("pred").mean().alias("pred_avg"),
-                                                           pl.col("pred").max().alias("pred_max"),
-                                                           pl.col("label").first().alias("label")]))
-            
-                preds = {'avg': torch.tensor(patient_df["pred_avg"].to_numpy(), dtype=torch.float32),
-                         'max': torch.tensor(patient_df["pred_max"].to_numpy(), dtype=torch.float32)}
-        
-                labels = torch.tensor(patient_df["label"].to_numpy(), dtype=torch.int)
+                                                              'preds': outputs['preterm'][str(cutoff)]['preds'].cpu().numpy(),
+                                                              'label': (data['GA_weeks'] < float(cutoff)).int().cpu().numpy()}))
                 
-                for eval_type in ['avg', 'max']: 
+                for cutoff in cutoffs:
+                    pred_df = pl.concat(dfs[str(cutoff)])    
+                    patient_df = (pred_df.group_by("cpr").agg([pl.col('preds').mean().alias('pred_avg'),
+                                                               pl.col('preds').max().alias('pred_max'),
+                                                               pl.col('label').first().alias('label')]))
+            
+                    preds = {'avg': torch.tensor(patient_df['pred_avg'].to_numpy(), dtype=torch.float32),
+                             'max': torch.tensor(patient_df['pred_max'].to_numpy(), dtype=torch.float32)}
         
-                    t = thresholds[eval_type].item(i)
-                    metrics = get_metrics(cfg, t)
-            
-                    for metric in metrics.values():
-                        metric(preds[eval_type], labels)
-            
-                    sens_spec, cutoff = metrics['SensAtSpec'].compute()
-                    
-                    if sens_spec.item() > best_epoch[population]['SensAtSpec']:
-                        best_epoch[population]['Epoch'] = i
-                        best_epoch[population]['SensAtSpec'] = sens_spec.item()
-                        best_epoch[population]['Type'] = eval_type
-                        best_epoch[population]['Sensitivity'] = metrics["Recall"].compute().item()
-                        best_epoch[population]['Specificity'] = metrics["Specificity"].compute().item()
-                        best_epoch[population]['SensAtSpec_cutoff'] = cutoff.item()
-                        best_epoch[population]['Val_Cutoff'] = t
-                        best_epoch[population]['weights'] = weight_path.replace('Running', 'Evaluated')
+                    labels = torch.tensor(patient_df["label"].to_numpy(), dtype=torch.int)
+                
+                    for eval_type in ['avg', 'max']: 
+                        t = thresholds[str(cutoff)][eval_type].item(i)
+                        metrics = get_metrics(cfg, t)
+                
+                        for metric in metrics.values():
+                            metric(preds[eval_type], labels)
+                
+                        sens_spec, sens_spec_cutoff = metrics['SensAtSpec'].compute()
+                        
+                        best = best_epoch[str(cutoff)][population]
+                        
+                        if sens_spec.item() > best['SensAtSpec']:
+                            best['Epoch'] = i
+                            best['SensAtSpec'] = sens_spec.item()
+                            best['Type'] = eval_type
+                            best['Sensitivity'] = metrics["Recall"].compute().item()
+                            best['Specificity'] = metrics["Specificity"].compute().item()
+                            best['SensAtSpec_cutoff'] = sens_spec_cutoff.item()
+                            best['Val_Cutoff'] = t
+                            best['weights'] = weight_path.replace('Running', 'Evaluated')
 
     with open(folder_path + 'test_results.txt', 'w') as f:
         f.write('--All patients--\n')
