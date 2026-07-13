@@ -64,7 +64,7 @@ for epoch in range(cfg.training.epochs):
     freeze_model(model, epoch, cfg)
 
     # model.train(True)
-    train_loss = 0
+    train_loss = 0.0
     # for i, data in enumerate(tqdm(TrainLoader)):
     #     optimizer.zero_grad()
     #     outputs, _ = model(data['imgs'].to(cfg.device.type), 
