@@ -37,7 +37,8 @@ class Metrics():
     def plot_metrics(self, train_loss, val_loss):
         for agg in ["avg", "max"]:
             fig, ax = plt.subplots(figsize=(8, 4))
-            ax.plot([train_loss, val_loss], label=['Train Loss', 'Val Loss'])
+            ax.plot(train_loss, label='Train Loss')
+            ax.plot(val_loss, label='Val Loss')
             for cutoff in self.cutoffs:
                 ax.plot(self.metrics[agg][str(cutoff)]['SensAtSpec'],
                         label=f"{cutoff} weeks")
