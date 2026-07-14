@@ -10,8 +10,8 @@ from omegaconf import ListConfig
 
 def get_loss(cfg):
     loss_map = {'bce': torch.nn.BCEWithLogitsLoss(reduction='none'),
-                'l2': torch.nn.MSELoss(),
-                'l1': torch.nn.L1Loss()}    
+                'l2': torch.nn.MSELoss(reduction='mean'),
+                'l1': torch.nn.L1Loss(reduction='mean')}    
     
     losses = {}
     

@@ -17,7 +17,7 @@ from filelock import FileLock
 
 from dataloader.dataloader import PreTermDataset, collate_fn, make_data_split
 from utils.model_utils import model_from_conf
-from utils.metric_loader import get_metrics
+from utils.metrics import get_metrics
 
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
