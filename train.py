@@ -65,7 +65,7 @@ for epoch in range(cfg.training.epochs):
 
     model.train(True)
     train_loss = 0.0
-    for i, data in enumerate(tqdm(TrainLoader)):
+    for data in tqdm(TrainLoader):
         optimizer.zero_grad()
         outputs, _ = model(data['imgs'].to(cfg.device.type), 
                            data['img_data'].to(cfg.device.type), 
@@ -103,29 +103,28 @@ for epoch in range(cfg.training.epochs):
                                data['ehr_data'].to(cfg.device.type))
             metrics.update(outputs, data)
 
-        loss = 0
-        
-        for task in cfg.tasks.keys():
-            if task == 'preterm':
-                cutoffs, loss_fn, weights = cfg.tasks[task].values()
-                for cutoff, weight in zip(cutoffs, weights):
-                    labels, mask = fix_labels(data, cutoff, cfg.data.label_smoothing_param)
-                    mask = mask.to(cfg.device.type)
-                    labels = labels.to(cfg.device.type)     
-                    preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
-                    loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
+            loss = 0
             
-            else:
-                for aux_task in cfg.tasks[task]:
-                    var, loss_fn, weight = aux_task.values()
-                    labels = data[var].to(cfg.device.type)
-                    loss += loss_fns[loss_fn](outputs[task][var]['preds'], labels)*weight
+            for task in cfg.tasks.keys():
+                if task == 'preterm':
+                    cutoffs, loss_fn, weights = cfg.tasks[task].values()
+                    for cutoff, weight in zip(cutoffs, weights):
+                        labels, mask = fix_labels(data, cutoff, cfg.data.label_smoothing_param)
+                        mask = mask.to(cfg.device.type)
+                        labels = labels.to(cfg.device.type)     
+                        preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
+                        loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
+                
+                else:
+                    for aux_task in cfg.tasks[task]:
+                        var, loss_fn, weight = aux_task.values()
+                        labels = data[var].to(cfg.device.type)
+                        loss += loss_fns[loss_fn](outputs[task][var]['preds'], labels)*weight
 
-        val_loss += loss.item() / len(ValLoader)
+            val_loss += loss.item() / len(ValLoader)
         
-        metrics.log_metrics(train_loss, val_loss)
-        
-        torch.save(model.state_dict(), save_path + '/weights/' + str(epoch).zfill(3) + '.pth')        
+    metrics.log_metrics(train_loss, val_loss)
+    torch.save(model.state_dict(), save_path + '/weights/' + str(epoch).zfill(3) + '.pth')        
 
 #%%Test model and log results
 test_model(save_path, cfg.data.test_path)
