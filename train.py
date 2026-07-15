@@ -84,7 +84,7 @@ for epoch in range(cfg.training.epochs):
                 for aux_task in cfg.tasks[task]:
                     var, loss_fn, weight = aux_task.values()
                     labels = data[var].to(cfg.device.type)
-                    loss += loss_fns[loss_fn](outputs[task][var]['preds'], labels)*weight
+                    loss += loss_fns[loss_fn](outputs[task][var]['logits'], labels)*weight
                     
         loss.backward()
 
@@ -119,7 +119,7 @@ for epoch in range(cfg.training.epochs):
                     for aux_task in cfg.tasks[task]:
                         var, loss_fn, weight = aux_task.values()
                         labels = data[var].to(cfg.device.type)
-                        loss += loss_fns[loss_fn](outputs[task][var]['preds'], labels)*weight
+                        loss += loss_fns[loss_fn](outputs[task][var]['logits'], labels)*weight
 
             val_loss += loss.item() / len(ValLoader)
         
