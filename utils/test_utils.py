@@ -55,11 +55,14 @@ def test_model(folder_path, move=True, batch_size=128):
     
     dirs = os.listdir(folder_path + 'weights/')
     dirs.sort()
+
+    cutoffs = cfg.tasks.preterm.cutoffs
     
     metrics_df =  pl.read_csv(folder_path + 'metrics.csv')
     best_epoch = {}
     thresholds = {}
-    cutoffs = cfg.tasks.preterm.cutoffs
+    best_preds = {c: None for c in cutoffs}
+    
     for cutoff in cutoffs:
         pt_all, not_pt_all, pop_all = TestDataProg.population_count(cutoff)
         pt_no_prog, not_pt_no_prog, pop_no_prog = TestDataNoProg.population_count(cutoff)
@@ -109,7 +112,7 @@ def test_model(folder_path, move=True, batch_size=128):
                         metrics = get_metrics(cfg, t)
                 
                         for metric in metrics.values():
-                            metric(preds[eval_type], labels)
+                            metric(preds[eval_type].flatten(), labels.flatten())
                 
                         sens_spec, sens_spec_cutoff = metrics['SensAtSpec'].compute()
                         
@@ -124,21 +127,27 @@ def test_model(folder_path, move=True, batch_size=128):
                             best['SensAtSpec_cutoff'] = sens_spec_cutoff.item()
                             best['Val_Cutoff'] = t
                             best['weights'] = weight_path.replace('Running', 'Evaluated')
-
+                            best_preds[str(cutoff)] = patient_df[['cpr', f"pred_{eval_type}", 'label']]
+                            
+    
+    os.makedirs(folder_path + 'preds/', exist_ok=True)
+    for cutoff in cutoffs:
+        best_preds[str(cutoff)].write_csv(folder_path + f"preds/GA_{cutoff}.csv")
+        
     with open(folder_path + 'test_results.txt', 'w') as f:
         for cutoff in cutoffs:
-            f.write(f"--GA {str(cutoff)}\n")
-            f.write('\t--All patients--\n')
+            f.write(f"--GA {str(cutoff)}--\n\n")
+            f.write('--All patients--\n')
             for key, value in best_epoch[str(cutoff)]['all'].items():
                 if isinstance(value, float):
                     value = round(value, 3)
-                f.write(f"\t\t {key} : {value}\n")
+                f.write(f"\t {key} : {value}\n")
             f.write('\n')
-            f.write('\t--No Progesterone patients--\n')
+            f.write('--No Progesterone patients--\n')
             for key, value in best_epoch[str(cutoff)]['no_prog'].items():
                 if isinstance(value, float):
                     value = round(value, 3)
-                f.write(f"\t\t {key} : {value}\n")
+                f.write(f"\t {key} : {value}\n")
     
     
     sota_path = folder_path.split('Running')[0] + 'SOTA.csv'

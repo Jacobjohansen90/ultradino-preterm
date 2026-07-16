@@ -12,58 +12,10 @@ import numpy as np
 from PIL import Image
 import albumentations as A
 import polars as pl
+import cv2
 
 FUS13M_MEAN = 0.1842924807
 FUS13M_STD = 0.2187705424
-
-class DummySet(Dataset):
-    def __init__(self, train, img_size=[224,224], scans=500):
-        super().__init__()
-        self.img_size = img_size
-        self.scans = scans
-
-        self.norm_mean = FUS13M_MEAN
-        self.norm_std = FUS13M_STD
-
-        self.setup_transforms(train)
-        
-        self.imgs = np.abs(np.random.randn(scans, self.img_size[0], self.img_size[1]))
-        self.pixel_spacings = torch.randn(scans, 2, dtype=torch.float32)
-        self.ehr_data = torch.randint(14, 60, (scans,1,1), dtype=torch.float32)
-        self.labels = torch.round(torch.rand(((500,1)), dtype=torch.float32))
-    
-    def __len__(self):
-        return self.scans
-    
-    def setup_transforms(self, train):
-        if train:
-            self.transforms = A.Compose([A.RandomBrightnessContrast(brightness_limit=(-0.3, 0.3), contrast_limit=(-0.3, 0.3), p=0.5),
-                                         A.RandomGamma(gamma_limit=(80, 120), p=0.5),
-                                         A.GaussNoise(std_range=(0.05, 0.2), p=0.5),
-                                         A.GridDistortion(num_steps=5, distort_limit=(-0.3, 0.3), p=0.5),
-                                         A.HorizontalFlip(p=0.5),                 
-                                         A.Resize(height=self.img_size[0], width=self.img_size[1]),
-                                         A.ToGray(p=1.0, num_output_channels=1),
-                                         A.Normalize(mean=self.norm_mean, std=self.norm_std),
-                                         A.ToTensorV2()])
-        
-        else:
-            self.transforms = A.Compose([A.Resize(height=self.img_size[0], width=self.img_size[1]),
-                                         A.ToGray(p=1.0, num_output_channels=1),
-                                         A.Normalize(mean=self.norm_mean, std=self.norm_std),
-                                         A.ToTensorV2()])
-
-    
-    def __getitem__(self, idx):
-        img = self.imgs[idx]
-        img = img.astype(np.float32)
-        img = self.transforms(image=img)['image']
-        pixel_spacing = self.pixel_spacings[idx]
-        
-        ehr_data = self.ehr_data[idx]
-        label = self.labels[idx]
-        
-        return {'img': img, 'img_data': pixel_spacing, 'ehr_data': ehr_data, 'label': label}
         
 class PreTermDataset(Dataset):
     def __init__(self, df, cfg, train, ID='CPR_CHILD'):
@@ -72,6 +24,7 @@ class PreTermDataset(Dataset):
         self.img_size = cfg.data.img_size
         self.ehr_vars = cfg.data.ehr_data
         self.img_data_vars = cfg.data.img_data
+        self.segmentations = cfg.data.segmentations
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424       
         self.train = train
@@ -130,7 +83,6 @@ class PreTermDataset(Dataset):
             ehr_data.append(float(data.get(key)) or 0.0)
         ehr_data = torch.tensor(ehr_data)
         ehr_data = ehr_data.unsqueeze(0)
-
         
         #Prepare labels
         GA_weeks = data.get('GA')//7
@@ -140,8 +92,7 @@ class PreTermDataset(Dataset):
         for var in self.remove_on_GA_vars:
             if data.get(var):
                 remove_on_GA = torch.tensor([1], dtype=torch.float32)
-
-                
+ 
         #Prepare Image       
         img = Image.open(data.get('no_ocr_preprocessed_file_path'))
         img = np.asarray(img)

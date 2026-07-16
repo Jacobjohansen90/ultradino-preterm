@@ -18,9 +18,11 @@ class Metrics():
         metric = tm.SensitivityAtSpecificity(min_specificity=0.85, task='binary').to(cfg.device.type)
 
         dfs = {str(c): [] for c in cutoffs}
-        metrics = {agg: {str(c): {'SensAtSpec': [],
-                                  'SensAtSpec_cutoff': []} 
-                         for c in cutoffs} for agg in ("avg", "max")}
+        metrics = {'train_loss': [],
+                   'val_loss': [],
+                   **{agg: {str(c): {'SensAtSpec': [],
+                                     'SensAtSpec_cutoff': []} 
+                            for c in cutoffs} for agg in ("avg", "max")}}
         
         self.cutoffs = cutoffs
         self.metric = metric
@@ -37,8 +39,8 @@ class Metrics():
     def plot_metrics(self, train_loss, val_loss):
         for agg in ["avg", "max"]:
             fig, ax = plt.subplots(figsize=(8, 4))
-            ax.plot(train_loss, label='Train Loss')
-            ax.plot(val_loss, label='Val Loss')
+            ax.plot(self.metrics['train_loss'], label='Train Loss')
+            ax.plot(self.metrics['val_loss'], label='Val Loss')
             for cutoff in self.cutoffs:
                 ax.plot(self.metrics[agg][str(cutoff)]['SensAtSpec'],
                         label=f"{cutoff} weeks")
@@ -55,8 +57,11 @@ class Metrics():
         
     def log_metrics(self, train_loss, val_loss):
 
+        self.metrics['train_loss'].append(round(train_loss, 5))
+        self.metrics['val_loss'].append(round(val_loss, 5))
+        
         row = {'train_loss': round(train_loss, 5), 'val_loss': round(val_loss, 5)}
-
+        
         for cutoff in self.cutoffs:
             df = pl.concat(self.dfs[str(cutoff)])
             patient_df = (df.group_by("cpr").agg([pl.col('preds').mean().alias('avg'),
