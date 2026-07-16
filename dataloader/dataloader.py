@@ -78,7 +78,7 @@ class PreTermDataset(Dataset):
         #Prepare EHR data
         ehr_data = []
         for key in self.ehr_vars:
-            ehr_data.append(float(data.get(key)) or 0.0)
+            ehr_data.append(float(data.get(key) or 0.0))
         ehr_data = torch.tensor(ehr_data)
         ehr_data = ehr_data.unsqueeze(0)
         
