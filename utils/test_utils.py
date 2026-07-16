@@ -79,7 +79,7 @@ def test_model(folder_path, move=True, batch_size=128):
         thresholds[str(cutoff)] = {'avg': metrics_df[f"SensAtSpec_cutoff_{cutoff}_avg"],
                                    'max': metrics_df[f"SensAtSpec_cutoff_{cutoff}_max"]}
         
-    for i, weights in enumerate(dirs):
+    for i, weights in enumerate(tqdm(dirs)):
         weight_path = folder_path + 'weights/' + weights
         model.load_state_dict(torch.load(weight_path, weights_only=True))
         model.eval()
@@ -87,7 +87,7 @@ def test_model(folder_path, move=True, batch_size=128):
         with torch.no_grad():
             for loader, population in [[TestLoaderProg, 'all'], [TestLoaderNoProg, 'no_prog']]:
                 dfs = {str(c): [] for c in cutoffs}
-                for data in tqdm(loader):
+                for data in loader:
                     outputs, _ = model(data['imgs'].to(cfg.device.type),
                                        data['img_data'].to(cfg.device.type),
                                        data['ehr_data'].to(cfg.device.type))
@@ -150,7 +150,7 @@ def test_model(folder_path, move=True, batch_size=128):
                 f.write(f"\t {key} : {value}\n")
     
     
-    sota_path = folder_path.split('Running')[0] + 'SOTA.csv'
+    sota_path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/SOTA.csv'
     
     lock_file = sota_path + ".lock"
     with FileLock(lock_file):
