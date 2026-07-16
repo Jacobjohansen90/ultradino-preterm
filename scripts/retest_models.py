@@ -15,6 +15,6 @@ folders = os.listdir(path)
 
 for folder in folders:
     print(f"Testing {folder}")
-    test_model(path + folder, move=False)
+    test_model(path + folder + '/', move=False)
     print("Done")
     print()
