@@ -12,7 +12,6 @@ import numpy as np
 from PIL import Image
 import albumentations as A
 import polars as pl
-import cv2
 
 FUS13M_MEAN = 0.1842924807
 FUS13M_STD = 0.2187705424
@@ -24,7 +23,6 @@ class PreTermDataset(Dataset):
         self.img_size = cfg.data.img_size
         self.ehr_vars = cfg.data.ehr_data
         self.img_data_vars = cfg.data.img_data
-        self.segmentations = cfg.data.segmentations
         self.norm_mean = 0.1842924807
         self.norm_std = 0.2187705424       
         self.train = train
