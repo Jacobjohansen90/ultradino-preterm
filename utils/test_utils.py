@@ -93,8 +93,8 @@ def test_model(folder_path, move=True, batch_size=128):
                                        data['ehr_data'].to(cfg.device.type))
                     for cutoff in cutoffs:
                         dfs[str(cutoff)].append(pl.DataFrame({'cpr': data['IDs'],
-                                                              'preds': outputs['preterm'][str(cutoff)]['preds'].cpu().numpy(),
-                                                              'label': (data['GA_weeks'] < float(cutoff)).int().cpu().numpy()}))
+                                                              'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
+                                                              'label': (data['GA_weeks'] < float(cutoff)).flatten().cpu().numpy()}))
                 
                 for cutoff in cutoffs:
                     pred_df = pl.concat(dfs[str(cutoff)])    
@@ -112,7 +112,7 @@ def test_model(folder_path, move=True, batch_size=128):
                         metrics = get_metrics(cfg, t)
                 
                         for metric in metrics.values():
-                            metric(preds[eval_type].flatten(), labels.flatten())
+                            metric(preds[eval_type], labels)
                 
                         sens_spec, sens_spec_cutoff = metrics['SensAtSpec'].compute()
                         
