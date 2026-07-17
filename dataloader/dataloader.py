@@ -56,15 +56,15 @@ class PreTermDataset(Dataset):
     def __getitem__(self, idx):
         return self.getitem(idx)
         
-    def population_count(self, ga_cutoff):
-        #Non preterm births
-        not_preterm = self.df.filter(pl.col("GA")//7 >= ga_cutoff)["CPR_CHILD"].n_unique()
-        #Preterm births - also filtered on remove_on_GA vars
-        preterm = self.df.filter((pl.col("GA")//7 < ga_cutoff) & (pl.all_horizontal(~pl.col(self.remove_on_GA_vars))))["CPR_CHILD"].n_unique()
-        #Total population, no filter applied. OBS! not_preterm + preterm =/= population, unless no remove_on_GA is applied.
-        population = self.df["CPR_CHILD"].n_unique()
-   
-        return preterm, not_preterm, population
+    def population_count(self, ga_cutoffs):
+        population = {}
+        for cutoff in ga_cutoffs:
+            population[str(cutoff)] = {'population': self.df["CPR_CHILD"].n_unique(),
+                                       'non_preterm': self.df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
+                                       'preterm': self.df.filter((pl.col("GA")//7 < cutoff) 
+                                                                 & (pl.all_horizontal(~pl.col(self.remove_on_GA_vars))))["CPR_CHILD"].n_unique()}
+
+        return population
     
     def __len__(self):
         return len(self.df)
@@ -105,8 +105,17 @@ class PreTermDataset(Dataset):
                 
         #Get patient identifier
         ID = data.get(self.ID_var)
+        
+        #Get progesterone status
+        progesterone = data.get('progesterone')
 
-        return {'img': img, 'img_data': img_data, 'ehr_data': ehr_data, 'GA_weeks': GA_weeks, 'ID': ID, 'remove_on_GA': remove_on_GA}
+        return {'img': img, 
+                'img_data': img_data, 
+                'ehr_data': ehr_data, 
+                'GA_weeks': GA_weeks, 
+                'ID': ID, 
+                'remove_on_GA': remove_on_GA,
+                'progesterone': progesterone}
 
 
 def collate_fn(batch):
@@ -116,13 +125,16 @@ def collate_fn(batch):
     GA_weeks = torch.stack([sample['GA_weeks'] for sample in batch])
     IDs = [sample['ID'] for sample in batch]
     remove_on_GA = torch.stack([sample['remove_on_GA'] for sample in batch])
+    progesterone = torch.stack([sample['progesterone'] for sample in batch])
+    
 
     sample =  {"imgs": imgs,
                "img_data": img_data,
                "ehr_data": ehr_data,
                "GA_weeks": GA_weeks,
                "IDs": IDs,
-               "remove_on_GA": remove_on_GA}
+               "remove_on_GA": remove_on_GA,
+               'progesterone': progesterone}
 
     return sample
    
