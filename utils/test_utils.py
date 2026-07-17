@@ -54,13 +54,13 @@ def test_model(folder_path, move=True, batch_size=128):
     population_all, population_no_prog = TestData.population_count(cutoffs)
 
     for cutoff in cutoffs:        
-        best_epoch[str(cutoff)] = {'all': {'Total Population': population_all['all'][str(cutoff)]['Total Population'],
-                                           'Preterm births': population_all['all'][str(cutoff)]['Preterm births'],
-                                           'Non-preterm_births': population_all['all'][str(cutoff)]['Non-preterm_births'],
+        best_epoch[str(cutoff)] = {'all': {'Total Population': population_all[str(cutoff)]['Total Population'],
+                                           'Preterm births': population_all[str(cutoff)]['Preterm births'],
+                                           'Non-preterm_births': population_all[str(cutoff)]['Non-preterm_births'],
                                            'SensAtSpec': 0.},
-                                   'no_prog': {'Total Population': population_no_prog['no_prog'][str(cutoff)]['Total Population'],
-                                               'Preterm births': population_no_prog['no_prog'][str(cutoff)]['Preterm births'],
-                                               'Non-preterm_births': population_no_prog['no_prog'][str(cutoff)]['Non-preterm_births'],
+                                   'no_prog': {'Total Population': population_no_prog[str(cutoff)]['Total Population'],
+                                               'Preterm births': population_no_prog[str(cutoff)]['Preterm births'],
+                                               'Non-preterm_births': population_no_prog[str(cutoff)]['Non-preterm_births'],
                                                'SensAtSpec': 0.}}
         
         thresholds[str(cutoff)] = {'avg': metrics_df[f"SensAtSpec_cutoff_{cutoff}_avg"],
