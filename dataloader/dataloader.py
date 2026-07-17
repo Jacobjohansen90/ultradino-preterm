@@ -62,14 +62,14 @@ class PreTermDataset(Dataset):
         no_prog_df = self.df.filter(~pl.col('progesterone'))
 
         for cutoff in ga_cutoffs:
-            population_all[str(cutoff)] = {'population': self.df["CPR_CHILD"].n_unique(),
-                                           'non_preterm': self.df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
-                                           'preterm': self.df.filter((pl.col("GA")//7 < cutoff) 
+            population_all[str(cutoff)] = {'Total Population': self.df["CPR_CHILD"].n_unique(),
+                                           'Non-preterm_births': self.df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
+                                           'Preterm births': self.df.filter((pl.col("GA")//7 < cutoff) 
                                                                      & (pl.all_horizontal(~pl.col(self.remove_on_GA_vars))))["CPR_CHILD"].n_unique()}
 
-            population_no_prog[str(cutoff)] = {'population': no_prog_df["CPR_CHILD"].n_unique(),
-                                               'non_preterm': no_prog_df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
-                                               'preterm': no_prog_df.filter((pl.col("GA")//7 < cutoff) 
+            population_no_prog[str(cutoff)] = {'Total Population': no_prog_df["CPR_CHILD"].n_unique(),
+                                               'Non-preterm_births': no_prog_df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
+                                               'Preterm births': no_prog_df.filter((pl.col("GA")//7 < cutoff) 
                                                                             & (pl.all_horizontal(~pl.col(self.remove_on_GA_vars))))["CPR_CHILD"].n_unique()}
 
         return population_all, population_no_prog
