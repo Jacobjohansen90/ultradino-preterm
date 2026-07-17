@@ -57,14 +57,22 @@ class PreTermDataset(Dataset):
         return self.getitem(idx)
         
     def population_count(self, ga_cutoffs):
-        population = {}
-        for cutoff in ga_cutoffs:
-            population[str(cutoff)] = {'population': self.df["CPR_CHILD"].n_unique(),
-                                       'non_preterm': self.df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
-                                       'preterm': self.df.filter((pl.col("GA")//7 < cutoff) 
-                                                                 & (pl.all_horizontal(~pl.col(self.remove_on_GA_vars))))["CPR_CHILD"].n_unique()}
+        population_all = {}
+        population_no_prog = {}
+        no_prog_df = self.df.filter(~pl.col('progesterone'))
 
-        return population
+        for cutoff in ga_cutoffs:
+            population_all[str(cutoff)] = {'population': self.df["CPR_CHILD"].n_unique(),
+                                           'non_preterm': self.df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
+                                           'preterm': self.df.filter((pl.col("GA")//7 < cutoff) 
+                                                                     & (pl.all_horizontal(~pl.col(self.remove_on_GA_vars))))["CPR_CHILD"].n_unique()}
+
+            population_no_prog[str(cutoff)] = {'population': no_prog_df["CPR_CHILD"].n_unique(),
+                                               'non_preterm': no_prog_df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
+                                               'preterm': no_prog_df.filter((pl.col("GA")//7 < cutoff) 
+                                                                            & (pl.all_horizontal(~pl.col(self.remove_on_GA_vars))))["CPR_CHILD"].n_unique()}
+
+        return population_all, population_no_prog
     
     def __len__(self):
         return len(self.df)
@@ -125,7 +133,7 @@ def collate_fn(batch):
     GA_weeks = torch.stack([sample['GA_weeks'] for sample in batch])
     IDs = [sample['ID'] for sample in batch]
     remove_on_GA = torch.stack([sample['remove_on_GA'] for sample in batch])
-    progesterone = torch.stack([sample['progesterone'] for sample in batch])
+    progesterone = [sample['progesterone'] for sample in batch]
     
 
     sample =  {"imgs": imgs,

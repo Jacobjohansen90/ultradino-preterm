@@ -51,6 +51,8 @@ ValLoader = DataLoader(ValData,
                        num_workers=cfg.data.workers,
                        collate_fn=collate_fn)
 
+train_population = TrainData.population_count(cfg.tasks.preterm.cutoffs)
+val_population = ValData.population_count(cfg.tasks.preterm.cutoffs)
 
 model = model_from_conf(cfg)
 
