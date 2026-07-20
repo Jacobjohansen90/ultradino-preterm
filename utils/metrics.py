@@ -36,7 +36,7 @@ class Metrics():
                                                        'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
                                                        'label': (data['GA_weeks'] < float(cutoff)).flatten().cpu().numpy()}))
     
-    def plot_metrics(self, train_loss, val_loss):
+    def plot_metrics(self):
         for agg in ["avg", "max"]:
             fig, ax = plt.subplots(figsize=(8, 4))
             ax.plot(self.metrics['train_loss'], label='Train Loss')
@@ -93,7 +93,7 @@ class Metrics():
         else:
             metrics_df.write_csv(path)
         
-        self.plot_metrics(round(train_loss, 5), round(val_loss, 5))
+        self.plot_metrics()
         self.dfs = {str(c): [] for c in self.cutoffs}
 
         

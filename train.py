@@ -12,7 +12,7 @@ import torch
 from tqdm import tqdm
 
 from dataloader.dataloader import PreTermDataset, collate_fn, make_data_split
-from utils.model_utils import model_from_conf, freeze_model
+from utils.model_utils import model_from_conf, update_freezing
 from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
 from utils.loss_utils import get_loss, fix_labels
 from utils.metrics import Metrics
@@ -63,9 +63,9 @@ loss_fns = get_loss(cfg)
 metrics = Metrics(cfg, save_path)
 
 for epoch in range(cfg.training.epochs):
-    freeze_model(model, epoch, cfg)
+    update_freezing(model, epoch, cfg)
 
-    model.train(True)
+    model.train()
     train_loss = 0.0
     for data in tqdm(TrainLoader):
         optimizer.zero_grad()
@@ -99,7 +99,7 @@ for epoch in range(cfg.training.epochs):
     val_loss = 0
     
     with torch.no_grad():
-        for data in iter(ValLoader):
+        for data in ValLoader:
             outputs, _ = model(data['imgs'].to(cfg.device.type), 
                                data['img_data'].to(cfg.device.type), 
                                data['ehr_data'].to(cfg.device.type))

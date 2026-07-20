@@ -36,7 +36,7 @@ class BirthModel(nn.Module):
             self.forward_ = self.forward_append
         
         else:
-            raise RuntimeError(f'Unknown fusion type f"{self.fusion}"')
+            raise RuntimeError(f'Unknown fusion type f"{self.aux_method}"')
             
     def forward_append(self, img, img_data, ehr):
         embeddings = []
@@ -67,11 +67,11 @@ class BirthModel(nn.Module):
         return outputs, vision_features
             
     def freeze_model(self, model):
-        for n, p in model.named_parameters():
+        for p in model.parameters():
             p.requires_grad = False
 
     def unfreeze_model(self, model):
-        for n, p in model.named_parameters():
+        for p in model.parameters():
             p.requires_grad = True
 
     def forward(self, img, img_data, ehr):

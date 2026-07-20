@@ -22,7 +22,7 @@ def vit_from_conf(cfg, **kwargs):
     elif 'vitl16'  in cfg.weights_path:
         model = vit_load.load_from_scratch('vitl16', **kwargs)
     else:
-        raise Exception(f"No model type found for {cfg.weights_path}")
+        raise RuntimeError(f"No model type found for {cfg.weights_path}")
         
     
     # Load pretrained weights if specified
@@ -72,7 +72,7 @@ def model_from_conf(cfg, **kwargs):
                                    vit_model.embed_dim,
                                    layer_dims=cfg.model.transform.layer_dims)
     
-    ehr_transform = Transform(len(cfg.data.ehr_data), 
+    ehr_transform = Transform(ehr_model.embed_dim, 
                               vit_model.embed_dim,
                               layer_dims=cfg.model.transform.layer_dims)
     
@@ -86,10 +86,10 @@ def model_from_conf(cfg, **kwargs):
                                                          cfg.model.head.dropout,
                                                          cfg.model.head.layer_dims)
         else:
-            for task in cfg.tasks[task]:
-                aux_task_heads[task['var']] = FCPredictor(vit_model.embed_dim,
-                                                          cfg.model.head.dropout,
-                                                          cfg.model.head.layer_dims)
+            for aux_cfg in cfg.tasks[task]:
+                aux_task_heads[aux_cfg['var']] = FCPredictor(vit_model.embed_dim,
+                                                             cfg.model.head.dropout,
+                                                             cfg.model.head.layer_dims)
         
     model = BirthModel(vit_model,
                        ehr_model,
@@ -104,7 +104,7 @@ def model_from_conf(cfg, **kwargs):
     
     return model.to(device)
 
-def freeze_model(model, epoch, cfg):
+def update_freezing(model, epoch, cfg):
     if epoch >= cfg.training.vit_frozen_until:
         if cfg.training.strategy == 'all':
             model.unfreeze_model(model.vit_model)
