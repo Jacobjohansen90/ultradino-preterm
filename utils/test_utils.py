@@ -84,7 +84,7 @@ def test_model(folder_path, move=True, batch_size=128):
                                                           'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
                                                           'label': (data['GA_weeks'] < float(cutoff)).flatten().cpu().numpy(),
                                                           'prog': data['progesterone'],
-                                                          'remove_on_GA': data['remove_on_GA']}))
+                                                          'remove_on_GA': data['remove_on_GA'].flatten().cpu().numpy()}))
                                                 
             for cutoff in cutoffs:
                 pred_df = pl.concat(dfs[str(cutoff)])    
