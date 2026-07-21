@@ -94,7 +94,7 @@ class PreTermDataset(Dataset):
         GA_weeks = data.get('GA')//7
         GA_weeks = torch.tensor([float(GA_weeks)])
 
-        remove_on_GA = torch.tensor([0], dtype=torch.float32)
+        remove_on_GA = torch.tensor([0], dtype=torch.bool)
         for var in self.remove_on_GA_vars:
             if data.get(var):
                 remove_on_GA = torch.tensor([1], dtype=torch.bool)
