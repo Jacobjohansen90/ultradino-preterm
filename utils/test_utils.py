@@ -91,8 +91,8 @@ def test_model(folder_path, move=True, batch_size=128):
                 patient_df = (pred_df.group_by("cpr").agg([pl.col('preds').mean().alias('pred_avg'),
                                                            pl.col('preds').max().alias('pred_max'),
                                                            pl.col('label').first().alias('label'),
-                                                           pl.col('prog').first().alias('prog')],
-                                                           pl.col('remove_on_GA').first().alias('remove')))
+                                                           pl.col('prog').first().alias('prog'),
+                                                           pl.col('remove_on_GA').first().alias('remove')]))
                 
                 populations = {'all': patient_df.filter(~pl.col('remove')),
                                'no_prog': patient_df.filter(~pl.col('prog') & ~pl.col('remove'))}
