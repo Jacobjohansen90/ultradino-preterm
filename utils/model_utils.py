@@ -105,10 +105,10 @@ def model_from_conf(cfg, **kwargs):
     return model.to(device)
 
 def update_freezing(model, epoch, cfg):
-    if epoch >= cfg.training.vit_frozen_until:
+    if epoch == cfg.training.vit_frozen_until:
         if cfg.training.strategy == 'all':
             model.unfreeze_model(model.vit_model)
-    if epoch >= cfg.training.ehr_frozen_until:
+    if epoch == cfg.training.ehr_frozen_until:
         if cfg.training.strategy == 'all':
             model.unfreeze_model(model.ehr_model)
             

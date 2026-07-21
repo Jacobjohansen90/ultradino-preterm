@@ -19,6 +19,7 @@ from sklearn.metrics import roc_auc_score
 from dataloader.dataloader import PreTermDataset, collate_fn, make_data_split
 from utils.model_utils import model_from_conf
 from utils.metrics import get_metrics
+from bias_analysis.bias_analysis import run_analysis
 
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
@@ -77,21 +78,24 @@ def test_model(folder_path, move=True, batch_size=128):
                 outputs, _ = model(data['imgs'].to(cfg.device.type),
                                    data['img_data'].to(cfg.device.type),
                                    data['ehr_data'].to(cfg.device.type))
+                
                 for cutoff in cutoffs:
-                    dfs[str(cutoff)].append(pl.DataFrame({'cpr': data['IDs'],
+                    dfs[str(cutoff)].append(pl.DataFrame({'CPR_CHILD': data['IDs'],
                                                           'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
                                                           'label': (data['GA_weeks'] < float(cutoff)).flatten().cpu().numpy(),
-                                                          'prog': data['progesterone']}))
+                                                          'prog': data['progesterone'],
+                                                          'remove_on_GA': data['remove_on_GA']}))
                                                 
             for cutoff in cutoffs:
                 pred_df = pl.concat(dfs[str(cutoff)])    
                 patient_df = (pred_df.group_by("cpr").agg([pl.col('preds').mean().alias('pred_avg'),
                                                            pl.col('preds').max().alias('pred_max'),
                                                            pl.col('label').first().alias('label'),
-                                                           pl.col('prog').first().alias('prog')]))
+                                                           pl.col('prog').first().alias('prog')],
+                                                           pl.col('remove_on_GA').first().alias('remove')))
                 
-                populations = {'all': patient_df,
-                               'no_prog': patient_df.filter(~pl.col('prog'))}
+                populations = {'all': patient_df.filter(~pl.col('remove')),
+                               'no_prog': patient_df.filter(~pl.col('prog') & ~pl.col('remove'))}
                 
                 for population, df in populations.items():
                     if df.height == 0:
@@ -124,7 +128,7 @@ def test_model(folder_path, move=True, batch_size=128):
                             best['SensAtSpec_cutoff'] = sens_spec_cutoff.item()
                             best['Val_Cutoff'] = t
                             best['weights'] = weight_path.replace('Running', 'Evaluated')
-                            best_preds[str(cutoff)][population] = df[['cpr', f"pred_{eval_type}", 'label']]
+                            best_preds[str(cutoff)][population] = df[['CPR_CHILD', f"pred_{eval_type}", 'label']]
                             
     
     os.makedirs(folder_path + 'preds/', exist_ok=True)
@@ -178,7 +182,11 @@ def test_model(folder_path, move=True, batch_size=128):
                     df = (pl.concat([df.filter(~cond), result]).sort(["GA", "population"]))
 
         df.write_csv(sota_path)
-                
+
+    bias_cfg = OmegaConf.load("/projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/Bias_analysis.yaml")          
+    for cutoff in cutoffs:
+        bias_cfg.save_path = folder_path + f"bias_analysis_{cutoff}/"
+        run_analysis(bias_cfg, folder_path + f"preds/GA_{cutoff}_all.csv", cfg.data.test_path)
 
     if move:
         shutil.move(folder_path, folder_path.replace('Running', 'Evaluated'))

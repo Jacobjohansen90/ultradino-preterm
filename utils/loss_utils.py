@@ -32,10 +32,10 @@ def get_loss(cfg):
 
 def fix_labels(data, cutoff, label_smoothing_param):
     
-    positive = (data['GA_weeks'] < cutoff).bool()
+    positive = (data['GA_weeks'] < cutoff)
     remove_on_GA = (data['remove_on_GA']).bool()
     
-    if label_smoothing_param != 0:
+    if label_smoothing_param > 0:
         labels = torch.sigmoid((cutoff-data['GA_weeks'])/label_smoothing_param)
     else:
         labels = positive.float()

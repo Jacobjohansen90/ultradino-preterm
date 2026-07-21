@@ -1,0 +1,21 @@
+config:
+  min_group_size: 100
+  save_path: 
+
+plots:
+  ylim: 
+  font_size: 14
+  show_metric_value: True
+  show_factor_name: True
+  show_subgroup_names: True
+  show_title: True
+
+metric:
+  sens@spec
+  #auc
+
+variables:
+  - variable: BMI
+    bin: [18.5, 25, 30]
+
+
