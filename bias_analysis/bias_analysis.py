@@ -154,7 +154,7 @@ def compute_bias_per_variable_classification(df, variable, min_group_size=100, m
     #TODO: This is kind of dirty, since we just let str cats be sorted randomly
     sorted_groups = sorted(valid, key=extract_numeric_start)
 
-    metric, boot, counts = {}, {}, {}
+    res, boot, counts = {}, {}, {}
     for sg in sorted_groups:
         print(sg)
         sub = df_temp.filter(pl.col(variable) == sg)
@@ -163,7 +163,6 @@ def compute_bias_per_variable_classification(df, variable, min_group_size=100, m
         if y_true.n_unique() < 2:
             logger.info(f"[skip] '{sg}': constant label")
             continue
-        print(metric)
         if metric == 'auc':
             fpr, tpr, _ = roc_curve(y_true, y_score)
             val = auc(fpr, tpr)
@@ -173,16 +172,16 @@ def compute_bias_per_variable_classification(df, variable, min_group_size=100, m
             boot_vals = bootstrap_sensitivities(sub, n_iterations=40)
 
         if not np.isnan(val):
-            metric[sg] = val
+            res[sg] = val
             boot[sg] = boot_vals
             counts[sg] = len(sub)
 
-    if len(metric) < 2:
+    if len(res) < 2:
         return None
 
     valid_sorted = [sg for sg in sorted_groups if sg in metric]
-    best = max(metric, key=metric.get)
-    worst = min(metric, key=metric.get)
+    best = max(res, key=res.get)
+    worst = min(res, key=res.get)
 
     return {'subgroups': valid_sorted,
             'metric_per_subgroup': metric,
@@ -190,8 +189,8 @@ def compute_bias_per_variable_classification(df, variable, min_group_size=100, m
             'counts': counts,
             'best_subgroup': best,
             'worst_subgroup': worst,
-            'best_value': metric[best],
-            'worst_value': metric[worst]}
+            'best_value': res[best],
+            'worst_value': res[worst]}
 
 
 def _radar_polygon_area(vals, angles, ymin=0.0):
