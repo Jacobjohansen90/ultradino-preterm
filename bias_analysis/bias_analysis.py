@@ -156,13 +156,14 @@ def compute_bias_per_variable_classification(df, variable, min_group_size=100, m
 
     metric, boot, counts = {}, {}, {}
     for sg in sorted_groups:
+        print(sg)
         sub = df_temp.filter(pl.col(variable) == sg)
         y_true = sub['label']
         y_score = sub['pred']
         if y_true.n_unique() < 2:
             logger.info(f"[skip] '{sg}': constant label")
             continue
-
+        print(metric)
         if metric == 'auc':
             fpr, tpr, _ = roc_curve(y_true, y_score)
             val = auc(fpr, tpr)
