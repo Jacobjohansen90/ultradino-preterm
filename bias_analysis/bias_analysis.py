@@ -131,7 +131,7 @@ def compute_all_bias_metrics_classification(df, cfg):
     variables = [v.variable for v in cfg.variables]
     
     for variable in variables:
-        result = compute_bias_per_variable_classification(df, variable, min_group_size=cfg.min_group_size, metric=cfg.metric)
+        result = compute_bias_per_variable_classification(df, variable, min_group_size=cfg.config.min_group_size, metric=cfg.metric)
         if result:
             results[variable] = result
             logger.info(f"[ok] {variable}: {len(result['subgroups'])} subgroups, "
