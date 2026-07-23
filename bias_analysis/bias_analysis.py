@@ -105,7 +105,7 @@ def extract_numeric_start(group_label):
 def bootstrap_sensitivities(df, n_iterations=40):
     sensitivities = []
     for _ in range(n_iterations):
-        sample = df.sample(n=len(df), replace=True)
+        sample = df.sample(n=df.height, with_replacement=True)
         y_true = sample['label']
         y_score = sample['pred']
         if len(y_true.unique()) > 1:
@@ -156,7 +156,6 @@ def compute_bias_per_variable_classification(df, variable, min_group_size=100, m
 
     res, boot, counts = {}, {}, {}
     for sg in sorted_groups:
-        print(sg)
         sub = df_temp.filter(pl.col(variable) == sg)
         y_true = sub['label']
         y_score = sub['pred']
