@@ -632,7 +632,7 @@ def save_metrics_csv(bias_results, cfg, df=None):
     df_out = pl.DataFrame(rows)
     out = Path(cfg.config.save_path)
     csv_path = out / 'metrics.csv'
-    df_out.write_csv(csv_path, index=False)
+    df_out.write_csv(csv_path)
     logger.info(f"  Metrics CSV saved: {csv_path}")
     return str(csv_path)
 
