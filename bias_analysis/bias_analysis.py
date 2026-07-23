@@ -639,8 +639,6 @@ def save_metrics_csv(bias_results, cfg, df=None):
 def save_experiment_results(bias_results, cfg, global_perfomance, df=None):
     paths = {}
 
-    plot_radar_main(bias_results, cfg)
-
     paths['radar_main'], paths['bias_index'], paths['mean_abs_gap'], paths['mean_rel_gap'] = plot_radar_main(bias_results, global_perfomance, cfg)
     paths['radar_comparisons'] = plot_all_comparison_radars(bias_results, cfg)
     paths['metrics_csv'] = save_metrics_csv(bias_results, cfg, df=df)
