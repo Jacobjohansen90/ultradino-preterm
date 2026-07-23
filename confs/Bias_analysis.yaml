@@ -3,7 +3,7 @@ config:
   save_path: 
 
 plots:
-  ylim: 
+  ylim: null
   font_size: 14
   show_metric_value: True
   show_factor_name: True
