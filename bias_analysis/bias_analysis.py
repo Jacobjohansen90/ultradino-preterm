@@ -658,7 +658,7 @@ def save_experiment_results(bias_results, cfg, global_perfomance, df=None):
 def run_analysis(cfg, pred_df, population_parquet):
     out = Path(cfg.config.save_path)
     out.mkdir(parents=True, exist_ok=True)
-    logging.basicConfig(filename=cfg.config.save_path + 'bias_analysis/analysis.log', filemode='w', level=logging.INFO)
+    logging.basicConfig(filename=cfg.config.save_path + '/analysis.log', filemode='w', level=logging.INFO)
 
     logger.info("\nSTEP 1: Preparing variables for analysis...")
     full_df = merge_dfs(pred_df, population_parquet)
