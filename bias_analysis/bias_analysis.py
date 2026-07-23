@@ -464,7 +464,7 @@ def plot_radar_main(bias_results, global_perfomance, cfg):
         _, significance = _significance_test(a, b)
 
         # ── Metric value suffix ───────────────────────────────────────────
-        if cfg.show_metric_value:
+        if cfg.plots.show_metric_value:
             bv = res['best_value']
             wv = res['worst_value']
             best_val_str  = f' {bv:.2f}'
@@ -476,9 +476,9 @@ def plot_radar_main(bias_results, global_perfomance, cfg):
         label_worst = f'↓{worst_sg}{worst_val_str}'
 
         children = []
-        if cfg.show_factor_name:
+        if cfg.plots.show_factor_name:
             children.append(TextArea(variable, textprops=dict(size=cfg.plots.font_size + 3, weight='bold')))
-        if cfg.show_subgroup_names:
+        if cfg.plots.show_subgroup_names:
             children.append(TextArea(label_best,  textprops=dict(size=cfg.plots.font_size - 2, color='blue')))
             children.append(TextArea(label_worst, textprops=dict(size=cfg.plots.font_size - 2, color='red')))
 
