@@ -185,7 +185,7 @@ def test_model(folder_path, move=True, batch_size=128):
 
     bias_cfg = OmegaConf.load("/projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/Bias_analysis.yaml")          
     for cutoff in cutoffs:
-        bias_cfg.save_path = folder_path + f"bias_analysis_{cutoff}/"
+        bias_cfg.config.save_path = folder_path + f"bias_analysis_{cutoff}/"
         run_analysis(bias_cfg, folder_path + f"preds/GA_{cutoff}_all.csv", cfg.data.test_path)
 
     if move:
