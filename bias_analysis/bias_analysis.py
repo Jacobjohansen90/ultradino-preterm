@@ -429,7 +429,7 @@ def plot_radar_main(bias_results, global_perfomance, cfg):
     ax.set_theta_direction(-1)
     ax.set_ylim(ymin, ymax)
     ax.set_yticks(yticks)
-    ax.set_yticklabels(yticklabels, color='gray', size=cfg.config.font_size-8)
+    ax.set_yticklabels(yticklabels, color='gray', size=cfg.plots.font_size-8)
 
     # ── Quadrant background shading + separator lines ─────────────────────────
     #if quadrant_def:
