@@ -393,7 +393,7 @@ def plot_radar_main(bias_results, global_perfomance, cfg):
         print("Warning: fewer than 2 factors – radar cannot be drawn")
         return None
 
-    ymin, ymax, yticks, yticklabels = _radar_ylim(bias_results=bias_results, metric=cfg.metric, ylim=cfg.config.ylim)
+    ymin, ymax, yticks, yticklabels = _radar_ylim(bias_results=bias_results, metric=cfg.metric, ylim=cfg.plots.ylim)
 
     angles = [angle_map[v] for v in variables]
     best_vals = [bias_results[v]['best_value']  for v in variables]
