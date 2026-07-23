@@ -11,7 +11,8 @@ import os
 
 path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/training_runs/Evaluated/'
 
-folders = os.listdir(path)
+folders = ['baseline_34']
+# folders = os.listdir(path)
 
 for folder in folders:
     print(f"Testing {folder}")
