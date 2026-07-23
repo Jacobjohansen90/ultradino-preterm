@@ -17,5 +17,7 @@ metric:
 variables:
   - variable: BMI
     bin: [18.5, 25, 30]
+  - variable: AGE
+    bin: [17.5, 30]
 
 
