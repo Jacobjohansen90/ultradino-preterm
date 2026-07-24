@@ -668,7 +668,8 @@ def run_analysis(cfg, pred_df, population_parquet):
     bias_results = compute_all_bias_metrics_classification(df, cfg)
     
     logger.info("\nSTEP 4: Generating visualizations...")
-    file_paths = save_experiment_results(bias_results, cfg, global_performance, df=df)
+    _ = save_experiment_results(bias_results, cfg, global_performance, df=df)
     
+    OmegaConf.save(cfg, cfg.save_path)
 
 
