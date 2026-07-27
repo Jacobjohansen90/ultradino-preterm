@@ -44,10 +44,17 @@ class BirthModel(nn.Module):
         if self.ehr_model is None:
             return None
 
-        if self.ehr_model.input_type == "patient_id":
+        input_type = self.ehr_model.input_type
+
+        if input_type == "patient_id":
             if patient_ids is None:
                 return None
             return self.ehr_model(patient_ids)
+
+        if input_type == "patient_id_tabular":
+            if patient_ids is None or ehr.shape[1] == 0:
+                return None
+            return self.ehr_model(ehr, patient_ids)
 
         if ehr.shape[1] != 0:
             return self.ehr_model(ehr)

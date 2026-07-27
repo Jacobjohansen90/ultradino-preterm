@@ -11,7 +11,11 @@ import logging
 from models.Transform import Transform
 from models.Predictor import FCPredictor
 from models.BirthModel import BirthModel
-from models.ehr_models import TabularEhrModel, PatientIdEhrModel
+from models.ehr_models import (
+    TabularEhrModel,
+    PatientIdEhrModel,
+    PatientLookupTabularEhrModel,
+)
 from utils.ehr_encoding import load_ehr_encodings_from_cfg
 import torch.nn as nn
 
@@ -20,6 +24,7 @@ logger = logging.getLogger("model_loader")
 EHR_MODEL_TYPES = {
     "tabular": TabularEhrModel,
     "patient_lookup": PatientIdEhrModel,
+    "patient_lookup_tabular": PatientLookupTabularEhrModel,
 }
 
 
@@ -69,19 +74,29 @@ def ehr_from_conf(cfg, **kwargs):
     encodings = load_ehr_encodings_from_cfg(cfg)
     if not encodings:
         raise ValueError(
-            "EHR model type 'patient_lookup' requires "
+            f"EHR model type '{model_type}' requires "
             "data.ehr_encoding_train_path / ehr_encoding_test_path"
         )
 
-    embed_dim = cfg.data.get("ehr_encoding_dim") or len(
+    encoding_dim = cfg.data.get("ehr_encoding_dim") or len(
         next(iter(encodings.values()))
     )
     logger.info(
         "Loaded %d patient encodings with dim %d",
         len(encodings),
-        embed_dim,
+        encoding_dim,
     )
-    return PatientIdEhrModel(encodings, embed_dim)
+
+    if model_type == "patient_lookup":
+        return PatientIdEhrModel(encodings, encoding_dim)
+
+    if not cfg.data.ehr_data:
+        raise ValueError(
+            "EHR model type 'patient_lookup_tabular' requires data.ehr_data columns"
+        )
+    return PatientLookupTabularEhrModel(
+        encodings, encoding_dim, len(cfg.data.ehr_data)
+    )
 
 
 def set_dropout(model, p=0.1):

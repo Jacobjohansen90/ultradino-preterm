@@ -51,3 +51,28 @@ class PatientIdEhrModel(nn.Module):
                 rows.append(self.table[idx])
 
         return torch.stack(rows).unsqueeze(1)
+
+
+class PatientLookupTabularEhrModel(nn.Module):
+    """Look up patient encodings and prepend tabular EHR features."""
+
+    input_type = "patient_id_tabular"
+
+    def __init__(self, encodings, encoding_dim, tabular_dim):
+        super().__init__()
+        if tabular_dim <= 0:
+            raise ValueError("tabular_dim must be > 0 for patient_lookup_tabular")
+
+        self.lookup = PatientIdEhrModel(encodings, encoding_dim)
+        self.tabular_dim = tabular_dim
+        self.embed_dim = tabular_dim + encoding_dim
+
+    def forward(self, ehr, patient_ids):
+        lookup = self.lookup(patient_ids)
+        if ehr.dim() == 2:
+            ehr = ehr.unsqueeze(1)
+        if ehr.shape[-1] != self.tabular_dim:
+            raise ValueError(
+                f"Expected {self.tabular_dim} tabular EHR features, got {ehr.shape[-1]}"
+            )
+        return torch.cat([ehr, lookup], dim=-1)

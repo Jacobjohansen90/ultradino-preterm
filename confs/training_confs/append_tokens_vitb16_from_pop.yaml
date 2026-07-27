@@ -64,7 +64,7 @@ model:
     dropout: 0.2
   
   ehr:
-    type: tabular  # tabular | patient_lookup
+    type: tabular  # tabular | patient_lookup | patient_lookup_tabular
     weights_path:
   
   transform:
