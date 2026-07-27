@@ -8,21 +8,15 @@ Created on Mon Mar  9 13:55:55 2026
 import torch
 import math
 from torch.optim.lr_scheduler import LambdaLR
-from ultradino_finetune.models.dinov2.utils.param_groups import get_params_groups_with_decay
 
 
 def get_optimizer(model, cfg):
-    param_groups = get_params_groups_with_decay(model, cfg.optimizer.lr_decay)
-    
-    optimizer_groups = []
-
-    for g in param_groups:
-        optimizer_groups.append({"params": [g["params"]],
-                                 "lr": cfg.optimizer.lr * g["lr_multiplier"],
-                                 "weight_decay": cfg.optimizer.weight_decay * g["wd_multiplier"]})
-    
     if cfg.optimizer.type == "AdamW":
-        optim = torch.optim.AdamW(optimizer_groups,
+        optim = torch.optim.AdamW(decay_lr(model,
+                                           base_lr=cfg.optimizer.lr,
+                                           lr_decay=cfg.optimizer.lr_decay), 
+                                  lr=cfg.optimizer.lr,
+                                  weight_decay=cfg.optimizer.weight_decay,
                                   betas=cfg.optimizer.adamw_params[0:2],
                                   eps=cfg.optimizer.adamw_params[2])
 
@@ -53,3 +47,28 @@ def get_cosine_schedule_with_warmup(optimizer, conf, num_training_steps, last_ep
             return abs(math.cos(math.pi*x))
     return LambdaLR(optimizer, lr_lambda, last_epoch)
 
+def get_layer_id(name, n_layers):
+    name = '.'.join(name.split('.')[0:])
+    if name.startswith("patch_embed"):
+        return 0
+
+    elif name.startswith("blocks"):
+        block_id = int(name.split(".")[1])
+        return block_id + 1
+
+    else:
+        return n_layers
+    
+def decay_lr(model, base_lr, lr_decay):
+    n_layers = len(model.blocks) + 1  # blocks + patch embed´
+
+    param_groups = []
+
+    for name, param in model.named_parameters():
+        layer_id = get_layer_id(name, n_layers)
+        scale = lr_decay ** (n_layers - layer_id)
+        param_groups.append({"params": [param],
+                             "lr": base_lr * scale})
+
+
+    return param_groups
