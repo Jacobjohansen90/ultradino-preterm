@@ -60,7 +60,7 @@ def get_layer_id(name, n_layers):
         return n_layers
     
 def decay_lr(model, base_lr, lr_decay):
-    n_layers = len(model.blocks) + 1  # blocks + patch embed´
+    n_layers = len(model.vit_model.blocks) + 1  # blocks + patch embed´
 
     param_groups = []
 
