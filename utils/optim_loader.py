@@ -48,7 +48,7 @@ def get_cosine_schedule_with_warmup(optimizer, conf, num_training_steps, last_ep
     return LambdaLR(optimizer, lr_lambda, last_epoch)
 
 def get_layer_id(name, n_layers):
-    name = '.'.join(name.split('.')[0:])
+    name = '.'.join(name.split('.')[1:])
     if name.startswith("patch_embed"):
         return 0
 

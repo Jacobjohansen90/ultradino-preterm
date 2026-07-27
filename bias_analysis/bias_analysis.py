@@ -670,6 +670,6 @@ def run_analysis(cfg, pred_df, population_parquet):
     logger.info("\nSTEP 4: Generating visualizations...")
     _ = save_experiment_results(bias_results, cfg, global_performance, df=df)
     
-    OmegaConf.save(cfg, cfg.save_path)
+    OmegaConf.save(cfg, cfg.config.save_path)
 
 
