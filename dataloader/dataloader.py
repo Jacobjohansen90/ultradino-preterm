@@ -105,7 +105,7 @@ class PreTermDataset(Dataset):
             if var == 'GA_weeks':
                 aux_vars[var] = GA_weeks
             else:
-                aux_vars[var] = torch.tensor([float(data.get(var))])
+                aux_vars[var] = torch.tensor([float(data.get(var) or 28.0)])
 
         #Prepare remove_on_GA 
         remove_on_GA = torch.tensor([0], dtype=torch.bool)
