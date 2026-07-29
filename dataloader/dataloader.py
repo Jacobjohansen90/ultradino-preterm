@@ -29,6 +29,11 @@ class PreTermDataset(Dataset):
         self.setup_transforms()
         self.ID_var = ID
         self.df = df
+
+        self.aux_vars = []
+        for task in cfg.tasks.aux_tasks:
+            self.aux_vars.append(task.var)
+
         self.remove_on_GA_vars = []
         for var, cond in cfg.dataset.items():
             if cond == 'remove_on_GA':
@@ -89,11 +94,20 @@ class PreTermDataset(Dataset):
             ehr_data.append(float(data.get(key) or 0.0))
         ehr_data = torch.tensor(ehr_data)
         ehr_data = ehr_data.unsqueeze(0)
-        
+                
         #Prepare labels
         GA_weeks = data.get('GA')//7
         GA_weeks = torch.tensor([float(GA_weeks)])
 
+        #Prepare auxilary task vars
+        aux_vars = {}
+        for var in self.aux_vars:
+            if var == 'GA_weeks':
+                aux_vars[var] = GA_weeks
+            else:
+                aux_vars[var] = torch.tensor([float(data.get(var))])
+
+        #Prepare remove_on_GA 
         remove_on_GA = torch.tensor([0], dtype=torch.bool)
         for var in self.remove_on_GA_vars:
             if data.get(var):
@@ -123,7 +137,8 @@ class PreTermDataset(Dataset):
                 'GA_weeks': GA_weeks, 
                 'ID': ID, 
                 'remove_on_GA': remove_on_GA,
-                'progesterone': progesterone}
+                'progesterone': progesterone,
+                'aux_vars': aux_vars}
 
 
 def collate_fn(batch):
@@ -135,6 +150,8 @@ def collate_fn(batch):
     remove_on_GA = torch.stack([sample['remove_on_GA'] for sample in batch])
     progesterone = [sample['progesterone'] for sample in batch]
     
+    aux_vars = {key: torch.stack([sample['aux_vars'][key] for sample in batch]) for key in batch[0]['aux_vars']}
+    
 
     sample =  {"imgs": imgs,
                "img_data": img_data,
@@ -142,7 +159,8 @@ def collate_fn(batch):
                "GA_weeks": GA_weeks,
                "IDs": IDs,
                "remove_on_GA": remove_on_GA,
-               'progesterone': progesterone}
+               'progesterone': progesterone,
+               'aux_vars': aux_vars}
 
     return sample
    
