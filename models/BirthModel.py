@@ -70,9 +70,35 @@ class BirthModel(nn.Module):
         for p in model.parameters():
             p.requires_grad = False
 
-    def unfreeze_model(self, model):
-        for p in model.parameters():
+    def unfreeze_vit(self, model, n, cfg):
+        total_blocks = len(model.blocks)
+    
+        #Always unfreeze final normalization layer
+        for p in model.norm.parameters():
             p.requires_grad = True
+    
+        # Maximum number of blocks that are allowed to be trainable
+        if cfg.top_n_blocks == -1:
+            max_blocks = total_blocks
+        else:
+            max_blocks = cfg.top_n_blocks
+    
+        #Number of blocks to unfreeze
+        if cfg.training.blocks_per_step == -1:
+            n_blocks = max_blocks
+        else:
+            n_blocks = min(max_blocks, cfg.training.blocks_per_step * (n // cfg.training.every_n_epochs))
+    
+        if n_blocks > 0:
+            for block in model.blocks[-n_blocks:]:
+                for p in block.parameters():
+                    p.requires_grad = True
+    
+        # Unfreeze embeddings once the whole backbone is trainable
+        if n_blocks == total_blocks:
+            model.cls_token.requires_grad = True
+            model.pos_embed.requires_grad = True
+            model.register_tokens.requires_grad = True
 
     def forward(self, img, img_data, ehr):
         return self.forward_(img, img_data, ehr) 

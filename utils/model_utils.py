@@ -99,16 +99,14 @@ def model_from_conf(cfg, **kwargs):
                        aux_task_heads,
                        aux_method=cfg.auxiliary.method)
     
-    model.freeze_model(model.vit_model)
-    model.freeze_model(model.ehr_model)
-    
     return model.to(device)
 
 def update_freezing(model, epoch, cfg):
-    if epoch == cfg.training.vit_frozen_until:
-        if cfg.training.strategy == 'all':
-            model.unfreeze_model(model.vit_model)
-    if epoch == cfg.training.ehr_frozen_until:
-        if cfg.training.strategy == 'all':
-            model.unfreeze_model(model.ehr_model)
+    if epoch == 0:
+        model.freeze(model.vit_model)
+        model.freeze(model.ehr_model)
+    if epoch >= cfg.training.vit_frozen_until:
+        n = epoch - cfg.training.vit_frozen_until
+        model.unfreeze_vit(model.vit_model, n, cfg)
+
             

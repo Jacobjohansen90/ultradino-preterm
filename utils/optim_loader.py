@@ -14,9 +14,9 @@ def get_optimizer(model, cfg):
     if cfg.optimizer.type == "AdamW":
         optim = torch.optim.AdamW(decay_lr(model,
                                            base_lr=cfg.optimizer.lr,
-                                           lr_decay=cfg.optimizer.lr_decay), 
+                                           lr_decay=cfg.optimizer.lr_decay,
+                                           weight_decay=cfg.optimizer.weight_decay), 
                                   lr=cfg.optimizer.lr,
-                                  weight_decay=cfg.optimizer.weight_decay,
                                   betas=cfg.optimizer.adamw_params[0:2],
                                   eps=cfg.optimizer.adamw_params[2])
 
@@ -59,7 +59,7 @@ def get_layer_id(name, n_layers):
     else:
         return n_layers
     
-def decay_lr(model, base_lr, lr_decay):
+def decay_lr(model, base_lr, lr_decay, weight_decay):
     n_layers = len(model.vit_model.blocks) + 1  # blocks + patch embed´
 
     param_groups = []
@@ -67,8 +67,14 @@ def decay_lr(model, base_lr, lr_decay):
     for name, param in model.named_parameters():
         layer_id = get_layer_id(name, n_layers)
         scale = lr_decay ** (n_layers - layer_id)
-        param_groups.append({"params": [param],
-                             "lr": base_lr * scale})
 
+        if param.ndim != 1 and name.endswith('.weight'):
+            wd = weight_decay
+        else:
+            wd = 1.0
+
+        param_groups.append({"params": [param],
+                             "lr": base_lr * scale,
+                             'weight_decay': wd})
 
     return param_groups
