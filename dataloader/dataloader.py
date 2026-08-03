@@ -116,12 +116,21 @@ class PreTermDataset(Dataset):
         #Prepare Image       
         img = Image.open(data.get('no_ocr_preprocessed_file_path'))
         img = np.asarray(img)
+        h,w,_ = img.shape
         img = self.transforms(image=img)['image']
 
         #Prepare image metadata
         img_data = []
         for key in self.img_data_vars:
-            img_data.append(data.get(key) or 0.0)
+            data_temp = data.get(key) or 0.0
+            #Correct physical deltas    
+            if key == 'physical_delta_x':
+                data_temp = (w/self.img_size[0]) * data_temp
+            elif key == 'physical_delta_y':
+                data_temp = (h/self.img_size[1]) * data_temp
+            
+            img_data.append(data_temp)
+        
         img_data = torch.tensor(img_data)
         img_data = img_data.unsqueeze(0)
                 
