@@ -116,7 +116,8 @@ class PreTermDataset(Dataset):
         #Prepare Image       
         img = Image.open(data.get('no_ocr_preprocessed_file_path'))
         img = np.asarray(img)
-        h,w,_ = img.shape
+        h = img.shape[0]
+        w = img.shape[1]
         img = self.transforms(image=img)['image']
 
         #Prepare image metadata
