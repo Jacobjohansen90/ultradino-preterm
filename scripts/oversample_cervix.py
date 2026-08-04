@@ -19,6 +19,6 @@ df = df.filter(pl.col("pred") == 14)
 
 df = df.join(df_hold, left_on='CPR_MOTHER', right_on='CPR_MOR', how='anti')
 
-df = df['no_ocr_preprocessed_file_path']
+df = df.select('no_ocr_preprocessed_file_path')
 
 df.write_csv(save_path, include_header=False)
