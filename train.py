@@ -58,7 +58,7 @@ model = model_from_conf(cfg)
 
 #%%Setup finetuning
 optimizer = get_optimizer(model, cfg)
-scheduler = get_cosine_schedule_with_warmup(optimizer, cfg, cfg.training.epochs)
+scheduler = get_cosine_schedule_with_warmup(optimizer, cfg)
 loss_fns = get_loss(cfg)
 metrics = Metrics(cfg, save_path)
 

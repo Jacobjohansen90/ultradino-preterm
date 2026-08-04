@@ -13,10 +13,10 @@ from torch.optim.lr_scheduler import LambdaLR
 def get_optimizer(model, cfg):
     if cfg.optimizer.type == "AdamW":
         optim = torch.optim.AdamW(decay_lr(model,
-                                           base_lr=cfg.optimizer.lr,
+                                           base_lr=cfg.optimizer.lr2,
                                            lr_decay=cfg.optimizer.lr_decay,
                                            weight_decay=cfg.optimizer.weight_decay), 
-                                  lr=cfg.optimizer.lr,
+                                  lr=cfg.optimizer.lr2,
                                   betas=cfg.optimizer.adamw_params[0:2],
                                   eps=cfg.optimizer.adamw_params[2])
 
@@ -30,22 +30,29 @@ def get_optimizer(model, cfg):
     
     return optim
 
-def get_cosine_schedule_with_warmup(optimizer, conf, num_training_steps, last_epoch=-1):
-    n_warmup_steps = conf.scheduler.num_warmup_steps
-    vit_frozen = conf.training.vit_frozen_until
-    num_cycles = conf.scheduler.num_cycles 
-    epochs = conf.training.epochs
+def get_cosine_schedule_with_warmup(optimizer, cfg):
+    n_warmup_steps = cfg.scheduler.num_warmup_steps
+    vit_frozen = cfg.training.vit_frozen_until
+    num_cycles = cfg.scheduler.num_cycles 
+    epochs = cfg.training.epochs
+    lr1 = cfg.optimizer.lr1
+    lr2 = cfg.optimizer.lr2
+    
 
     def lr_lambda(current_step):
         if current_step < vit_frozen:
-            x = float(current_step/vit_frozen)
-            return abs(math.cos(math.pi*x))
+            t = current_step / max(1, vit_frozen)
+            alpha = 0.5 * (1 - math.cos(math.pi * t))
+            lr = lr1 + (lr2 - lr1) * alpha
+            return lr / lr2
         elif current_step < vit_frozen + n_warmup_steps:
-            return float(current_step-vit_frozen) / float(n_warmup_steps)
+            t = (current_step - vit_frozen) / max(1, n_warmup_steps)
+            return t
         else:
-            x = float((current_step-vit_frozen-n_warmup_steps)/epochs)*num_cycles
-            return abs(math.cos(math.pi*x))
-    return LambdaLR(optimizer, lr_lambda, last_epoch)
+            t = (current_step - vit_frozen - n_warmup_steps) / (epochs - vit_frozen - n_warmup_steps)
+            t = min(max(t, 0.0), 1.0)
+            return 0.5 * (1 + math.cos(math.pi * num_cycles * t))
+    return LambdaLR(optimizer, lr_lambda)
 
 def get_layer_id(name, n_layers):
     name = '.'.join(name.split('.')[1:])
