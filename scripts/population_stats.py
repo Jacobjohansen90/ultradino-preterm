@@ -36,6 +36,16 @@ for GA in cutoffs:
     #BMI
     print(f"Total BMI (+/- SD): {round(df_all['BMI'].mean(), 2)} ({round(df_all['BMI'].std(), 2)})")
     print(f"Preterm BMI (+/- SD): {round(df_preterm['BMI'].mean(), 2)} ({round(df_preterm['BMI'].std(), 2)})")
+    
+    #Scanners
+    t = len(df_all) // 100
+    counts = df_all['manufacturer_model_name'].value_counts()
+    included = counts.filter(pl.col("count") >= t)
+    excluded = counts.filter(pl.col("count") < t).height
+    for name, count in included.iter_rows(named=True):
+        print(f"{name}: {count}")
+        
+    print(f"other: {excluded}")
 
 print()    
 print('--Test--')
