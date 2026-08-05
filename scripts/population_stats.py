@@ -19,8 +19,10 @@ cutoffs = [32,34,37]
 train_df = pl.read_parquet(train_data)
 test_df = pl.read_parquet(test_data)
 
-def print_scanner_counts(df, name, included_models):
+def print_scanner_counts(df, name):
     print(name)
+
+    total = len(df)
 
     counts = (
         df["manufacturer_model_name"]
@@ -32,11 +34,12 @@ def print_scanner_counts(df, name, included_models):
 
     for row in counts.iter_rows(named=True):
         if row["model"] in included_models:
-            print(f"\t{row['model']}: {row['count']}")
+            pct = 100 * row["count"] / total
+            print(f"\t{row['model']}: {row['count']} ({pct:.1f}%)")
         else:
             other += row["count"]
 
-    print(f"\tOther: {other}")
+    print(f"\tOther: {other} ({100 * other / total:.1f}%)")
 
 print('--Training--')
 
