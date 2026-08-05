@@ -52,6 +52,11 @@ for GA in cutoffs:
     print(f"Total births: {df_all['CPR_CHILD'].n_unique()}")
     print(f"Preterm births: {df_preterm['CPR_CHILD'].n_unique()}")
     print()
+    #Progesterone
+    print('Progesterone')
+    print(f"Total Progesterone: {df_all['progesterone'].sum()})")
+    print(f"Preterm Progesterone: {df_preterm['progesterone'].sum()}")
+    print()
     #Age
     print('Age')
     print(f"Total Age (+/- SD): {round(df_all['AGE'].mean(), 2)} ({round(df_all['AGE'].std(), 2)})")
@@ -84,6 +89,11 @@ for GA in cutoffs:
     print('Births:')
     print(f"Total births: {df_all['CPR_CHILD'].n_unique()}")
     print(f"Preterm births: {df_preterm['CPR_CHILD'].n_unique()}")
+    print()
+    #Progesterone
+    print('Progesterone')
+    print(f"Total Progesterone: {df_all['progesterone'].sum()})")
+    print(f"Preterm Progesterone: {df_preterm['progesterone'].sum()}")
     print()
     #Age
     print('Age')
