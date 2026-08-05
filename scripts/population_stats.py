@@ -19,7 +19,7 @@ cutoffs = [32,34,37]
 train_df = pl.read_parquet(train_data)
 test_df = pl.read_parquet(test_data)
 
-def print_scanner_counts(df, name):
+def print_scanner_counts(df, name, included_models):
     print(name)
 
     total = len(df)
