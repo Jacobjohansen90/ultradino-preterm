@@ -7,9 +7,12 @@ data:
   batch_size: 128
   val_frac: 0.05
   workers: 32
-  # Risk / tabular columns already present in the parquet (no CSV merge).
-  # Use [] for encoding-only or no-EHR runs.
-  ehr_data: []  # e.g. ['ehr_pred'] for tabular / hybrid risks
+  # Risk / tabular columns (joined from ehr_*_path, or already in the parquet).
+  ehr_data: ['ehr_pred']
+  ehr_train_path: path/to/ehr_train.csv   # csv or parquet; join on CPR_CHILD
+  ehr_test_path: path/to/ehr_test.csv     # same file if combined
+  # ehr_id_column: CPR_CHILD  # join key in the EHR file; defaults to CPR_CHILD
+  # drop_missing_ehr: false
   # Optional JSON patient encodings (keyed by CPR_CHILD):
   # ehr_encoding_train_path: path/to/train_encodings.json
   # ehr_encoding_test_path: path/to/test_encodings.json
@@ -61,7 +64,7 @@ model:
   ehr:
     # tabular | patient_lookup | patient_lookup_tabular | omit/null for no EHR
     # patient_lookup_tabular appends risk and encoding as two distinct token groups
-    # type: patient_lookup_tabular
+    type: tabular
     # num_tokens: 4  # encoding → this many ViT tokens (default 1); risk stays 1 token
     weights_path: 
   

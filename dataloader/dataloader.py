@@ -175,8 +175,66 @@ def collate_fn(batch):
     return sample
    
 
+def read_dataframe(path, columns=None):
+    if path.endswith('.csv'):
+        return pl.read_csv(path, infer_schema=False, columns=columns)
+    if path.endswith('.parquet'):
+        return pl.read_parquet(path, columns=columns)
+    raise ValueError(f"Unsupported data file format: {path}")
+
+
+def resolve_ehr_path(cfg, training):
+    if training:
+        return cfg.data.get('ehr_train_path')
+    return cfg.data.get('ehr_test_path')
+
+
+def merge_ehr_features(df, cfg, training):
+    """Left-join tabular EHR features from a separate CSV/parquet onto the population."""
+    ehr_path = resolve_ehr_path(cfg, training)
+    ehr_cols = list(cfg.data.get('ehr_data') or [])
+    if not ehr_path:
+        return df
+    if not ehr_cols:
+        raise ValueError("ehr_train_path/ehr_test_path is set but data.ehr_data is empty")
+
+    child_id = 'CPR_CHILD'
+    ehr_child_id = cfg.data.get('ehr_id_column') or child_id
+    ehr_df = read_dataframe(ehr_path, columns=[ehr_child_id, *ehr_cols])
+
+    if child_id not in df.columns:
+        raise ValueError(f"Population data missing join column '{child_id}'")
+    if ehr_child_id not in ehr_df.columns:
+        raise ValueError(f"EHR data missing join column '{ehr_child_id}'")
+
+    # Avoid duplicate column names if population already has ehr cols.
+    existing = [c for c in ehr_cols if c in df.columns]
+    if existing:
+        df = df.drop(existing)
+
+    if ehr_child_id == child_id:
+        df = df.join(ehr_df, on=child_id, how='left')
+    else:
+        df = df.join(ehr_df, left_on=child_id, right_on=ehr_child_id, how='left')
+
+    if cfg.data.get('drop_missing_ehr', False):
+        n_before = df.select(child_id).unique().height
+        df = df.filter(pl.all_horizontal([pl.col(c).is_not_null() for c in ehr_cols]))
+        n_after = df.select(child_id).unique().height
+        dropped = n_before - n_after
+        pct = 100.0 * dropped / n_before if n_before else 0.0
+        split = 'train' if training else 'test'
+        print(
+            f"[{split}] Dropped {dropped}/{n_before} unique {child_id} "
+            f"({pct:.1f}%) with missing EHR data"
+        )
+
+    return df
+
+
 def make_data_split(cfg, data_path, unique_column='CPR_MOTHER', training=True):
     df = pl.read_parquet(data_path)
+    df = merge_ehr_features(df, cfg, training=training)
     
     for col, cond in cfg.dataset.items():
         if cond == 'remove':
