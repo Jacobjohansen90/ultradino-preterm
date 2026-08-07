@@ -60,7 +60,8 @@ def make_embeddings(path, save_path):
                     
                 outputs = model(data['imgs'].to(cfg.device.type),
                                 data['img_data'].to(cfg.device.type),
-                                data['ehr_data'].to(cfg.device.type))
+                                data['ehr_data'].to(cfg.device.type),
+                                patient_ids=data['IDs'])
             
                 dfs.append(pl.DataFrame({"img": data["IDs"],
                                          "preterm_pred": outputs["preterm"].flatten().cpu().numpy(),
