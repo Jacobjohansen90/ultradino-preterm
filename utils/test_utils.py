@@ -77,7 +77,8 @@ def test_model(folder_path, move=True, batch_size=128):
             for data in TestLoader:
                 outputs, _ = model(data['imgs'].to(cfg.device.type),
                                    data['img_data'].to(cfg.device.type),
-                                   data['ehr_data'].to(cfg.device.type))
+                                   data['ehr_data'].to(cfg.device.type),
+                                   patient_ids=data['IDs'])
                 
                 for cutoff in cutoffs:
                     dfs[str(cutoff)].append(pl.DataFrame({'CPR_CHILD': data['IDs'],

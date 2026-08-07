@@ -17,12 +17,14 @@ class BirthModel(nn.Module):
                  img_data_transform,
                  preterm_heads,
                  aux_task_heads,
+                 risk_transform=None,
                  aux_method='append'):
         
         super().__init__()
         
         self.ehr_model = ehr_model
         self.ehr_transform = ehr_transform
+        self.risk_transform = risk_transform
         self.img_data_transform = img_data_transform
         self.vit_model = vit_model
         self.preterm_heads = preterm_heads
@@ -37,13 +39,49 @@ class BirthModel(nn.Module):
         
         else:
             raise RuntimeError(f'Unknown fusion type f"{self.aux_method}"')
-            
-    def forward_append(self, img, img_data, ehr):
-        embeddings = []
+
+    def encode_ehr(self, ehr, patient_ids):
+        if self.ehr_model is None:
+            return None
+
+        input_type = self.ehr_model.input_type
+
+        if input_type == "patient_id":
+            if patient_ids is None:
+                return None
+            return self.ehr_model(patient_ids)
+
+        if input_type == "patient_id_tabular":
+            if patient_ids is None or ehr.shape[1] == 0:
+                return None
+            return self.ehr_model(ehr, patient_ids)
+
         if ehr.shape[1] != 0:
-            ehr_embedding = self.ehr_model(ehr)        
-            ehr_embedding = self.ehr_transform(ehr_embedding)
-            embeddings.append(ehr_embedding)
+            return self.ehr_model(ehr)
+
+        return None
+
+    def append_ehr_tokens(self, embeddings, ehr, patient_ids):
+        encoded = self.encode_ehr(ehr, patient_ids)
+        if encoded is None:
+            return embeddings
+
+        if self.ehr_model.input_type == "patient_id_tabular":
+            risk, encoding = encoded
+            if self.risk_transform is not None:
+                embeddings.append(self.risk_transform(risk))
+            if self.ehr_transform is not None:
+                embeddings.append(self.ehr_transform(encoding))
+            return embeddings
+
+        if self.ehr_transform is not None:
+            embeddings.append(self.ehr_transform(encoded))
+        return embeddings
+            
+    def forward_append(self, img, img_data, ehr, patient_ids=None):
+        embeddings = []
+
+        self.append_ehr_tokens(embeddings, ehr, patient_ids)
         
         if img_data.shape[1] != 0:        
             img_data_embedding = self.img_data_transform(img_data)
@@ -100,6 +138,5 @@ class BirthModel(nn.Module):
             model.pos_embed.requires_grad = True
             model.register_tokens.requires_grad = True
 
-    def forward(self, img, img_data, ehr):
-        return self.forward_(img, img_data, ehr) 
-    
+    def forward(self, img, img_data, ehr, patient_ids=None):
+        return self.forward_(img, img_data, ehr, patient_ids)
