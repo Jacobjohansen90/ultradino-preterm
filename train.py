@@ -7,7 +7,6 @@ Created on Wed Mar  4 09:41:00 2026
 """
 #%%Imports
 import argparse
-import os
 
 from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
@@ -26,19 +25,9 @@ import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
 warnings.filterwarnings("ignore", category=UserWarning, module="torchmetrics")
 
-CONF_DIR = (
-    "/projects/users/data/UCPH/DeepFetal/projects/preterm_EHR/code/"
-    "ultradino-preterm/confs/training_confs"
-)
 
-
-def main(config_name, run_name):
-    config_path = os.path.join(CONF_DIR, config_name)
-    if not config_path.endswith(('.yaml', '.yml')):
-        config_path += '.yaml'
-
+def main(config_path):
     cfg = OmegaConf.load(config_path)
-    cfg.info.name = run_name
 
     save_path = setup(cfg)
 
@@ -147,11 +136,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train preterm prediction model')
     parser.add_argument(
         'config',
-        help='Config file name under confs/training_confs (e.g. baseline_ehr.yaml)',
-    )
-    parser.add_argument(
-        'name',
-        help='Experiment name used for the training_runs/Running/<name>/ folder',
+        help='Full path to training config YAML (info.name sets the run folder)',
     )
     args = parser.parse_args()
-    main(args.config, args.name)
+    main(args.config)
