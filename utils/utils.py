@@ -13,7 +13,7 @@ def setup(cfg):
     if cfg.info.name is None:
         raise Exception("Model experiment must be named")
     
-    path = f"/projects/users/data/UCPH/DeepFetal/projects/preterm/training_runs/Running/{cfg.info.name}/"
+    path = f"/projects/users/data/UCPH/DeepFetal/projects/preterm_EHR/code/ultradino-preterm/training_runs/Running/{cfg.info.name}/"
     if cfg.info.name == 'test':
         os.makedirs(path + 'weights/', exist_ok=True)
     else:
