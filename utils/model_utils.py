@@ -75,7 +75,8 @@ def ehr_from_conf(cfg, **kwargs):
     if model_type == "tabular":
         if not cfg.data.ehr_data:
             raise ValueError(
-                "EHR model type 'tabular' requires data.ehr_data columns in the parquet"
+                "EHR model type 'tabular' requires data.ehr_data columns "
+                "(from ehr_train_path/ehr_test_path or already in the parquet)"
             )
         return TabularEhrModel(len(cfg.data.ehr_data))
 
@@ -101,7 +102,7 @@ def ehr_from_conf(cfg, **kwargs):
     if not cfg.data.ehr_data:
         raise ValueError(
             "EHR model type 'patient_lookup_tabular' requires data.ehr_data "
-            "risk columns in the parquet"
+            "risk columns (from ehr_train_path/ehr_test_path or the parquet)"
         )
     return PatientLookupTabularEhrModel(
         encodings, encoding_dim, len(cfg.data.ehr_data)
