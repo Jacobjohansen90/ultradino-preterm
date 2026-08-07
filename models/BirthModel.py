@@ -116,17 +116,17 @@ class BirthModel(nn.Module):
             p.requires_grad = True
     
         # Maximum number of blocks that are allowed to be trainable
-        if cfg.top_n_blocks == -1:
+        if cfg.training.top_n_blocks == -1:
             max_blocks = total_blocks
         else:
-            max_blocks = cfg.top_n_blocks
-    
+            max_blocks = cfg.training.top_n_blocks
+        
         #Number of blocks to unfreeze
         if cfg.training.blocks_per_step == -1:
             n_blocks = max_blocks
         else:
             n_blocks = min(max_blocks, cfg.training.blocks_per_step * (n // cfg.training.every_n_epochs))
-    
+
         if n_blocks > 0:
             for block in model.blocks[-n_blocks:]:
                 for p in block.parameters():
