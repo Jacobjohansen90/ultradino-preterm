@@ -54,8 +54,8 @@ for GA in cutoffs:
     print()
     #Progesterone
     print('Progesterone')
-    print(f"Total Progesterone (%): {df_all['progesterone'].sum()} ({round(100*df_all['CPR_CHILD'].n_unique() / df_all['progesterone'].sum(), 2)}%)")
-    print(f"Preterm Progesterone (%): {df_preterm['progesterone'].sum()} ({round(100*df_preterm['CPR_CHILD'].n_unique() / df_preterm['progesterone'].sum(), 2)}%)")
+    print(f"Total Progesterone (%): {df_all.unique('CPR_CHILD')['progesterone'].sum()} ({round(100 * df_all.unique('CPR_CHILD')['progesterone'].sum() / df_all['CPR_CHILD'].n_unique(), 2)}%)")    
+    print(f"Preterm Progesterone (%): {df_preterm.unique('CPR_CHILD')['progesterone'].sum()} ({round(100 * df_preterm.unique('CPR_CHILD')['progesterone'].sum() / df_preterm['CPR_CHILD'].n_unique(), 2)}%)")    
     print()
     #Age
     print('Age')
@@ -92,8 +92,8 @@ for GA in cutoffs:
     print()
     #Progesterone
     print('Progesterone')
-    print(f"Total Progesterone (%): {df_all['progesterone'].sum()} ({round(100*df_all['CPR_CHILD'].n_unique() / df_all['progesterone'].sum(), 2)}%)")
-    print(f"Preterm Progesterone (%): {df_preterm['progesterone'].sum()} ({round(100*df_preterm['CPR_CHILD'].n_unique() / df_preterm['progesterone'].sum(), 2)}%)")
+    print(f"Total Progesterone (%): {df_all.unique('CPR_CHILD')['progesterone'].sum()} ({round(100 * df_all.unique('CPR_CHILD')['progesterone'].sum() / df_all['CPR_CHILD'].n_unique(), 2)}%)")    
+    print(f"Preterm Progesterone (%): {df_preterm.unique('CPR_CHILD')['progesterone'].sum()} ({round(100 * df_preterm.unique('CPR_CHILD')['progesterone'].sum() / df_preterm['CPR_CHILD'].n_unique(), 2)}%)")    
     print()
     #Age
     print('Age')
