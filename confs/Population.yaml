@@ -62,10 +62,10 @@ imaging:
     - ['study_date','date']
     - ['physical_delta_x', 'float']
     - ['physical_delta_y', 'float']
-    - ['region_location_min_x0, 'float']
-    - ['region_location_max_x1, 'float']
-    - ['region_location_min_y0, 'float']
-    - ['region_location_max_y1, 'float']
+    - ['region_location_min_x0', 'float']
+    - ['region_location_max_x1', 'float']
+    - ['region_location_min_y0', 'float']
+    - ['region_location_max_y1', 'float']
 
 #Operators work as: column_1 [operator] column_2
 merge:
