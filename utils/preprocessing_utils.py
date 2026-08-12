@@ -18,9 +18,9 @@ import os
 
 def unique(df, column, value):
     if value is True:
-        df = df.filter(pl.col(column).count().over(column) == 1)
+        df = df.filter(pl.len().over(column) == 1)
     elif value is False:
-        df = df.filter(pl.col(column).count().over(column) != 1)
+        df = df.filter(pl.len().over(column) != 1)
     return df
 
 def in_list(df, column, value):
