@@ -1,6 +1,6 @@
 paths:
 
-population_name: OnlyFirstPreg_June_v4
+population_name: AnyPreg_June_v4
 
 #Operators work as: column_1 [operator] column_2
 #Add flow_img when database has the info
@@ -110,25 +110,6 @@ population_criteria:
         match_on: CPRnummer_Barn
         column: LevendefoedtDoedfoedt
         operator: "=="
-        value: "1"
-
-    #Only first pregnancy
-  - name: First Pregnancy
-    filter_on: CPR_CHILD
-    action: exclude
-    function: filter_df_external
-    conditions:
-      - condition: 
-        table: ${paths.input_dir_SDS}/mfr.csv
-        match_on: CPR_BARN
-        column: PARITET
-        operator: "!="
-        value: "1"
-      - condition: or
-        table: ${paths.input_dir_SDS}/nyfoedte.csv
-        match_on: CPRnummer_Barn
-        column: Paritet
-        operator: "!="
         value: "1"
 
     #Non-twins
