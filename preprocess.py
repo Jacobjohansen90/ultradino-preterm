@@ -19,7 +19,8 @@ from utils.preprocessing_utils import (merge_population_tables,
                                        apply_inclusion_exclusion, 
                                        link_t_tables,
                                        make_train_test_split,
-                                       sqlite_extractor)
+                                       sqlite_extractor,
+                                       append_pred_and_CL)
 
 #%%Load variable YAML and setup logger and dirs
 cfg = OmegaConf.load('./confs/Population.yaml')
@@ -56,13 +57,14 @@ logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime
 df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
 
 #Link cervix preds and image df
-df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds, infer_schema=False)
-df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
+# df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds, infer_schema=False)
+#df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
+#del df_cervix_preds
+
+df_img = append_pred_and_CL(df_img, cfg)
+
 
 df_img.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
-
-del df_cervix_preds
-
 
 logger.info(f"Found {len(df_img)} images - " + str(datetime.now().strftime('%H:%M:%S')))
 logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))

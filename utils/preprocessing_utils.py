@@ -9,6 +9,10 @@ Created on Thu Jun  4 10:28:32 2026
 import polars as pl
 import operator
 import sqlite3
+import tqdm
+import numpy as np
+from PIL import Image
+import os
 
 #%%Operator functions
 
@@ -72,7 +76,10 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
         df_temp = df_temp.filter(OPS[condition.operator](pl.col(condition.column), condition.value))
 
     if external:
-        df_temp = df_temp.with_columns(pl.col(condition.match_on).alias(filter_on))
+        # df_temp = df_temp.with_columns(pl.col(condition.match_on).alias(filter_on))
+        match_on = [condition.match_on] if isinstance(condition.match_on, str) else condition.match_on
+        filter_on = [filter_on] if isinstance(filter_on, str) else filter_on
+        df_temp = df_temp.with_columns(pl.col(src).alias(dst) for src, dst in zip(match_on, filter_on))
         if action == 'exclude_birth':
             filter_on = [filter_on, "cond_col"]
             df_temp = df_temp.with_columns(pl.col(condition.conditional_column)
@@ -325,6 +332,70 @@ def apply_inclusion_exclusion(df, cfg):
     
     return df, discards, conditioned
 
+def append_pred_and_CL(df, cfg):
+    required_cols = ['physical_delta_x', 'physical_delta_y', 
+                     'region_location_min_x0', 'region_location_max_x1',
+                     'region_location_min_y0', 'region_location_max_y1']
+
+    missing = set(required_cols) - set(df.columns)
+
+    assert not missing, f"Missing columns: {missing}"
+        
+    results = []
+        
+    for row in tqdm(df.iter_rows(named=True), total=df.height):
+        file_path = cfg.paths.segmentation_paths + row['file_path'].replace('.png', '.npz')
+        if os.path.exists(file_path):
+            data = np.load(file_path)
+            pred = np.argmax(data['cls_logits'])
+            if pred:
+                CL = calculate_CL(row, data['seg_logits'])
+            else:
+                CL = 0
+        else:
+            pred = 0
+            CL = 0
+
+        results.append({'binary_cervix_pred': pred,
+                        'CL': CL})
+    
+    df_CL = pl.DataFrame(results)
+    
+    df = df.hstack(df_CL)
+    
+    return df
+
+def calculate_CL(row, seg, cervix_label=3):
+    img = Image.open(row['no_ocr_preprocessed_file_path'])
+    img_x, img_y = img.size
+    seg_x, seg_y = seg.size
+    
+    x_crop = row['region_location_min_x0'] - row['region_location_max_x1'] 
+    
+    if x_crop != 0:
+        print(x_crop)
+    
+    ratio_x = img_x / seg_x
+    new_phys_delta_x = row['physical_delta_x']*ratio_x
+    
+    y_crop = row['region_location_min_y0'] - row['region_location_max_y1']     
+    ratio_y = (img_y - y_crop) / seg_y
+    new_phys_delta_y = row['physical_delta_y']*ratio_y
+    
+    ys, xs = np.where(seg == cervix_label)
+    
+    left_idx = xs.argmin()
+    right_idx  = xs.argmax()
+    
+    left_x, left_y = xs[left_idx], ys[left_idx]
+    right_x, right_y = xs[right_idx], ys[right_idx]
+    
+    CL = np.sqrt(((right_x - left_x) * new_phys_delta_x)**2 + ((right_y - left_y) * new_phys_delta_y)**2)
+    
+    return CL
+    
+    
+    
 
 def sqlite_extractor(cfg, cpr_mothers):
     conn = sqlite3.connect(cfg.paths.SQL_DB)

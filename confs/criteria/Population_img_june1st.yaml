@@ -133,19 +133,19 @@ population_criteria:
 
     #Non-twins
   - name: No multi-births
-    filter_on: CPR_MOTHER
+    filter_on: [CPR_MOTHER, BIRTH_ID]
     action: include
     function: filter_df_external
     conditions:
       - condition: 
         table: ${paths.input_dir_SDS}/mfr.csv
-        match_on: CPR_MODER
+        match_on: [CPR_MODER, FOEDSELSLOEBENUMMER]
         column: FOEDSELSLOEBENUMMER
         operator: "unique"
         value: True
       - condition: or
         table: ${paths.input_dir_SDS}/nyfoedte.csv
-        match_on: CPRnummer_Mor
+        match_on: [CPRnummer_Mor, DW_EK_Foedsel]
         column: DW_EK_Foedsel
         operator: "unique"
         value: True

@@ -6,6 +6,7 @@ paths:
   SQL_DB: /projects/users/data/UCPH/DeepFetal/ultrasound/tables/DeepFetal_image_database_250526.sqlite
   holdout_csv: /projects/users/data/UCPH/DeepFetal/projects/common/splits/split_V4/test_split_0.15_2026-06-08.csv
   incl_excl_cfg: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/criteria/Population_img_june1st.yaml
+  segmentation_paths: /projects/users/data/UCPH/DeepFetal/ultrasound/segmentations/
 
 population: 
   population_key: CPR_CHILD
@@ -61,6 +62,10 @@ imaging:
     - ['study_date','date']
     - ['physical_delta_x', 'float']
     - ['physical_delta_y', 'float']
+    - ['region_location_min_x0, 'float']
+    - ['region_location_max_x1, 'float']
+    - ['region_location_min_y0, 'float']
+    - ['region_location_max_y1, 'float']
 
 #Operators work as: column_1 [operator] column_2
 merge:
