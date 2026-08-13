@@ -51,6 +51,12 @@ df_pop.write_csv(cfg.paths.data_dir + 'data_dump/population.csv')
 
 logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
     
+print(
+    "DF:",
+    df
+    .filter(pl.col("BIRTH_ID") == 123899)
+    .select(["CPR_MOTHER", "BIRTH_ID"])
+    )
 
 #%%Extract info from database
 
@@ -68,12 +74,7 @@ logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + s
 
 #%%Merge image and population dfs
 df = merge_population_and_image_df(df_img, df_pop, cfg)
-print(
-    "DF:",
-    df
-    .filter(pl.col("BIRTH_ID") == 123899)
-    .select(["CPR_MOTHER", "BIRTH_ID"])
-    )
+
 
 #%%Apply inclusion/exclusion criteria
 
