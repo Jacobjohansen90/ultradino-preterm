@@ -366,14 +366,19 @@ def append_pred_and_CL(df, cfg):
     return df
 
 def calculate_CL(row, seg, cervix_label=3):
-    img = Image.open(row['no_ocr_preprocessed_file_path'])
+    img_path = row['segmentation_path']
+    
+    if img_path is None:
+        return 0
+    
+    img = Image.open(img_path)
     img_x, img_y = img.size
-    seg_x, seg_y = seg.size
+    seg_x, seg_y = seg.shape
     
     x_crop = row['region_location_min_x0'] - row['region_location_max_x1'] 
     
     if x_crop != 0:
-        print(x_crop)
+        return 0
     
     ratio_x = img_x / seg_x
     new_phys_delta_x = row['physical_delta_x']*ratio_x
@@ -383,6 +388,9 @@ def calculate_CL(row, seg, cervix_label=3):
     new_phys_delta_y = row['physical_delta_y']*ratio_y
     
     ys, xs = np.where(seg == cervix_label)
+    
+    if len(xs) == 0:
+        return 0
     
     left_idx = xs.argmin()
     right_idx  = xs.argmax()
@@ -412,6 +420,7 @@ def sqlite_extractor(cfg, cpr_mothers):
     schema = [("CPR_MOTHER", pl.Utf8),
               ("file_path", pl.Utf8),
               ("no_ocr_preprocessed_file_path", pl.Utf8),
+              ("segmentation_path", pl.Utf8),
               *[(column, type_map[dtype]) for column, dtype in metadata_dicom_variables]]
     
     cur.execute(f"""
@@ -419,6 +428,7 @@ def sqlite_extractor(cfg, cpr_mothers):
                     t.phair_hash,
                     pt.file_path,
                     pt.no_ocr_preprocessed_file_path,
+                    pt.segmentation_path,
                     {dicom_select}
                 FROM tmp_hashes t
                 LEFT JOIN cpr_hashes c
