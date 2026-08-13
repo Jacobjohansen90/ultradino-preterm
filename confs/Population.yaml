@@ -7,7 +7,7 @@ paths:
   segmentation_paths: /projects/users/data/UCPH/DeepFetal/ultrasound/segmentations/
   incl_excl_cfg: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/criteria/AnyPreg.yaml
   #incl_excl_cfg: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/criteria/FirstPreg.yaml
-  #cervix_preds: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/cervix_preds_v2.csv
+  cervix_preds: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/cervix_preds_v2.csv
 population: 
   population_key: CPR_CHILD
   types: #By default column types are strings. If not listed here, it will be kept as string
