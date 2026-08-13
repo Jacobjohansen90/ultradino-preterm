@@ -140,13 +140,13 @@ population_criteria:
       - condition: 
         table: ${paths.input_dir_SDS}/mfr.csv
         match_on: [CPR_MODER, FOEDSELSLOEBENUMMER]
-        column: FOEDSELSLOEBENUMMER
+        column: [CPR_MODER, FOEDSELSLOEBENUMMER]
         operator: "unique"
         value: True
       - condition: or
         table: ${paths.input_dir_SDS}/nyfoedte.csv
         match_on: [CPRnummer_Mor, DW_EK_Foedsel]
-        column: DW_EK_Foedsel
+        column: [CPRnummer_Mor, DW_EK_Foedsel]
         operator: "unique"
         value: True
 

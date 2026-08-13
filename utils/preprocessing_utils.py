@@ -108,10 +108,13 @@ def filter_df_internal(df, criteria):
 def filter_df_external(df, criteria):
     table = None
     print(criteria)
-    print()
     for condition in criteria.conditions:
         df_temp = load_table(condition.table)
         table = filter_conditions(df_temp, condition, criteria.filter_on, table, criteria.action)
+    print("DF COLUMNS:", df.columns)
+    print("TABLE COLUMNS:", table.columns)
+    print("FILTER ON:", criteria.filter_on)
+    print()
     if criteria.action == 'include':
         df = df.join(table, on=criteria.filter_on, how='semi')
     elif criteria.action == 'exclude':
