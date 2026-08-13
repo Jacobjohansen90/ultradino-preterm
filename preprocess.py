@@ -54,7 +54,7 @@ logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime
 print(
     "DF:",
     df_pop
-    .filter(pl.col("BIRTH_ID") == 123899)
+    .filter(pl.col("BIRTH_ID") == '123899')
     .select(["CPR_MOTHER", "BIRTH_ID"])
     )
 
