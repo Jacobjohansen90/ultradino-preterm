@@ -13,6 +13,8 @@ import tqdm
 import numpy as np
 from PIL import Image
 import os
+from concurrent.futures import ProcessPoolExecutor
+
 
 #%%Operator functions
 
@@ -105,6 +107,8 @@ def filter_df_internal(df, criteria):
     
 def filter_df_external(df, criteria):
     table = None
+    print(criteria)
+    print()
     for condition in criteria.conditions:
         df_temp = load_table(condition.table)
         table = filter_conditions(df_temp, condition, criteria.filter_on, table, criteria.action)
@@ -341,30 +345,28 @@ def get_CL(df, cfg):
 
     assert not missing, f"Missing columns: {missing}"
         
-    results = []
-        
-    for row in tqdm(df.iter_rows(named=True), total=df.height):
-        file_path = row['segmentation_path']
-        if os.path.exists(file_path):
-            CL = calculate_CL(row)            
-        else:
-            CL = 0
-          
-        results.append({'CL': CL})
-        
-    df = df.hstack(pl.DataFrame(results))
+    with ProcessPoolExecutor(max_workers=16) as executor:
+        results = list(tqdm(executor.map(calculate_CL,
+                                         df.iter_rows(named=True),
+                                         chunksize=1000),
+                            total=df.height,
+                            desc="Calculating CL",
+                            unit="img"))
+    
+    df = df.with_columns(pl.Series("CL", results))
     
     return df
 
-def calculate_CL(row, seg, cervix_label=3):
+def calculate_CL(row, cervix_label=3):
 
     img_path = row['no_ocr_preprocessed_file_path']    
+    
     if img_path is None:
         return 0
     
-    
     img = Image.open(img_path)
     seg = np.load(row['segmentation_path'])['seg_logits']
+    
     img_x, img_y = img.size
     seg_x, seg_y = seg.shape
     
@@ -396,9 +398,6 @@ def calculate_CL(row, seg, cervix_label=3):
     
     return CL
     
-    
-    
-
 def sqlite_extractor(cfg, cpr_mothers):
     conn = sqlite3.connect(cfg.paths.SQL_DB)
     cur = conn.cursor()
