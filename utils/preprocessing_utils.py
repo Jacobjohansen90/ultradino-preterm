@@ -83,7 +83,7 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
         filter_on = [filter_on] if isinstance(filter_on, str) else filter_on
         df_temp = df_temp.with_columns(pl.col(src).alias(dst) for src, dst in zip(match_on, filter_on))
         if action == 'exclude_birth':
-            filter_on = [filter_on, "cond_col"]
+            filter_on = filter_on + ["cond_col"]
             df_temp = df_temp.with_columns(pl.col(condition.conditional_column)
                                            .str.strptime(pl.Date).alias('cond_col'))
             
