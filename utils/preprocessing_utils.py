@@ -332,7 +332,7 @@ def apply_inclusion_exclusion(df, cfg):
     
     return df, discards, conditioned
 
-def append_pred_and_CL(df, cfg):
+def get_CL(df, cfg):
     required_cols = ['physical_delta_x', 'physical_delta_y', 
                      'region_location_min_x0', 'region_location_max_x1',
                      'region_location_min_y0', 'region_location_max_y1']
@@ -344,40 +344,34 @@ def append_pred_and_CL(df, cfg):
     results = []
         
     for row in tqdm(df.iter_rows(named=True), total=df.height):
-        file_path = cfg.paths.segmentation_paths + row['file_path'].replace('.png', '.npz')
+        file_path = row['segmentation_path']
         if os.path.exists(file_path):
-            data = np.load(file_path)
-            pred = np.argmax(data['cls_logits'])
-            if pred:
-                CL = calculate_CL(row, data['seg_logits'])
-            else:
-                CL = 0
+            CL = calculate_CL(row)            
         else:
-            pred = 0
             CL = 0
-
-        results.append({'binary_cervix_pred': pred,
-                        'CL': CL})
-    
-    df_CL = pl.DataFrame(results)
-    
-    df = df.hstack(df_CL)
+          
+        results.append({'CL': CL})
+        
+    df = df.hstack(pl.DataFrame(results))
     
     return df
 
 def calculate_CL(row, seg, cervix_label=3):
-    img_path = row['segmentation_path']
-    
+
+    img_path = row['no_ocr_preprocessed_file_path']    
     if img_path is None:
         return 0
     
+    
     img = Image.open(img_path)
+    seg = np.load(row['segmentation_path'])['seg_logits']
     img_x, img_y = img.size
     seg_x, seg_y = seg.shape
     
     x_crop = row['region_location_min_x0'] - row['region_location_max_x1'] 
     
     if x_crop != 0:
+        print(row['no_ocr_preprocessed_file_path'])
         return 0
     
     ratio_x = img_x / seg_x

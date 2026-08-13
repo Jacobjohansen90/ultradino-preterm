@@ -20,7 +20,7 @@ from utils.preprocessing_utils import (merge_population_tables,
                                        link_t_tables,
                                        make_train_test_split,
                                        sqlite_extractor,
-                                       append_pred_and_CL)
+                                       get_CL)
 
 #%%Load variable YAML and setup logger and dirs
 cfg = OmegaConf.load('./confs/Population.yaml')
@@ -61,9 +61,6 @@ df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds, infer_schema=False)
 df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
 del df_cervix_preds
 
-# df_img = append_pred_and_CL(df_img, cfg)
-
-
 df_img.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
 
 logger.info(f"Found {len(df_img)} images - " + str(datetime.now().strftime('%H:%M:%S')))
@@ -87,6 +84,10 @@ with open(cfg.paths.data_dir + 'logs/conditioned.json', "w") as file:
 logger.info(f"Final data contains {len(df)} images - " + str(datetime.now().strftime('%H:%M:%S')))
 logger.info(f"Final data contains {df['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
 logger.info(f"Final data contains {df['CPR_CHILD'].n_unique()} children - " + str(datetime.now().strftime('%H:%M:%S')))
+
+#%%Calculate cervix length for remaining images
+
+df = get_CL(df, cfg)
 
 #%%Make train/test split and save the data
 
