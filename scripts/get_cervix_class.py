@@ -9,6 +9,7 @@ import sqlite3
 import numpy as np
 import polars as pl
 from concurrent.futures import ProcessPoolExecutor
+from tqdm import tqdm
 
 SQL_path = '/projects/users/data/UCPH/DeepFetal/ultrasound/tables/DeepFetal_image_database_250526.sqlite'
 save_path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/cervix_preds_v3.csv'
@@ -43,13 +44,16 @@ items = paths.iter_rows()
 
 with ProcessPoolExecutor(max_workers=64) as executor:
     results = list(
-        executor.map(
-            get_class,
-            items,
-            chunksize=1000,
+        tqdm(
+            executor.map(
+                get_class,
+                paths.iter_rows(),
+                chunksize=1000,
+            ),
+            total=len(paths),
+            desc="Processing segmentations",
         )
     )
-
 df = pl.DataFrame(
     results,
     schema=["file_path", "is_cervix"])
