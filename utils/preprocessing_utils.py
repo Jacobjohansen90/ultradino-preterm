@@ -111,26 +111,17 @@ def filter_df_external(df, criteria):
     for condition in criteria.conditions:
         df_temp = load_table(condition.table)
         table = filter_conditions(df_temp, condition, criteria.filter_on, table, criteria.action)
-    try:
         print("=== BEFORE FINAL JOIN ===")
     
         print("filter_on:", criteria.filter_on)
     
         print(
-            "TABLE:",
-            table
-            .filter(pl.col("BIRTH_ID") == 123899)
-            .select(["CPR_MOTHER", "BIRTH_ID"])
-            )
+            "TABLE:", table.columns)
     
         print(
             "DF:",
-            df
-            .filter(pl.col("BIRTH_ID") == 123899)
-            .select(["CPR_MOTHER", "BIRTH_ID"])
-            )
-    except:
-        pass
+            df.columns)
+
     if criteria.action == 'include':
         df = df.join(table, on=criteria.filter_on, how='semi')
     elif criteria.action == 'exclude':
