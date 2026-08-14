@@ -42,7 +42,7 @@ tasks:
 training:
   epochs: 60
   vit_frozen_until: 10  #VIT is frozen until this epoch
-  ehr_frozen_until: 10 #EHR is frozen until this epoch
+  ehr_frozen_until: 0 #EHR is frozen until this epoch
   #Unfreezeing strategy. Unfreeze blocks_per_step every_n_epochs until we reach top_n_blocks are unfrozen.
   #blocks_per_step = -1, top_n_blocks = -1 is all layers immediately
   #blocks_per_step = -1, top_n_blocks = N is top N layers immediately
@@ -66,7 +66,6 @@ model:
     # patient_lookup_tabular appends risk and encoding as two distinct token groups
     type: tabular
     # num_tokens: 4  # encoding → this many ViT tokens (default 1); risk stays 1 token
-    weights_path: 
   
   transform:
     layer_dims: []

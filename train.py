@@ -14,7 +14,7 @@ import torch
 from tqdm import tqdm
 
 from dataloader.dataloader import PreTermDataset, collate_fn, make_data_split
-from utils.model_utils import model_from_conf, update_freezing
+from utils.model_utils import model_from_conf, update_freezing, log_ehr_encoding_coverage
 from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
 from utils.loss_utils import get_loss, fix_labels
 from utils.metrics import Metrics
@@ -55,6 +55,7 @@ def main(config_path):
     ValData.population_count(cfg.tasks.preterm.cutoffs)
 
     model = model_from_conf(cfg)
+    log_ehr_encoding_coverage(model, [train_df, val_df], ["train", "val"])
 
     optimizer = get_optimizer(model, cfg)
     scheduler = get_cosine_schedule_with_warmup(optimizer, cfg)

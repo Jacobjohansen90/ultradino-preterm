@@ -40,3 +40,41 @@ def load_ehr_encodings_from_cfg(cfg):
         if path:
             encodings.update(load_ehr_encodings(path))
     return encodings
+
+
+def log_encoding_id_coverage(
+    id_to_idx,
+    dataframes,
+    split_names,
+    id_column="CPR_CHILD",
+    max_examples=20,
+):
+    """Print how many population IDs match the patient-encoding lookup table."""
+    encoding_ids = set(id_to_idx)
+
+    for split_name, df in zip(split_names, dataframes):
+        if id_column not in df.columns:
+            print(f"[{split_name}] Skipping encoding ID check: missing '{id_column}'")
+            continue
+
+        data_ids = {str(patient_id) for patient_id in df[id_column].unique().to_list()}
+        matched = data_ids & encoding_ids
+        missing = sorted(data_ids - encoding_ids)
+        n_data = len(data_ids)
+        n_matched = len(matched)
+        pct = 100.0 * n_matched / n_data if n_data else 0.0
+
+        print(
+            f"[{split_name}] EHR encoding ID coverage: "
+            f"{n_matched}/{n_data} unique {id_column} ({pct:.1f}%)"
+        )
+        if missing:
+            print(
+                f"[{split_name}] Missing from encoding JSON "
+                f"({len(missing)} total), e.g.: {missing[:max_examples]}"
+            )
+        if n_matched == 0 and n_data > 0:
+            print(
+                f"[{split_name}] WARNING: no {id_column} values matched the encoding JSON. "
+                "Check ID formatting (str/int, leading zeros, etc.)."
+            )

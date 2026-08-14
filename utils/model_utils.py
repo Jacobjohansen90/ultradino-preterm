@@ -16,7 +16,7 @@ from models.ehr_models import (
     PatientIdEhrModel,
     PatientLookupTabularEhrModel,
 )
-from utils.ehr_encoding import load_ehr_encodings_from_cfg
+from utils.ehr_encoding import load_ehr_encodings_from_cfg, log_encoding_id_coverage
 import torch.nn as nn
 
 logger = logging.getLogger("model_loader")
@@ -106,6 +106,30 @@ def ehr_from_conf(cfg, **kwargs):
         )
     return PatientLookupTabularEhrModel(
         encodings, encoding_dim, len(cfg.data.ehr_data)
+    )
+
+
+def patient_id_lookup(model):
+    """Return the PatientIdEhrModel used for JSON encodings, if any."""
+    ehr_model = model.ehr_model
+    if ehr_model is None:
+        return None
+    if isinstance(ehr_model, PatientIdEhrModel):
+        return ehr_model
+    if isinstance(ehr_model, PatientLookupTabularEhrModel):
+        return ehr_model.lookup
+    return None
+
+
+def log_ehr_encoding_coverage(model, dataframes, split_names, id_column="CPR_CHILD"):
+    lookup = patient_id_lookup(model)
+    if lookup is None:
+        return
+    log_encoding_id_coverage(
+        lookup.id_to_idx,
+        dataframes,
+        split_names,
+        id_column=id_column,
     )
 
 
