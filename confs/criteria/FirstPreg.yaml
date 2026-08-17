@@ -1,6 +1,6 @@
 paths:
 
-population_name: OnlyFirstPreg_June_v4
+population_name: OnlyFirstPreg_v5
 
 #Operators work as: column_1 [operator] column_2
 #Add flow_img when database has the info
@@ -14,6 +14,16 @@ image_criteria:
         column: binary_cervix_pred
         operator: "=="
         value: 1
+
+  - name: No flow imgs
+    action: exclude
+    filter_on: file_path
+    function: filter_df_internal
+    conditions:
+      - condition:
+        column: is_flow
+        operator: "=="
+        value: True
 
   - name: Image must be no_ocr processed
     action: exclude

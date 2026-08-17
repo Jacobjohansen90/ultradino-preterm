@@ -358,12 +358,13 @@ def get_CL(df, cfg):
 def calculate_CL(row, cervix_label=3):
 
     img_path = row['no_ocr_preprocessed_file_path']    
-    
-    if img_path is None:
+    seg_path = row['segmentation_path']
+
+    if img_path is None or seg_path is None:
         return 0
     
     img = Image.open(img_path)
-    seg = np.load(row['segmentation_path'])['seg_logits']
+    seg = np.load(seg_path)['seg_logits']
     
     img_x, img_y = img.size
     seg_x, seg_y = seg.shape
@@ -408,7 +409,8 @@ def sqlite_extractor(cfg, cpr_mothers):
               ("file_path", pl.Utf8),
               ("no_ocr_preprocessed_file_path", pl.Utf8),
               ("segmentation_path", pl.Utf8),
-              *[(column, type_map[dtype]) for column, dtype in metadata_dicom_variables]]
+              *[(column, type_map[dtype]) for column, dtype in metadata_dicom_variables],
+              ("is_flow", pl.Boolean)]
     
     cur.execute(f"""
                 SELECT
@@ -430,10 +432,8 @@ def sqlite_extractor(cfg, cpr_mothers):
     
     #TODO: Currently we drop any flow image. Update this so they are instead marked
     for row in cur.fetchall():
-        if any(s is not None and "[" in s for s in row):
-            continue
-        else:
-            rows.append(row)
+        is_flow = any(s is not None and "[" in s for s in row)
+        rows.append((*row, is_flow))
 
     df = pl.DataFrame(rows,
                       schema=schema,
