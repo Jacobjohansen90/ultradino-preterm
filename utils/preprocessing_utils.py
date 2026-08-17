@@ -368,18 +368,19 @@ def calculate_CL(row, cervix_label=3):
     img_x, img_y = img.size
     seg_x, seg_y = seg.shape
     
-    x_crop = row['region_location_min_x0'] - row['region_location_max_x1'] 
+    x_crop = row['region_location_max_x1'] - row['region_location_min_x0'] 
     
     if x_crop != 0:
         print(row['segmentation_path'])
         print(row['no_ocr_preprocessed_file_path'])
+        print(row['region_location_min_x0'], row['region_location_max_x1'])
         print()
         return 0
     
     ratio_x = img_x / seg_x
     new_phys_delta_x = row['physical_delta_x']*ratio_x
     
-    y_crop = row['region_location_min_y0'] - row['region_location_max_y1']     
+    y_crop = row['region_location_max_y1'] - row['region_location_min_y0']     
     ratio_y = (img_y - y_crop) / seg_y
     new_phys_delta_y = row['physical_delta_y']*ratio_y
     
