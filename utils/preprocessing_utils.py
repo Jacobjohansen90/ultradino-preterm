@@ -343,7 +343,7 @@ def get_CL(df, cfg):
 
     assert not missing, f"Missing columns: {missing}"
         
-    with ProcessPoolExecutor(max_workers=16) as executor:
+    with ProcessPoolExecutor(max_workers=64) as executor:
         results = list(tqdm(executor.map(calculate_CL,
                                          df.iter_rows(named=True),
                                          chunksize=1000),
@@ -369,15 +369,8 @@ def calculate_CL(row, cervix_label=3):
     seg_x, seg_y = seg.shape
     
     x_crop = row['region_location_max_x1'] - row['region_location_min_x0'] 
-    
-    if x_crop != 0:
-        print(row['segmentation_path'])
-        print(row['no_ocr_preprocessed_file_path'])
-        print(row['region_location_min_x0'], row['region_location_max_x1'])
-        print()
-        return 0
-    
-    ratio_x = img_x / seg_x
+        
+    ratio_x = (img_x - x_crop) / seg_x
     new_phys_delta_x = row['physical_delta_x']*ratio_x
     
     y_crop = row['region_location_max_y1'] - row['region_location_min_y0']     
