@@ -9,10 +9,9 @@ Created on Thu Jun  4 10:28:32 2026
 import polars as pl
 import operator
 import sqlite3
-import tqdm
+from tqdm import tqdm
 import numpy as np
 from PIL import Image
-import os
 from concurrent.futures import ProcessPoolExecutor
 
 
@@ -78,7 +77,6 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
         df_temp = df_temp.filter(OPS[condition.operator](pl.col(condition.column), condition.value))
 
     if external:
-        # df_temp = df_temp.with_columns(pl.col(condition.match_on).alias(filter_on))
         match_on = [condition.match_on] if isinstance(condition.match_on, str) else condition.match_on
         filter_on = [filter_on] if isinstance(filter_on, str) else filter_on
         df_temp = df_temp.with_columns(pl.col(src).alias(dst) for src, dst in zip(match_on, filter_on))
@@ -107,29 +105,11 @@ def filter_df_internal(df, criteria):
     
 def filter_df_external(df, criteria):
     table = None
-    print(criteria)
+
     for condition in criteria.conditions:
         df_temp = load_table(condition.table)
         table = filter_conditions(df_temp, condition, criteria.filter_on, table, criteria.action)
-        try:
-            print("=== BEFORE FINAL JOIN ===")
-        
-            print("filter_on:", criteria.filter_on)
-        
-            print(
-                "TABLE:", table
-                .filter(pl.col("BIRTH_ID") == '123899')
-                .select(["CPR_MOTHER", "BIRTH_ID"])
-                )
-        
-            print(
-                "DF:",
-                df
-                .filter(pl.col("BIRTH_ID") == '123899')
-                .select(["CPR_MOTHER", "BIRTH_ID"])
-                )
-        except:
-            pass
+
     if criteria.action == 'include':
         df = df.join(table, on=criteria.filter_on, how='semi')
     elif criteria.action == 'exclude':
@@ -391,7 +371,9 @@ def calculate_CL(row, cervix_label=3):
     x_crop = row['region_location_min_x0'] - row['region_location_max_x1'] 
     
     if x_crop != 0:
+        print(row['segmentation_path'])
         print(row['no_ocr_preprocessed_file_path'])
+        print()
         return 0
     
     ratio_x = img_x / seg_x

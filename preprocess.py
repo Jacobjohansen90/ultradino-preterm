@@ -51,12 +51,6 @@ df_pop.write_csv(cfg.paths.data_dir + 'data_dump/population.csv')
 
 logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
     
-print(
-    "DF:",
-    df_pop
-    .filter(pl.col("BIRTH_ID") == '123899')
-    .select(["CPR_MOTHER", "BIRTH_ID"])
-    )
 
 #%%Extract info from database
 
