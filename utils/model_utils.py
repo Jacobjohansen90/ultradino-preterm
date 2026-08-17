@@ -16,7 +16,11 @@ from models.ehr_models import (
     PatientIdEhrModel,
     PatientLookupTabularEhrModel,
 )
-from utils.ehr_encoding import load_ehr_encodings_from_cfg, log_encoding_id_coverage
+from utils.ehr_encoding import (
+    load_ehr_encodings_from_cfg,
+    log_encoding_id_coverage,
+    log_tabular_ehr_coverage,
+)
 import torch.nn as nn
 
 logger = logging.getLogger("model_loader")
@@ -121,7 +125,13 @@ def patient_id_lookup(model):
     return None
 
 
-def log_ehr_encoding_coverage(model, dataframes, split_names, id_column="CPR_CHILD"):
+def log_ehr_coverage(cfg, model, dataframes, split_names, id_column="CPR_CHILD"):
+    log_tabular_ehr_coverage(
+        dataframes,
+        split_names,
+        cfg.data.get("ehr_data"),
+        id_column=id_column,
+    )
     lookup = patient_id_lookup(model)
     if lookup is None:
         return

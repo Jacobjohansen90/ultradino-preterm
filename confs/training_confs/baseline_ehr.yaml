@@ -2,7 +2,7 @@ info:
   name: baseline
 
 data:
-  path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/AnyPreg_June_v3/train.parquet
+  path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/OnlyFirstPreg_June_v3/train.parquet
   test_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/OnlyFirstPreg_June_v3/test.parquet
   batch_size: 128
   val_frac: 0.05

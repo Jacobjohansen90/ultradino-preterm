@@ -2,6 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
+
+import polars as pl
+
+logger = logging.getLogger(__name__)
 
 
 def load_ehr_encodings(path):
@@ -42,6 +47,43 @@ def load_ehr_encodings_from_cfg(cfg):
     return encodings
 
 
+def _log_coverage_stats(
+    split_name,
+    n_matched,
+    n_data,
+    missing,
+    source,
+    id_column,
+    max_examples=20,
+):
+    pct = 100.0 * n_matched / n_data if n_data else 0.0
+    logger.info(
+        "[%s] %s ID coverage: %d/%d unique %s (%.1f%%)",
+        split_name,
+        source,
+        n_matched,
+        n_data,
+        id_column,
+        pct,
+    )
+    if missing:
+        logger.warning(
+            "[%s] Missing from %s (%d total), e.g.: %s",
+            split_name,
+            source,
+            len(missing),
+            missing[:max_examples],
+        )
+    if n_matched == 0 and n_data > 0:
+        logger.warning(
+            "[%s] No %s values matched %s. "
+            "Check ID formatting (str/int, leading zeros, etc.).",
+            split_name,
+            id_column,
+            source,
+        )
+
+
 def log_encoding_id_coverage(
     id_to_idx,
     dataframes,
@@ -49,32 +91,79 @@ def log_encoding_id_coverage(
     id_column="CPR_CHILD",
     max_examples=20,
 ):
-    """Print how many population IDs match the patient-encoding lookup table."""
+    """Log how many population IDs match the patient-encoding lookup table."""
     encoding_ids = set(id_to_idx)
 
     for split_name, df in zip(split_names, dataframes):
         if id_column not in df.columns:
-            print(f"[{split_name}] Skipping encoding ID check: missing '{id_column}'")
+            logger.warning(
+                "[%s] Skipping encoding ID check: missing '%s'",
+                split_name,
+                id_column,
+            )
             continue
 
         data_ids = {str(patient_id) for patient_id in df[id_column].unique().to_list()}
-        matched = data_ids & encoding_ids
         missing = sorted(data_ids - encoding_ids)
         n_data = len(data_ids)
-        n_matched = len(matched)
-        pct = 100.0 * n_matched / n_data if n_data else 0.0
-
-        print(
-            f"[{split_name}] EHR encoding ID coverage: "
-            f"{n_matched}/{n_data} unique {id_column} ({pct:.1f}%)"
+        n_matched = n_data - len(missing)
+        _log_coverage_stats(
+            split_name,
+            n_matched,
+            n_data,
+            missing,
+            "encoding JSON",
+            id_column,
+            max_examples=max_examples,
         )
-        if missing:
-            print(
-                f"[{split_name}] Missing from encoding JSON "
-                f"({len(missing)} total), e.g.: {missing[:max_examples]}"
+
+
+def log_tabular_ehr_coverage(
+    dataframes,
+    split_names,
+    ehr_cols,
+    id_column="CPR_CHILD",
+    max_examples=20,
+):
+    """Log how many unique IDs have non-null tabular EHR features after the join."""
+    ehr_cols = list(ehr_cols or [])
+    if not ehr_cols:
+        logger.info("Skipping tabular EHR ID check: data.ehr_data is empty")
+        return
+
+    for split_name, df in zip(split_names, dataframes):
+        if id_column not in df.columns:
+            logger.warning(
+                "[%s] Skipping tabular EHR ID check: missing '%s'",
+                split_name,
+                id_column,
             )
-        if n_matched == 0 and n_data > 0:
-            print(
-                f"[{split_name}] WARNING: no {id_column} values matched the encoding JSON. "
-                "Check ID formatting (str/int, leading zeros, etc.)."
+            continue
+
+        missing_cols = [col for col in ehr_cols if col not in df.columns]
+        if missing_cols:
+            logger.warning(
+                "[%s] Tabular EHR columns missing from dataframe: %s",
+                split_name,
+                missing_cols,
             )
+            continue
+
+        data_ids = {str(patient_id) for patient_id in df[id_column].unique().to_list()}
+        unmatched = df.filter(
+            pl.any_horizontal([pl.col(col).is_null() for col in ehr_cols])
+        )
+        missing = sorted(
+            {str(patient_id) for patient_id in unmatched[id_column].unique().to_list()}
+        )
+        n_data = len(data_ids)
+        n_matched = n_data - len(missing)
+        _log_coverage_stats(
+            split_name,
+            n_matched,
+            n_data,
+            missing,
+            "tabular EHR",
+            id_column,
+            max_examples=max_examples,
+        )

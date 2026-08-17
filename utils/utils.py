@@ -7,7 +7,9 @@ Created on Sun Apr 19 11:30:20 2026
 """
 
 from omegaconf import OmegaConf
+import logging
 import os
+import sys
 
 def setup(cfg):
     if cfg.info.name is None:
@@ -20,5 +22,15 @@ def setup(cfg):
         os.makedirs(path + 'weights/', exist_ok=False)
         if os.path.exists(path.replace('Running', 'Evaluated')):
             raise Exception("Model experiment exists in Evaluated folder.")
-    OmegaConf.save(cfg, path + 'conf.yaml')        
+    OmegaConf.save(cfg, path + 'conf.yaml')
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            logging.FileHandler(path + "train.log", mode="w"),
+        ],
+        force=True,
+    )
     return path

@@ -17,7 +17,7 @@ from filelock import FileLock
 from sklearn.metrics import roc_auc_score
 
 from dataloader.dataloader import PreTermDataset, collate_fn, make_data_split
-from utils.model_utils import model_from_conf
+from utils.model_utils import model_from_conf, log_ehr_coverage
 from utils.metrics import get_metrics
 from bias_analysis.bias_analysis import run_analysis
 
@@ -42,6 +42,7 @@ def test_model(folder_path, move=True, batch_size=128):
                             collate_fn=collate_fn)
     
     model = model_from_conf(cfg)
+    log_ehr_coverage(cfg, model, [df], ["test"])
     
     dirs = os.listdir(folder_path + 'weights/')
     dirs.sort()
