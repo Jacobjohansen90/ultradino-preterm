@@ -88,7 +88,7 @@ logger.info(f"Final data contains {df['CPR_CHILD'].n_unique()} children - " + st
 
 #%%Calculate cervix length for remaining images
 
-# df = get_CL(df, cfg)
+df = get_CL(df, cfg)
 
 #%%Make train/test split and save the data
 
