@@ -60,12 +60,12 @@ imaging:
     - ['manufacturer', 'str']
     - ['manufacturer_model_name', 'str']
     - ['study_date','date']
-    - ['physical_delta_x', 'float']
-    - ['physical_delta_y', 'float']
-    - ['region_location_min_x0', 'float']
-    - ['region_location_max_x1', 'float']
-    - ['region_location_min_y0', 'float']
-    - ['region_location_max_y1', 'float']
+    - ['physical_delta_x', 'list']
+    - ['physical_delta_y', 'list']
+    - ['region_location_min_x0', 'list']
+    - ['region_location_max_x1', 'list']
+    - ['region_location_min_y0', 'list']
+    - ['region_location_max_y1', 'list']
 
 #Operators work as: column_1 [operator] column_2
 merge:

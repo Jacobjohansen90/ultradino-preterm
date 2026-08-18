@@ -13,6 +13,7 @@ from tqdm import tqdm
 import numpy as np
 from PIL import Image
 from concurrent.futures import ProcessPoolExecutor
+import json
 
 
 #%%Operator functions
@@ -54,9 +55,10 @@ type_map = {"str": pl.Utf8,
             "float": pl.Float64,
             "int": pl.Int64,
             "date": pl.Utf8,
-            "bool": pl.Boolean}
+            "bool": pl.Boolean,
+            "list": pl.List(pl.Float64)}
 
-#%%Utility functions
+#%%Utility functions for inclusion / exclusion
 
 def load_table(path, ignore_errors=False, has_header=True):
     if path.endswith(".csv"):
@@ -244,7 +246,7 @@ def condition(conditioned, df, criteria):
     
     return conditioned
 
-#%%High level functions
+#%%High level inclusion / exclusion functions
 
 custom_funcs = {'filter_df_internal': filter_df_internal,
                 'filter_df_external': filter_df_external,
@@ -334,6 +336,8 @@ def apply_inclusion_exclusion(df, cfg):
     
     return df, discards, conditioned
 
+#%%Cervical length functions
+
 def get_CL(df, cfg):
     required_cols = ['physical_delta_x', 'physical_delta_y', 
                      'region_location_min_x0', 'region_location_max_x1',
@@ -392,7 +396,9 @@ def calculate_CL(row, cervix_label=3):
     CL = np.sqrt(((right_x - left_x) * new_phys_delta_x)**2 + ((right_y - left_y) * new_phys_delta_y)**2)
     
     return CL
-    
+
+#%%SQL functions
+  
 def sqlite_extractor(cfg, cpr_mothers):
     conn = sqlite3.connect(cfg.paths.SQL_DB)
     cur = conn.cursor()
@@ -419,7 +425,7 @@ def sqlite_extractor(cfg, cpr_mothers):
                     pt.no_ocr_preprocessed_file_path,
                     pt.segmentation_path,
                     {dicom_select}
-                FROM (SELECT * FROM tmp_hashes LIMIT 10) t 
+                FROM tmp_hashes t 
                 LEFT JOIN cpr_hashes c
                     ON c.phair_hash = t.phair_hash
                 LEFT JOIN path_table pt
@@ -430,11 +436,19 @@ def sqlite_extractor(cfg, cpr_mothers):
 
     rows = []
     
+    list_columns = {column for column, dtype in metadata_dicom_variables if dtype == "float"}
+    
     #TODO: Currently we drop any flow image. Update this so they are instead marked
     for row in cur.fetchall():
-        print(row)
-        is_flow = any(s is not None and "[" in s for s in row)
-        rows.append((*row, is_flow))
+        row = list(row)
+
+        is_flow = any(isinstance(s, str) and "[" in s for s in row)
+
+        for i, (column, dtypes) in enumerate(metadata_dicom_variables, start=4):
+            if column in list_columns:
+                row[i] = to_list(row[i])
+                
+        rows.appens((*row, is_flow))
 
     df = pl.DataFrame(rows,
                       schema=schema,
@@ -449,3 +463,14 @@ def sqlite_extractor(cfg, cpr_mothers):
     conn.close()
 
     return df
+
+def to_list(x):
+    if x is None:
+        return None
+
+    if isinstance(x, str):
+        if x.startswith("["):
+            return [float(v) for v in json.loads(x)]
+        return [float(x)]
+
+    return [float(x)]
