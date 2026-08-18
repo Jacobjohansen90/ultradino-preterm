@@ -419,7 +419,7 @@ def sqlite_extractor(cfg, cpr_mothers):
                     pt.no_ocr_preprocessed_file_path,
                     pt.segmentation_path,
                     {dicom_select}
-                FROM tmp_hashes t
+                FROM (SELECT * FROM tmp_hashes LIMIT 10) t 
                 LEFT JOIN cpr_hashes c
                     ON c.phair_hash = t.phair_hash
                 LEFT JOIN path_table pt
@@ -431,7 +431,7 @@ def sqlite_extractor(cfg, cpr_mothers):
     rows = []
     
     #TODO: Currently we drop any flow image. Update this so they are instead marked
-    for row in cur.fetchmany(10):
+    for row in cur.fetchall():
         print(row)
         is_flow = any(s is not None and "[" in s for s in row)
         rows.append((*row, is_flow))
