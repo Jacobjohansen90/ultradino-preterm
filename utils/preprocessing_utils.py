@@ -438,7 +438,6 @@ def sqlite_extractor(cfg, cpr_mothers):
     
     list_columns = {column for column, dtype in metadata_dicom_variables if dtype == "float"}
     
-    #TODO: Currently we drop any flow image. Update this so they are instead marked
     for row in cur.fetchall():
         row = list(row)
 
@@ -448,7 +447,7 @@ def sqlite_extractor(cfg, cpr_mothers):
             if column in list_columns:
                 row[i] = to_list(row[i])
                 
-        rows.appens((*row, is_flow))
+        rows.append((*row, is_flow))
 
     df = pl.DataFrame(rows,
                       schema=schema,
