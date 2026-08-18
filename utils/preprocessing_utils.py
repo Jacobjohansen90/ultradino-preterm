@@ -431,7 +431,7 @@ def sqlite_extractor(cfg, cpr_mothers):
     rows = []
     
     #TODO: Currently we drop any flow image. Update this so they are instead marked
-    for row in cur.fetchall():
+    for row in cur.fetchmany(10):
         print(row)
         is_flow = any(s is not None and "[" in s for s in row)
         rows.append((*row, is_flow))
