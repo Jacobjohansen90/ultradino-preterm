@@ -61,7 +61,7 @@ df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds, infer_schema=False)
 df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
 del df_cervix_preds
 
-df_img.write_csv(cfg.paths.data_dir + 'data_dump/img_data.csv')
+df_img.write_parquet(cfg.paths.data_dir + 'data_dump/img_data.parquet')
 
 logger.info(f"Found {len(df_img)} images - " + str(datetime.now().strftime('%H:%M:%S')))
 logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
@@ -71,9 +71,7 @@ df = merge_population_and_image_df(df_img, df_pop, cfg)
 
 
 #%%Apply inclusion/exclusion criteria
-
 df, discards, conditioned = apply_inclusion_exclusion(df, cfg_incl_excl)
-df.write_csv(cfg.paths.data_dir + 'data_dump/filtered_population.csv')
 
 with open(cfg.paths.data_dir + 'logs/discards.json', "w") as file:
     json.dump(discards, file)
@@ -87,7 +85,6 @@ logger.info(f"Final data contains {df['CPR_MOTHER'].n_unique()} mothers - " + st
 logger.info(f"Final data contains {df['CPR_CHILD'].n_unique()} children - " + str(datetime.now().strftime('%H:%M:%S')))
 
 #%%Calculate cervix length for remaining images
-
 df = get_CL(df, cfg)
 
 #%%Make train/test split and save the data
