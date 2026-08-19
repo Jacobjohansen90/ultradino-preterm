@@ -442,9 +442,9 @@ def sqlite_extractor(cfg, cpr_mothers):
 
     rows = []
     
-    list_columns = {column for column, dtype in metadata_dicom_variables if dtype == "float"}
+    list_columns = {column for column, dtype in metadata_dicom_variables if dtype == "list"}
     
-    for row in cur.fetchall():
+    for row in tqdm(cur.fetchall(), desc='Preocessing Rows'):
         row = list(row)
 
         is_flow = any(isinstance(s, str) and "[" in s for s in row)
