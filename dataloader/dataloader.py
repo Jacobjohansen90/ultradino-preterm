@@ -42,10 +42,10 @@ class PreTermDataset(Dataset):
     
     def setup_transforms(self):
         if self.train:
-            self.transforms = A.Compose([A.RandomBrightnessContrast(brightness_limit=(-0.6, 0.6), contrast_limit=(-0.6, 0.6), p=0.5),
-                                         A.RandomGamma(gamma_limit=(40, 160), p=0.5),
-                                         A.GaussNoise(std_range=(0.1, 0.4), p=0.5),
-                                         A.GridDistortion(num_steps=5, distort_limit=(-0.6, 0.6), p=0.5),
+            self.transforms = A.Compose([A.RandomBrightnessContrast(brightness_limit=(-0.3, 0.3), contrast_limit=(-0.3, 0.3), p=0.5),
+                                         A.RandomGamma(gamma_limit=(80, 120), p=0.5),
+                                         A.GaussNoise(std_range=(0.05, 0.2), p=0.5),
+                                         A.GridDistortion(num_steps=5, distort_limit=(-0.3, 0.3), p=0.5),
                                          A.HorizontalFlip(p=0.5),                 
                                          A.Resize(height=self.img_size[0], width=self.img_size[1]),
                                          A.ToGray(p=1.0, num_output_channels=1),
