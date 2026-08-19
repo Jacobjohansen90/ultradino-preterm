@@ -363,15 +363,15 @@ def calculate_CL(row, cervix_label=3):
 
     img_path = row['no_ocr_preprocessed_file_path']    
     seg_path = row['segmentation_path']    
-    x0 = row['region_location_min_x0'][0] 
+    x0 = row['region_location_min_x0'][0]
     x1 = row['region_location_max_x1'][0]
-    y0 = row['region_location_min_y0'][0]  
+    y0 = row['region_location_min_y0'][0] 
     y1 = row['region_location_max_y1'][0]
     delta_x = row['physical_delta_x'][0]
     delta_y = row['physical_delta_y'][0]
     
     if any(v is None for v in [x0, x1, y0, y1, delta_x, delta_y, img_path, seg_path]):
-        return 0
+        return 0.0
         
     img = Image.open(img_path)
     seg = np.load(seg_path)['seg_logits']
@@ -391,7 +391,7 @@ def calculate_CL(row, cervix_label=3):
     ys, xs = np.where(seg == cervix_label)
     
     if len(xs) == 0:
-        return 0
+        return 0.0
     
     left_idx = xs.argmin()
     right_idx  = xs.argmax()
@@ -461,9 +461,10 @@ def sqlite_extractor(cfg, cpr_mothers):
                       strict=False)
 
 
+    df = df.drop_nulls(subset="file_path")
+
     date_cols = [col for col, dtype in metadata_dicom_variables if dtype == "date"]
     df = df.with_columns([pl.col(col).str.strptime(pl.Date, format="%Y%m%d", strict=False) for col in date_cols])
-    df = df.drop_nulls(subset="file_path")
 
     conn.close()
 
