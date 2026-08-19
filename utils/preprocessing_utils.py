@@ -363,12 +363,12 @@ def calculate_CL(row, cervix_label=3):
 
     img_path = row['no_ocr_preprocessed_file_path']    
     seg_path = row['segmentation_path']    
-    x0 = row['region_location_min_x0'] 
-    x1 = row['region_location_max_x1']
-    y0 = row['region_location_min_y0']     
-    y1 = row['region_location_max_y1']
-    delta_x = row['physical_delta_x']
-    delta_y = row['physical_delta_y']
+    x0 = row['region_location_min_x0'][0] 
+    x1 = row['region_location_max_x1'][0]
+    y0 = row['region_location_min_y0'][0]  
+    y1 = row['region_location_max_y1'][0]
+    delta_x = row['physical_delta_x'][0]
+    delta_y = row['physical_delta_y'][0]
     
     if any(v is None for v in [x0, x1, y0, y1, delta_x, delta_y, img_path, seg_path]):
         return 0
@@ -379,14 +379,14 @@ def calculate_CL(row, cervix_label=3):
     img_x, img_y = img.size
     seg_x, seg_y = seg.shape
     
-    x_crop = row['region_location_max_x1'] - row['region_location_min_x0'] 
+    x_crop = x1 - x0 
         
     ratio_x = (img_x - x_crop) / seg_x
-    new_phys_delta_x = row['physical_delta_x']*ratio_x
+    new_phys_delta_x =delta_x*ratio_x
     
-    y_crop = row['region_location_max_y1'] - row['region_location_min_y0']     
+    y_crop = y1 - y0 
     ratio_y = (img_y - y_crop) / seg_y
-    new_phys_delta_y = row['physical_delta_y']*ratio_y
+    new_phys_delta_y = delta_y*ratio_y
     
     ys, xs = np.where(seg == cervix_label)
     
@@ -444,7 +444,7 @@ def sqlite_extractor(cfg, cpr_mothers):
     
     list_columns = {column for column, dtype in metadata_dicom_variables if dtype == "list"}
     
-    for row in tqdm(cur.fetchall(), desc='Preocessing Rows'):
+    for row in tqdm(cur.fetchall(), desc='Processing Rows'):
         row = list(row)
 
         is_flow = any(isinstance(s, str) and "[" in s for s in row)
