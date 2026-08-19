@@ -362,11 +362,17 @@ def get_CL(df, cfg):
 def calculate_CL(row, cervix_label=3):
 
     img_path = row['no_ocr_preprocessed_file_path']    
-    seg_path = row['segmentation_path']
-
-    if img_path is None or seg_path is None:
-        return 0
+    seg_path = row['segmentation_path']    
+    x0 = row['region_location_min_x0'] 
+    x1 = row['region_location_max_x1']
+    y0 = row['region_location_min_y0']     
+    y1 = row['region_location_max_y1']
+    delta_x = row['physical_delta_x']
+    delta_y = row['physical_delta_y']
     
+    if any(v is None for v in [x0, x1, y0, y1, delta_x, delta_y, img_path, seg_path]):
+        return 0
+        
     img = Image.open(img_path)
     seg = np.load(seg_path)['seg_logits']
     

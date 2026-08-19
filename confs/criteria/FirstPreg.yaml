@@ -11,9 +11,9 @@ image_criteria:
     function: filter_df_internal
     conditions:
       - condition:
-        column: binary_cervix_pred
+        column: is_cervix
         operator: "=="
-        value: 1
+        value: "1"
 
   - name: No flow imgs
     action: exclude
