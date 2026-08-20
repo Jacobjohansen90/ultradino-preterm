@@ -14,6 +14,8 @@ import numpy as np
 from PIL import Image
 from concurrent.futures import ProcessPoolExecutor
 import json
+pl.Config.set_tbl_rows(-1)
+pl.Config.set_tbl_cols(-1)
 
 
 #%%Operator functions
@@ -318,28 +320,16 @@ def apply_inclusion_exclusion(df, cfg):
     cpr = 'e804ee60d82eff0e37290ec7b4e3527f43bbf04ba6e9243e76ad7d44f17ff7aa'
     mothers = df['CPR_MOTHER'].unique()
     children = df['CPR_CHILD'].unique()
-
     # for criteria in cfg.image_criteria:
     #     fn = custom_funcs[criteria.function]
     #     df = fn(df, criteria)
     #     discards, mothers, children = discard(discards, df, criteria, mothers, children)
     for criteria in cfg.image_criteria:
-
-        print(
-            criteria.name,
-            "before:", df.filter(pl.col("CPR_MOTHER") == cpr).height
-        )
-    
+        print(df.filter(pl.col("CPR_MOTHER") == cpr).select(["CPR_MOTHER", "CPR_CHILD", "GA_at_scan", "pred"]))
         df = custom_funcs[criteria.function](df, criteria)
+        print(df.filter(pl.col("CPR_MOTHER") == cpr).select(["CPR_MOTHER", "CPR_CHILD", "GA_at_scan", "pred"]))
     
-        print(
-            criteria.name,
-            "after:", df.filter(pl.col("CPR_MOTHER") == cpr).height
-        )
-    
-        discards, mothers, children = discard(
-            discards, df, criteria, mothers, children
-        )
+        discards, mothers, children = discard(discards, df, criteria, mothers, children)
     
     for criteria in cfg.population_criteria:       
         fn = custom_funcs[criteria.function]
