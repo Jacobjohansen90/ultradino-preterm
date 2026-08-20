@@ -397,14 +397,14 @@ def calculate_CL(row, cervix_label=3):
     img_x, img_y = img.size
     seg_x, seg_y = seg.shape
     
-    x_crop = x1 - x0 
+    x_crop = x0 + (img_x - x1)
         
     ratio_x = (img_x - x_crop) / seg_x
-    new_phys_delta_x = delta_x*ratio_x
+    new_phys_delta_x = delta_x*ratio_x*10
     
-    y_crop = y1 - y0 
+    y_crop = y0 + (img_y - y1) 
     ratio_y = (img_y - y_crop) / seg_y
-    new_phys_delta_y = delta_y*ratio_y
+    new_phys_delta_y = delta_y*ratio_y*10
     
     ys, xs = np.where(seg == cervix_label)
     
@@ -418,7 +418,7 @@ def calculate_CL(row, cervix_label=3):
     right_x, right_y = xs[right_idx], ys[right_idx]
     
     CL = np.sqrt(((right_x - left_x) * new_phys_delta_x)**2 + ((right_y - left_y) * new_phys_delta_y)**2)
-    
+        
     return CL
 
 #%%SQL functions

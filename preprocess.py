@@ -54,16 +54,15 @@ logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime
 
 #%%Extract info from database
 
-# df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
+df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
 
-# #Link cervix preds and image df
-# df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds, infer_schema=False)
-# df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
-# del df_cervix_preds
+#Link cervix preds and image df
+df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds, infer_schema=False)
+df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
+del df_cervix_preds
 
-# df_img.write_parquet(cfg.paths.data_dir + 'data_dump/img_data.parquet')
+df_img.write_parquet(cfg.paths.data_dir + 'data_dump/img_data.parquet')
 
-df_img = pl.read_parquet(cfg.paths.data_dir + 'data_dump/img_data.parquet')
 
 logger.info(f"Found {len(df_img)} images - " + str(datetime.now().strftime('%H:%M:%S')))
 logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
@@ -87,7 +86,7 @@ logger.info(f"Final data contains {df['CPR_MOTHER'].n_unique()} mothers - " + st
 logger.info(f"Final data contains {df['CPR_CHILD'].n_unique()} children - " + str(datetime.now().strftime('%H:%M:%S')))
 
 #%%Calculate cervix length for remaining images
-df = get_CL(df, cfg)
+# df = get_CL(df, cfg)
 
 #%%Make train/test split and save the data
 
