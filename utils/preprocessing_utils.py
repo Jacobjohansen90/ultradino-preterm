@@ -315,14 +315,32 @@ def make_train_test_split(df, cfg, cols_to_check=['CPR_MOTHER', 'CPR_CHILD', 'no
 def apply_inclusion_exclusion(df, cfg):
     discards = {}
     conditioned = {}
+    cpr = 'e804ee60d82eff0e37290ec7b4e3527f43bbf04ba6e9243e76ad7d44f17ff7aa'
     mothers = df['CPR_MOTHER'].unique()
     children = df['CPR_CHILD'].unique()
 
+    # for criteria in cfg.image_criteria:
+    #     fn = custom_funcs[criteria.function]
+    #     df = fn(df, criteria)
+    #     discards, mothers, children = discard(discards, df, criteria, mothers, children)
     for criteria in cfg.image_criteria:
-        fn = custom_funcs[criteria.function]
-        df = fn(df, criteria)
-        discards, mothers, children = discard(discards, df, criteria, mothers, children)
-        
+
+        print(
+            criteria.name,
+            "before:", df.filter(pl.col("CPR_MOTHER") == cpr).height
+        )
+    
+        df = custom_funcs[criteria.function](df, criteria)
+    
+        print(
+            criteria.name,
+            "after:", df.filter(pl.col("CPR_MOTHER") == cpr).height
+        )
+    
+        discards, mothers, children = discard(
+            discards, df, criteria, mothers, children
+        )
+    
     for criteria in cfg.population_criteria:       
         fn = custom_funcs[criteria.function]
         df = fn(df, criteria)
@@ -382,7 +400,7 @@ def calculate_CL(row, cervix_label=3):
     x_crop = x1 - x0 
         
     ratio_x = (img_x - x_crop) / seg_x
-    new_phys_delta_x =delta_x*ratio_x
+    new_phys_delta_x = delta_x*ratio_x
     
     y_crop = y1 - y0 
     ratio_y = (img_y - y_crop) / seg_y
