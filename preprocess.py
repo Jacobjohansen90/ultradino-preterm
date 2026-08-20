@@ -29,7 +29,7 @@ cfg.paths.data_dir += cfg_incl_excl.population_name + '/'
 cfg_incl_excl.paths = cfg.paths
 
 #Setup dirs
-Path(cfg.paths.data_dir).mkdir(exist_ok=False)
+Path(cfg.paths.data_dir).mkdir(exist_ok=True)
 Path(cfg.paths.data_dir + 'data_dump/').mkdir()
 Path(cfg.paths.data_dir + 'logs/').mkdir()
 Path(cfg.paths.data_dir + 'tables/').mkdir()
@@ -54,14 +54,16 @@ logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime
 
 #%%Extract info from database
 
-df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
+# df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
 
-#Link cervix preds and image df
-df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds, infer_schema=False)
-df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
-del df_cervix_preds
+# #Link cervix preds and image df
+# df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds, infer_schema=False)
+# df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
+# del df_cervix_preds
 
-df_img.write_parquet(cfg.paths.data_dir + 'data_dump/img_data.parquet')
+# df_img.write_parquet(cfg.paths.data_dir + 'data_dump/img_data.parquet')
+
+df_img = pl.read_parquet(cfg.paths.data_dir + 'data_dump/img_data.parquet')
 
 logger.info(f"Found {len(df_img)} images - " + str(datetime.now().strftime('%H:%M:%S')))
 logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
