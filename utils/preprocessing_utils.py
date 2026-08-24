@@ -317,20 +317,13 @@ def make_train_test_split(df, cfg, cols_to_check=['CPR_MOTHER', 'CPR_CHILD', 'no
 def apply_inclusion_exclusion(df, cfg):
     discards = {}
     conditioned = {}
-    cpr = 'e804ee60d82eff0e37290ec7b4e3527f43bbf04ba6e9243e76ad7d44f17ff7aa'
     mothers = df['CPR_MOTHER'].unique()
     children = df['CPR_CHILD'].unique()
-    # for criteria in cfg.image_criteria:
-    #     fn = custom_funcs[criteria.function]
-    #     df = fn(df, criteria)
-    #     discards, mothers, children = discard(discards, df, criteria, mothers, children)
     for criteria in cfg.image_criteria:
-        print(df.filter(pl.col("CPR_MOTHER") == cpr).select(["CPR_MOTHER", "CPR_CHILD", "GA_at_scan", "pred"]))
-        df = custom_funcs[criteria.function](df, criteria)
-        print(df.filter(pl.col("CPR_MOTHER") == cpr).select(["CPR_MOTHER", "CPR_CHILD", "GA_at_scan", "pred"]))
-    
+        fn = custom_funcs[criteria.function]
+        df = fn(df, criteria)
         discards, mothers, children = discard(discards, df, criteria, mothers, children)
-    
+
     for criteria in cfg.population_criteria:       
         fn = custom_funcs[criteria.function]
         df = fn(df, criteria)
