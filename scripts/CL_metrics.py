@@ -15,7 +15,37 @@ from sklearn.metrics import roc_auc_score
 
 path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/'
 
-df_full = pl.read_parquet(path + 'OnlyFirstPreg_v5/test.parquet')
+df1 = pl.read_parquet(path + 'OnlyFirstPreg_v5/test.parquet')
+df2 = pl.read_parquet(path + 'OnlyFirstPreg_v5/train.parquet')
+
+df_full = pl.concat([df1, df2])
+
+cl = pl.read_parquet(path + 'misc/CL_2009-2025.parquet')
+
+cl_avg = (df_full.filter(pl.col("CL") != 0).group_by("CPR_MOTHER").agg(pl.col("CL").mean().alias("CL_avg")))
+
+comparison = (cl_avg.join(cl.select(["CPR_MOTHER", "cervix_length"]), on="CPR_MOTHER",how="inner")
+              .filter(pl.col("cervix_length").is_not_null()))
+
+comparison = comparison.with_columns((pl.col("CL_avg") - pl.col("cervix_length")).alias("difference"),
+                                     (pl.col("CL_avg") - pl.col("cervix_length")).abs().alias("abs_difference"))
+
+print("Mean difference:", comparison["difference"].mean())
+print("Median difference:", comparison["difference"].median())
+print("Mean absolute difference:", comparison["abs_difference"].mean())
+print("SD difference:", comparison["difference"].std())
+
+comparison = comparison.with_columns(((pl.col("CL_avg") + pl.col("cervix_length")) / 2).alias("mean_measurement"),)
+
+mean_diff = comparison["difference"].mean()
+sd_diff = comparison["difference"].std()
+
+loa_upper = mean_diff + 1.96 * sd_diff
+loa_lower = mean_diff - 1.96 * sd_diff
+
+print("Bias:", mean_diff)
+print("95% limits of agreement:", loa_lower, "to", loa_upper)
+
 
 for prog in [True, False]:
     print(f"-----Progesterone included: {prog}-----")
