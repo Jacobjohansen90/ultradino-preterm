@@ -30,6 +30,11 @@ comparison = (cl_avg.join(cl.select(["CPR_MOTHER", "cervix_length"]), on="CPR_MO
 comparison = comparison.with_columns((pl.col("CL_avg") - pl.col("cervix_length")).alias("difference"),
                                      (pl.col("CL_avg") - pl.col("cervix_length")).abs().alias("abs_difference"))
 
+comparison = comparison.with_columns(((pl.col("CL_avg") - pl.col("cervix_length"))/ pl.col("cervix_length")* 100)
+                                     .alias("percent_difference"))
+
+print("Average % difference:", comparison["percent_difference"].mean())
+
 print("Mean difference:", comparison["difference"].mean())
 print("Median difference:", comparison["difference"].median())
 print("Mean absolute difference:", comparison["abs_difference"].mean())
