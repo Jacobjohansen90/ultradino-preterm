@@ -15,7 +15,7 @@ from sklearn.metrics import roc_auc_score
 
 path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/Data/'
 
-df_full = pl.read_parquet(path + 'AnyPreg_v5/test.parquet')
+df_full = pl.read_parquet(path + 'OnlyFirstPreg_v5/test.parquet')
 
 for prog in [True, False]:
     print(f"-----Progesterone included: {prog}-----")
