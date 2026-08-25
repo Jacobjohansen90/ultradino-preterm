@@ -101,11 +101,15 @@ for prog in [True, False]:
         sens_ci = np.percentile(boot_sens, [2.5, 97.5])
         cutoff_ci = np.percentile(boot_cutoff, [2.5, 97.5])
         
-        print(f"Original cutoff: {cl_cutoff:.4f}")
-        print(f"Bootstrap median: {np.median(boot_cutoff):.4f}")
-        print(f"Bootstrap mean: {np.mean(boot_cutoff):.4f}")
-        print(f"Bootstrap 2.5%: {np.percentile(boot_cutoff, 2.5):.4f}")
-        print(f"Bootstrap 97.5%: {np.percentile(boot_cutoff, 97.5):.4f}")
+        import matplotlib.pyplot as plt
+        
+        plt.hist(boot_cutoff, bins=50)
+        plt.axvline(cl_cutoff, linestyle="--")
+        plt.xlabel("CL cutoff")
+        plt.ylabel("Bootstrap count")
+        
+        plt.savefig(f"{path}/bootstrap_cl_{prog}_{cutoff}.png", dpi=300, bbox_inches="tight")
+        plt.close()
         
         print(f"\tSensitivity @ 85% spec: "f"{sens:.4f} (95% CI {sens_ci[0]:.4f}-{sens_ci[1]:.4f})")    
         print(f"\tCL cutoff: "f"{cl_cutoff:.4f} (95% CI {cutoff_ci[0]:.4f}-{cutoff_ci[1]:.4f})")
