@@ -30,7 +30,7 @@ for prog in [True, False]:
         df = df.filter(pl.col("CL").max().over("CPR_CHILD") != 0)
         n_after = df.select(pl.col("CPR_CHILD").n_unique()).item()
         
-        print("\tFraction removed due to CL = 0: ", (n_before - n_after) / n_before)
+        print(f"\tFraction removed due to CL = 0: {((n_before - n_after) / n_before):.4f}")
     
     
         #Do sens and spec at CL < 25
@@ -49,8 +49,8 @@ for prog in [True, False]:
         spec_ci = proportion_confint(tn, tn + fp, alpha=0.05, method="wilson")
         spec_ci = proportion_confint(tn, tn + fp, alpha=0.05, method="wilson")
             
-        print(f"\tSensitivity: {sensitivity:.4f} (95% CI {sens_ci[0]:.4f}-{sens_ci[1]:.4f})")
-        print(f"\tSpecificity: {specificity:.4f} (95% CI {spec_ci[0]:.4f}-{spec_ci[1]:.4f})")
+        print(f"\tSensitivity CL < 25: {sensitivity:.4f} (95% CI {sens_ci[0]:.4f}-{sens_ci[1]:.4f})")
+        print(f"\tSpecificity CL < 25: {specificity:.4f} (95% CI {spec_ci[0]:.4f}-{spec_ci[1]:.4f})")
     
         #Do sens@85spec        
         cl = df_child["CL"].to_numpy()
