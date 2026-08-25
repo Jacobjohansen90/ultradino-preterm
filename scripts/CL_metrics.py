@@ -53,18 +53,15 @@ for prog in [True, False]:
         print(f"\tSpecificity CL < 25: {specificity:.4f} (95% CI {spec_ci[0]:.4f}-{spec_ci[1]:.4f})")
     
         #Do sens@85spec        
+        # CL values
         cl = df_child["CL"].to_numpy()
         
-        # Original estimate
-        fpr, tpr, thresholds = roc_curve(y_true, -cl)
-        specificity = 1 - fpr
+        # Original cutoff: 85% specificity
+        cl_cutoff = np.quantile(cl[~y_true], 0.15)
         
-        valid = np.where(specificity >= 0.85)[0]
-        idx = valid[np.argmin(specificity[valid] - 0.85)]
-        
-        sens = tpr[idx]
-        cl_cutoff = -thresholds[idx]
-            
+        # Sensitivity at this cutoff
+        sens = np.mean(cl[y_true] < cl_cutoff)
+                
         # Bootstrap
         rng = np.random.default_rng()
         n_bootstrap = 2000
@@ -74,45 +71,31 @@ for prog in [True, False]:
         
         for _ in range(n_bootstrap):
         
-            # Resample children
             sample_idx = rng.integers(0, len(y_true), len(y_true))
         
             y_boot = y_true[sample_idx]
             cl_boot = cl[sample_idx]
         
-            # Need both classes present
+            # Need both classes
             if len(np.unique(y_boot)) < 2:
                 continue
         
-            fpr_b, tpr_b, thresholds_b = roc_curve(y_boot, -cl_boot)
-            specificity_b = 1 - fpr_b
+            # 85% specificity = 15th percentile among negatives
+            cl_cutoff_b = np.quantile(cl_boot[~y_boot], 0.15)
         
-            valid_b = np.where(specificity_b >= 0.85)[0]
+            # Sensitivity at that cutoff
+            sens_b = np.mean(cl_boot[y_boot] < cl_cutoff_b)
         
-            if len(valid_b) == 0:
-                continue
+            boot_cutoff.append(cl_cutoff_b)
+            boot_sens.append(sens_b)
         
-            idx_b = valid_b[np.argmin(specificity_b[valid_b] - 0.85)]
-        
-            boot_sens.append(tpr_b[idx_b])
-            boot_cutoff.append(-thresholds_b[idx_b])
-        
-        # 95% bootstrap CIs
+        # 95% CIs
         sens_ci = np.percentile(boot_sens, [2.5, 97.5])
         cutoff_ci = np.percentile(boot_cutoff, [2.5, 97.5])
         
-        import matplotlib.pyplot as plt
+        print(f"\tSensitivity @ 85% spec: {sens:.4f} (95% CI {sens_ci[0]:.4f}-{sens_ci[1]:.4f})")
         
-        plt.hist(boot_cutoff, bins=50)
-        plt.axvline(cl_cutoff, linestyle="--")
-        plt.xlabel("CL cutoff")
-        plt.ylabel("Bootstrap count")
-        
-        plt.savefig(f"{path}/bootstrap_cl_{prog}_{cutoff}.png", dpi=300, bbox_inches="tight")
-        plt.close()
-        
-        print(f"\tSensitivity @ 85% spec: "f"{sens:.4f} (95% CI {sens_ci[0]:.4f}-{sens_ci[1]:.4f})")    
-        print(f"\tCL cutoff: "f"{cl_cutoff:.4f} (95% CI {cutoff_ci[0]:.4f}-{cutoff_ci[1]:.4f})")
+        print(f"\tCL cutoff: {cl_cutoff:.4f} (95% CI {cutoff_ci[0]:.4f}-{cutoff_ci[1]:.4f})")
         
         #Get AUC and CI
         auc = roc_auc_score(y_true, -cl)
