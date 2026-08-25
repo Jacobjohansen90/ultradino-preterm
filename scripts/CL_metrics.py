@@ -27,6 +27,8 @@ cl_avg = (df_full.filter(pl.col("CL") != 0).group_by("CPR_MOTHER").agg(pl.col("C
 comparison = (cl_avg.join(cl.select(["CPR_MOTHER", "cervix_length"]), on="CPR_MOTHER",how="inner")
               .filter(pl.col("cervix_length").is_not_null()))
 
+comparison.filter(pl.col("cervix_length") == 0)
+
 comparison = comparison.with_columns((pl.col("CL_avg") - pl.col("cervix_length")).alias("difference"),
                                      (pl.col("CL_avg") - pl.col("cervix_length")).abs().alias("abs_difference"))
 
