@@ -126,9 +126,9 @@ class PreTermDataset(Dataset):
             data_temp = data.get(key) or 0.0
             #Correct physical deltas    
             if key == 'physical_delta_x':
-                data_temp = (w/self.img_size[0]) * data_temp
+                data_temp = (w/self.img_size[0]) * data_temp[0]
             elif key == 'physical_delta_y':
-                data_temp = (h/self.img_size[1]) * data_temp
+                data_temp = (h/self.img_size[1]) * data_temp[0]
             
             img_data.append(data_temp)
         
