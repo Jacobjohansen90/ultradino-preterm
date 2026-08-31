@@ -10,8 +10,8 @@ from omegaconf import ListConfig
 
 def get_loss(cfg):
     loss_map = {'bce': torch.nn.BCEWithLogitsLoss(reduction='none'),
-                'l2': torch.nn.MSELoss(reduction='mean'),
-                'l1': torch.nn.L1Loss(reduction='mean')}    
+                'l2': torch.nn.MSELoss(reduction='none'),
+                'l1': torch.nn.L1Loss(reduction='none')}    
     
     losses = {}
     
@@ -29,6 +29,11 @@ def get_loss(cfg):
     
     return losses
 
+def get_mask(labels, mask_value):
+    if mask_value is None:
+        return torch.ones_like(labels, dtype=torch.bool)
+    else:
+        return labels != mask_value
 
 def fix_labels(data, cutoff, label_smoothing_param):
     

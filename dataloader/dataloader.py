@@ -105,7 +105,7 @@ class PreTermDataset(Dataset):
             if var == 'GA_weeks':
                 aux_vars[var] = GA_weeks
             else:
-                aux_vars[var] = torch.tensor([float(data.get(var) or 28.0)])
+                aux_vars[var] = torch.tensor([float(data.get(var) or 0.0)])
 
         #Prepare remove_on_GA 
         remove_on_GA = torch.tensor([0], dtype=torch.bool)
@@ -174,43 +174,88 @@ def collate_fn(batch):
 
     return sample
    
+    
+class DataSplits:
+    def __init__(self, cfg, unique_column='CPR_MOTHER', folds=6):
+        self.data_path = cfg.data_path
+        self.unique_column=unique_column
+        self.folds=folds
+        self.oversample_ratio = cfg.data.oversample_ratio
+        self.highest_GA = max(cfg.tasks.preterm.cutoffs)
+        
+        train_df = pl.read_parquet(self.data_path + 'train.parquet')
+        test_df = pl.read_parquet(self.data_path + 'test.parquet')
+        
+        for col, cond in cfg.dataset.items():
+            if cond == 'remove':
+                train_df = train_df.filter(~pl.col(col))
+                test_df = test_df.filter(~pl.col(col))
+                
+        self.train_df = train_df
 
-def make_data_split(cfg, data_path, unique_column='CPR_MOTHER', training=True):
-    df = pl.read_parquet(data_path)
-    
-    for col, cond in cfg.dataset.items():
-        if cond == 'remove':
-            df = df.filter(~pl.col(col))
-    
-    if training:
-        unique_keys = df.select(unique_column).unique()
-    
-        rng = np.random.default_rng()
-        keys = unique_keys.to_series().to_list()
-        rng.shuffle(keys)
-    
-        split_idx = int(len(keys) * (1 - cfg.data.val_frac))
-        train_keys = keys[:split_idx]
-        val_keys = keys[split_idx:]
-    
-        train_df = df.filter(pl.col(unique_column).is_in(train_keys))
-        val_df = df.filter(pl.col(unique_column).is_in(val_keys))
+        # Get the lowest GA for each unique group
+        groups = (test_df.group_by(self.unique_column).agg(pl.col("GA").min().alias("GA"))
+                  .with_columns((pl.col("GA") // 7).alias("GA_week")))
+
+        # Distribute groups evenly within each GA week
+        groups = (groups.with_columns(pl.int_range(pl.len()).shuffle().over("GA_week").alias("fold"))
+                  .with_columns((pl.col("fold") % self.folds).alias("fold")).select([self.unique_column, "fold"]))
+
+        # Assign the group's fold to every row
+        self.test_df = test_df.join(groups, on=self.unique_column, how="left")
         
-        if cfg.data.oversample_ratio != 0:
-            df_1 = train_df.filter(pl.col('GA')//7 < max(cfg.tasks.preterm.cutoffs))
-            df_0 = train_df.filter(pl.col('GA')//7 >= max(cfg.tasks.preterm.cutoffs))
-            n1 = df_1.height
-            n0 = df_0.height
-            if n1 > n0:
-                df_0 = df_0.sample(n=n1*cfg.data.oversample_ratio, with_replacement=True)
-            else:
-                df_1 = df_1.sample(n=n0*cfg.data.oversample_ratio, with_replacement=True)
-            train_df = pl.concat([df_1, df_0])
-            train_df = train_df.sample(fraction=1.0, shuffle=True)
-        if (train_df[unique_column].is_in(val_df[unique_column].implode())).any():
-            raise Exception(f"Traindata and Validation data overlap on column {unique_column}")
+        #Check that self.unqiue_column is in exactly one fold
+        assert (self.test_df.group_by(self.unique_column).agg(pl.col("fold").n_unique().alias("n_folds"))
+                .filter(pl.col("n_folds") != 1).height == 0)
         
-        return train_df, val_df
-    
-    else:
-        return df
+        
+    def save_distributions(self, save_path):
+        fold_counts = (self.test_df.select(["CPR_CHILD", "GA", "fold"])
+                       .unique("CPR_CHILD").group_by("fold").agg(pl.len().alias("n"),
+                                                                 (pl.col("GA") // 7 < 32).sum().alias("GA < 32"),
+                                                                 (pl.col("GA") // 7 < 34).sum().alias("GA < 34"),
+                                                                 (pl.col("GA") // 7 < 37).sum().alias("GA < 37")).sort("fold"))
+        
+        fold_counts.write_csv(save_path + 'GA_distribution.csv')
+            
+        for fold in range(self.folds):
+            test_df_fold = self.test_df.filter(pl.col("fold") == fold)
+
+            test_df_fold.write_parquet(save_path + f"test_df_fold_{fold}.parquet")
+        
+        
+    def get_split(self, fold):
+        if not 0 <= fold < self.folds:
+            raise Exception(f"Data only contains {self.folds} folds")
+
+        test_df = self.test_df.filter(pl.col('fold') == fold)
+
+        train_df = self.test_df.filter(pl.col('fold') != fold)
+        train_df = pl.concat([self.train_df, train_df])
+
+        for col in ["CPR_MOTHER", "CPR_CHILD", "file_path"]:
+            overlap = (set(train_df[col].drop_nulls().unique()) & set(test_df[col].drop_nulls().unique()))
+            
+            if overlap:
+                raise ValueError(f"{col}: {len(overlap)} overlaps. \n Examples: {list(overlap)[:10]}")
+            
+        if self.oversample_ratio != 0:
+            positives = train_df.filter(pl.col("GA") // 7 < self.highest_GA)
+            negatives = train_df.filter(pl.col("GA") // 7 >= self.highest_GA)
+            
+            if len(negatives) > len(positives):
+                n_target = int(len(negatives) * self.oversample_ratio)
+                positives = positives.sample(n=n_target,
+                                             with_replacement=True)
+                
+            elif len(positives) > len(negatives):
+                n_target = int(len(positives) * self.oversample_ratio)
+                negatives = negatives.sample(n=n_target,
+                                             with_replacement=True)
+                
+            train_df = pl.concat([negatives, positives]) 
+        
+        
+            
+        return train_df, test_df
+        
