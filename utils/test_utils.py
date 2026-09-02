@@ -200,7 +200,6 @@ def test_model(folder_path, move=True, batch_size=128):
         shutil.move(folder_path, folder_path.replace('Running', 'Evaluated'))
     
   
-test_model("/projects/users/data/UCPH/DeepFetal/projects/preterm/training_runs/Evaluated/baseline_34/", move=False)        
 
     
     
