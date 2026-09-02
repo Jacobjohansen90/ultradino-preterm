@@ -285,7 +285,7 @@ def bootstrap_cl_sensitivity(
 
     n = len(y_true)
 
-    for _ in range(n_bootstrap):
+    for _ in tqdm(range(n_bootstrap), desc="Bootstrap"):
 
         idx = rng.integers(0, n, n)
 
@@ -676,61 +676,61 @@ print(
 # Save result
 # --------------------------------------------------------
 
-results.append({
-    "GA_cutoff": cutoff,
+print(f"\n{'=' * 60}")
+print(f"GA < {cutoff} weeks")
+print(f"{'=' * 60}")
 
-    "N": len(y_true),
-    "N_preterm": int(y_true.sum()),
-    "N_term": int((~y_true).sum()),
+print(f"N: {len(y_true)}")
+print(f"Preterm: {int(y_true.sum())}")
+print(f"Term: {int((~y_true).sum())}")
 
-    # Model
-    "model_sensitivity": model_sens,
-    "model_sens_ci_low": model_sens_ci[0],
-    "model_sens_ci_high": model_sens_ci[1],
+print("\nModel")
+print(
+    f"  Sensitivity: {model_sens:.3f} "
+    f"(95% CI {model_sens_ci[0]:.3f}-{model_sens_ci[1]:.3f})"
+)
+print(
+    f"  AUC: {model_auc:.3f} "
+    f"(95% CI {model_auc_ci[0]:.3f}-{model_auc_ci[1]:.3f})"
+)
 
-    "model_AUC": model_auc,
-    "model_AUC_ci_low": model_auc_ci[0],
-    "model_AUC_ci_high": model_auc_ci[1],
+print("\nCL < 25 mm")
+print(
+    f"  Sensitivity: {cl25_sens:.3f} "
+    f"(95% CI {cl25_sens_ci[0]:.3f}-{cl25_sens_ci[1]:.3f})"
+)
+print(
+    f"  Difference vs model: {difference_25:+.3f}"
+)
+print(
+    f"  P-value: {p_25:.4f}"
+)
 
-    # CL < 25
-    "CL25_sensitivity": cl25_sens,
-    "CL25_sens_ci_low": cl25_sens_ci[0],
-    "CL25_sens_ci_high": cl25_sens_ci[1],
+print("\nCL optimal")
+print(f"  Cutoff: {cl_optimal_cutoff:.2f} mm")
+print(
+    f"  Cutoff 95% CI: "
+    f"{opt_cutoff_boot_ci[0]:.2f}-{opt_cutoff_boot_ci[1]:.2f} mm"
+)
+print(
+    f"  Sensitivity: {cl_opt_sens:.3f} "
+    f"(95% CI {opt_sens_boot_ci[0]:.3f}-{opt_sens_boot_ci[1]:.3f})"
+)
+print(
+    f"  Difference vs model: {difference_opt:+.3f}"
+)
+print(
+    f"  P-value: {p_opt:.4f}"
+)
 
-    "CL25_difference_vs_model": difference_25,
-    "CL25_p_value": p_25,
-
-    # CL optimal
-    "CL_optimal_cutoff": cl_optimal_cutoff,
-    "CL_optimal_cutoff_ci_low": opt_cutoff_boot_ci[0],
-    "CL_optimal_cutoff_ci_high": opt_cutoff_boot_ci[1],
-
-    "CL_optimal_sensitivity": cl_opt_sens,
-    "CL_optimal_sens_ci_low": opt_sens_boot_ci[0],
-    "CL_optimal_sens_ci_high": opt_sens_boot_ci[1],
-
-    "CL_optimal_difference_vs_model": difference_opt,
-    "CL_optimal_p_value": p_opt,
-
-    # AUC comparison
-    "CL_AUC": cl_auc,
-    "CL_AUC_ci_low": cl_auc_ci[0],
-    "CL_AUC_ci_high": cl_auc_ci[1],
-
-    "AUC_difference_CL_vs_model": auc_difference,
-    "AUC_p_value_CL_vs_model": auc_p,
-})
-
-
-# ============================================================
-# Final table
-# ============================================================
-
-results_df = pl.DataFrame(results)
-
-print()
-print("=" * 70)
-print("FINAL RESULTS")
-print("=" * 70)
-
-print(results_df)
+print("\nAUC: Model vs continuous CL")
+print(
+    f"  CL AUC: {cl_auc:.3f} "
+    f"(95% CI {cl_auc_ci[0]:.3f}-{cl_auc_ci[1]:.3f})"
+)
+print(
+    f"  Difference CL vs model: {auc_difference:+.3f}"
+)
+print(
+    f"  P-value: {auc_p:.4f}"
+)
