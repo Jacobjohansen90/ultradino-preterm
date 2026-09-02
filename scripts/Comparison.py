@@ -11,6 +11,7 @@ import polars as pl
 from sklearn.metrics import confusion_matrix
 from statsmodels.stats.proportion import proportion_confint
 from sklearn.metrics import roc_auc_score
+from tqdm import tqdm
 
 path = '/projects/users/data/UCPH/DeepFetal/projects/preterm/'
 
@@ -26,7 +27,7 @@ PROG = True
 cutoff = 34
 
 N_BOOTSTRAP = 2000
-N_PERMUTATIONS = 10000
+N_PERMUTATIONS = 2000
 
 RANDOM_SEED = 42
 
@@ -223,7 +224,7 @@ def paired_permutation_test(
 
     permutation_differences = np.empty(n_permutations)
 
-    for i in range(n_permutations):
+    for i in tqdm(range(n_permutations), desc="AUC permutation test"):
 
         swap = rng.random(len(y_true)) < 0.5
 
@@ -323,6 +324,32 @@ def bootstrap_cl_sensitivity(
 
     return sens_ci, cutoff_ci
 
+def optimal_model_threshold(score, y_true, specificity_target=0.85):
+    score = np.asarray(score, dtype=float)
+    y_true = np.asarray(y_true, dtype=bool)
+
+    thresholds = np.sort(np.unique(score))
+
+    valid_thresholds = []
+
+    for threshold in thresholds:
+        y_pred = score >= threshold
+
+        tn, fp, fn, tp = confusion_matrix(
+            y_true,
+            y_pred,
+            labels=[False, True]
+        ).ravel()
+
+        if tn + fp == 0:
+            continue
+
+        specificity = tn / (tn + fp)
+
+        if specificity >= specificity_target:
+            valid_thresholds.append(threshold)
+
+    return min(valid_thresholds) if valid_thresholds else None
 
 # ============================================================
 # Analysis
@@ -358,7 +385,6 @@ df_sub = df_sub.filter(
 
 if df_sub.height == 0:
     print("No data")
-    continue
 
 # --------------------------------------------------------
 # Arrays
@@ -377,8 +403,13 @@ model_score = df_sub[MODEL_PRED].to_numpy()
 
 # Binary model prediction
 # Change threshold if your model uses a different threshold
-model_pred = model_score >= 0.5
+model_threshold = optimal_model_threshold(
+    model_score,
+    y_true,
+    specificity_target=0.85
+)
 
+model_pred = model_score >= model_threshold
 # CL score
 # Lower CL = higher preterm risk
 cl_score = -cl
