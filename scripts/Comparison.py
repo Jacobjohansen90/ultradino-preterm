@@ -21,7 +21,9 @@ preds = pl.read_csv(path + 'some_path')
 
 MODEL_PRED = "pred_avg"
 
-GA_CUTOFFS = [32, 34, 37]
+PROG = True
+
+cutoff = 34
 
 N_BOOTSTRAP = 2000
 N_PERMUTATIONS = 10000
@@ -47,6 +49,10 @@ df = (
     preds
     .join(cl, on="CPR_CHILD", how="inner")
 )
+
+
+if not PROG:
+    df = df.filter(pl.col("progesterone") == False)
 
 if df["CPR_CHILD"].n_unique() != df.height:
     raise ValueError("There are multiple prediction rows per CPR_CHILD")
@@ -325,364 +331,364 @@ def bootstrap_cl_sensitivity(
 results = []
 
 
-for cutoff in GA_CUTOFFS:
 
-    print()
-    print("=" * 70)
-    print(f"GA < {cutoff}")
-    print("=" * 70)
 
-    # --------------------------------------------------------
-    # Subgroup
-    # --------------------------------------------------------
+print()
+print("=" * 70)
+print(f"GA < {cutoff}")
+print("=" * 70)
 
-    # Exclude induced / C-section only among preterm births
-    df_sub = df.filter(
-        ~(
-            (pl.col("GA") // 7 < cutoff)
-            &
-            (pl.col("induced") | pl.col("c-section"))
-        )
+# --------------------------------------------------------
+# Subgroup
+# --------------------------------------------------------
+
+# Exclude induced / C-section only among preterm births
+df_sub = df.filter(
+    ~(
+        (pl.col("GA") // 7 < cutoff)
+        &
+        (pl.col("induced") | pl.col("c-section"))
+    )
+)
+
+# Remove children without a valid CL
+df_sub = df_sub.filter(
+    pl.col("CL").is_not_null()
+)
+
+if df_sub.height == 0:
+    print("No data")
+    continue
+
+# --------------------------------------------------------
+# Arrays
+# --------------------------------------------------------
+
+y_true = (
+    (df_sub["GA"] // 7 < cutoff)
+    .to_numpy()
+    .astype(bool)
+)
+
+cl = df_sub["CL"].to_numpy()
+
+# Continuous model prediction [0, 1]
+model_score = df_sub[MODEL_PRED].to_numpy()
+
+# Binary model prediction
+# Change threshold if your model uses a different threshold
+model_pred = model_score >= 0.5
+
+# CL score
+# Lower CL = higher preterm risk
+cl_score = -cl
+
+# CL < 25
+cl_25_pred = cl < 25
+
+# --------------------------------------------------------
+# Model performance
+# --------------------------------------------------------
+
+(
+    model_sens,
+    model_spec,
+    model_sens_ci,
+    model_spec_ci
+) = sensitivity_specificity(
+    y_true,
+    model_pred
+)
+
+print(
+    f"Model sensitivity: "
+    f"{model_sens:.4f} "
+    f"(95% CI {model_sens_ci[0]:.4f}-{model_sens_ci[1]:.4f})"
+)
+
+print(
+    f"Model specificity: "
+    f"{model_spec:.4f} "
+    f"(95% CI {model_spec_ci[0]:.4f}-{model_spec_ci[1]:.4f})"
+)
+
+# --------------------------------------------------------
+# AUC: Model vs CL
+# --------------------------------------------------------
+
+model_auc = roc_auc_score(
+    y_true,
+    model_score
+)
+
+cl_auc = roc_auc_score(
+    y_true,
+    cl_score
+)
+
+# Bootstrap AUC CIs
+rng = np.random.default_rng(RANDOM_SEED)
+
+model_boot_auc = []
+cl_boot_auc = []
+
+for _ in range(N_BOOTSTRAP):
+
+    idx = rng.integers(
+        0,
+        len(y_true),
+        len(y_true)
     )
 
-    # Remove children without a valid CL
-    df_sub = df_sub.filter(
-        pl.col("CL").is_not_null()
-    )
+    y_boot = y_true[idx]
 
-    if df_sub.height == 0:
-        print("No data")
+    # Need both classes
+    if len(np.unique(y_boot)) < 2:
         continue
 
-    # --------------------------------------------------------
-    # Arrays
-    # --------------------------------------------------------
-
-    y_true = (
-        (df_sub["GA"] // 7 < cutoff)
-        .to_numpy()
-        .astype(bool)
+    model_boot_auc.append(
+        roc_auc_score(
+            y_boot,
+            model_score[idx]
+        )
     )
 
-    cl = df_sub["CL"].to_numpy()
+    cl_boot_auc.append(
+        roc_auc_score(
+            y_boot,
+            cl_score[idx]
+        )
+    )
 
-    # Continuous model prediction [0, 1]
-    model_score = df_sub[MODEL_PRED].to_numpy()
+model_auc_ci = np.percentile(
+    model_boot_auc,
+    [2.5, 97.5]
+)
 
-    # Binary model prediction
-    # Change threshold if your model uses a different threshold
-    model_pred = model_score >= 0.5
+cl_auc_ci = np.percentile(
+    cl_boot_auc,
+    [2.5, 97.5]
+)
 
-    # CL score
-    # Lower CL = higher preterm risk
-    cl_score = -cl
+print()
+print(
+    f"Model AUC: "
+    f"{model_auc:.4f} "
+    f"(95% CI {model_auc_ci[0]:.4f}-{model_auc_ci[1]:.4f})"
+)
+
+print(
+    f"CL AUC: "
+    f"{cl_auc:.4f} "
+    f"(95% CI {cl_auc_ci[0]:.4f}-{cl_auc_ci[1]:.4f})"
+)
+
+# --------------------------------------------------------
+# Model vs CL AUC
+# --------------------------------------------------------
+
+(
+    _,
+    _,
+    auc_difference,
+    auc_p
+) = paired_auc_permutation_test(
+    y_true,
+    model_score,
+    cl_score,
+    n_permutations=N_PERMUTATIONS,
+    seed=RANDOM_SEED
+)
+
+print(
+    f"Model vs CL AUC: "
+    f"Δ AUC = {auc_difference:+.4f}, "
+    f"p = {auc_p:.4f}"
+)
+
+# --------------------------------------------------------
+# CL < 25
+# --------------------------------------------------------
+
+(
+    cl25_sens,
+    cl25_spec,
+    cl25_sens_ci,
+    cl25_spec_ci
+) = sensitivity_specificity(
+    y_true,
+    cl_25_pred
+)
+
+print()
+print(
+    f"CL < 25 sensitivity: "
+    f"{cl25_sens:.4f} "
+    f"(95% CI {cl25_sens_ci[0]:.4f}-{cl25_sens_ci[1]:.4f})"
+)
+
+print(
+    f"CL < 25 specificity: "
+    f"{cl25_spec:.4f} "
+    f"(95% CI {cl25_spec_ci[0]:.4f}-{cl25_spec_ci[1]:.4f})"
+)
+
+# --------------------------------------------------------
+# Model vs CL < 25
+# --------------------------------------------------------
+
+(
+    _,
+    _,
+    difference_25,
+    p_25
+) = paired_permutation_test(
+    y_true,
+    model_pred,
+    cl_25_pred,
+    n_permutations=N_PERMUTATIONS,
+    seed=RANDOM_SEED
+)
+
+print(
+    f"Model vs CL < 25: "
+    f"Δ sensitivity = {difference_25:+.4f}, "
+    f"p = {p_25:.4f}"
+)
+
+# --------------------------------------------------------
+# Find subgroup-specific optimal CL cutoff
+# --------------------------------------------------------
+
+cl_optimal_cutoff = optimal_cl_cutoff(
+    cl,
+    y_true,
+    specificity_target=0.85
+)
+
+cl_optimal_pred = cl < cl_optimal_cutoff
+
+(
+    cl_opt_sens,
+    cl_opt_spec,
+    cl_opt_sens_ci,
+    cl_opt_spec_ci
+) = sensitivity_specificity(
+    y_true,
+    cl_optimal_pred
+)
+
+print()
+print(
+    f"Optimal CL cutoff: "
+    f"{cl_optimal_cutoff:.4f}"
+)
+
+print(
+    f"Optimal CL sensitivity: "
+    f"{cl_opt_sens:.4f} "
+    f"(95% CI {cl_opt_sens_ci[0]:.4f}-{cl_opt_sens_ci[1]:.4f})"
+)
+
+print(
+    f"Optimal CL specificity: "
+    f"{cl_opt_spec:.4f} "
+    f"(95% CI {cl_opt_spec_ci[0]:.4f}-{cl_opt_spec_ci[1]:.4f})"
+)
+
+# Bootstrap CI for optimal cutoff and sensitivity
+(
+    opt_sens_boot_ci,
+    opt_cutoff_boot_ci
+) = bootstrap_cl_sensitivity(
+    cl,
+    y_true,
+    specificity_target=0.85,
+    n_bootstrap=N_BOOTSTRAP,
+    seed=RANDOM_SEED
+)
+
+print(
+    f"Optimal CL sensitivity bootstrap 95% CI: "
+    f"{opt_sens_boot_ci[0]:.4f}-{opt_sens_boot_ci[1]:.4f}"
+)
+
+print(
+    f"Optimal CL cutoff bootstrap 95% CI: "
+    f"{opt_cutoff_boot_ci[0]:.4f}-{opt_cutoff_boot_ci[1]:.4f}"
+)
+
+# --------------------------------------------------------
+# Model vs optimal CL
+# --------------------------------------------------------
+
+(
+    _,
+    _,
+    difference_opt,
+    p_opt
+) = paired_permutation_test(
+    y_true,
+    model_pred,
+    cl_optimal_pred,
+    n_permutations=N_PERMUTATIONS,
+    seed=RANDOM_SEED
+)
+
+print(
+    f"Model vs optimal CL: "
+    f"Δ sensitivity = {difference_opt:+.4f}, "
+    f"p = {p_opt:.4f}"
+)
+
+# --------------------------------------------------------
+# Save result
+# --------------------------------------------------------
+
+results.append({
+    "GA_cutoff": cutoff,
+
+    "N": len(y_true),
+    "N_preterm": int(y_true.sum()),
+    "N_term": int((~y_true).sum()),
+
+    # Model
+    "model_sensitivity": model_sens,
+    "model_sens_ci_low": model_sens_ci[0],
+    "model_sens_ci_high": model_sens_ci[1],
+
+    "model_AUC": model_auc,
+    "model_AUC_ci_low": model_auc_ci[0],
+    "model_AUC_ci_high": model_auc_ci[1],
 
     # CL < 25
-    cl_25_pred = cl < 25
+    "CL25_sensitivity": cl25_sens,
+    "CL25_sens_ci_low": cl25_sens_ci[0],
+    "CL25_sens_ci_high": cl25_sens_ci[1],
 
-    # --------------------------------------------------------
-    # Model performance
-    # --------------------------------------------------------
+    "CL25_difference_vs_model": difference_25,
+    "CL25_p_value": p_25,
 
-    (
-        model_sens,
-        model_spec,
-        model_sens_ci,
-        model_spec_ci
-    ) = sensitivity_specificity(
-        y_true,
-        model_pred
-    )
+    # CL optimal
+    "CL_optimal_cutoff": cl_optimal_cutoff,
+    "CL_optimal_cutoff_ci_low": opt_cutoff_boot_ci[0],
+    "CL_optimal_cutoff_ci_high": opt_cutoff_boot_ci[1],
 
-    print(
-        f"Model sensitivity: "
-        f"{model_sens:.4f} "
-        f"(95% CI {model_sens_ci[0]:.4f}-{model_sens_ci[1]:.4f})"
-    )
+    "CL_optimal_sensitivity": cl_opt_sens,
+    "CL_optimal_sens_ci_low": opt_sens_boot_ci[0],
+    "CL_optimal_sens_ci_high": opt_sens_boot_ci[1],
 
-    print(
-        f"Model specificity: "
-        f"{model_spec:.4f} "
-        f"(95% CI {model_spec_ci[0]:.4f}-{model_spec_ci[1]:.4f})"
-    )
+    "CL_optimal_difference_vs_model": difference_opt,
+    "CL_optimal_p_value": p_opt,
 
-    # --------------------------------------------------------
-    # AUC: Model vs CL
-    # --------------------------------------------------------
+    # AUC comparison
+    "CL_AUC": cl_auc,
+    "CL_AUC_ci_low": cl_auc_ci[0],
+    "CL_AUC_ci_high": cl_auc_ci[1],
 
-    model_auc = roc_auc_score(
-        y_true,
-        model_score
-    )
-
-    cl_auc = roc_auc_score(
-        y_true,
-        cl_score
-    )
-
-    # Bootstrap AUC CIs
-    rng = np.random.default_rng(RANDOM_SEED)
-
-    model_boot_auc = []
-    cl_boot_auc = []
-
-    for _ in range(N_BOOTSTRAP):
-
-        idx = rng.integers(
-            0,
-            len(y_true),
-            len(y_true)
-        )
-
-        y_boot = y_true[idx]
-
-        # Need both classes
-        if len(np.unique(y_boot)) < 2:
-            continue
-
-        model_boot_auc.append(
-            roc_auc_score(
-                y_boot,
-                model_score[idx]
-            )
-        )
-
-        cl_boot_auc.append(
-            roc_auc_score(
-                y_boot,
-                cl_score[idx]
-            )
-        )
-
-    model_auc_ci = np.percentile(
-        model_boot_auc,
-        [2.5, 97.5]
-    )
-
-    cl_auc_ci = np.percentile(
-        cl_boot_auc,
-        [2.5, 97.5]
-    )
-
-    print()
-    print(
-        f"Model AUC: "
-        f"{model_auc:.4f} "
-        f"(95% CI {model_auc_ci[0]:.4f}-{model_auc_ci[1]:.4f})"
-    )
-
-    print(
-        f"CL AUC: "
-        f"{cl_auc:.4f} "
-        f"(95% CI {cl_auc_ci[0]:.4f}-{cl_auc_ci[1]:.4f})"
-    )
-
-    # --------------------------------------------------------
-    # Model vs CL AUC
-    # --------------------------------------------------------
-
-    (
-        _,
-        _,
-        auc_difference,
-        auc_p
-    ) = paired_auc_permutation_test(
-        y_true,
-        model_score,
-        cl_score,
-        n_permutations=N_PERMUTATIONS,
-        seed=RANDOM_SEED
-    )
-
-    print(
-        f"Model vs CL AUC: "
-        f"Δ AUC = {auc_difference:+.4f}, "
-        f"p = {auc_p:.4f}"
-    )
-
-    # --------------------------------------------------------
-    # CL < 25
-    # --------------------------------------------------------
-
-    (
-        cl25_sens,
-        cl25_spec,
-        cl25_sens_ci,
-        cl25_spec_ci
-    ) = sensitivity_specificity(
-        y_true,
-        cl_25_pred
-    )
-
-    print()
-    print(
-        f"CL < 25 sensitivity: "
-        f"{cl25_sens:.4f} "
-        f"(95% CI {cl25_sens_ci[0]:.4f}-{cl25_sens_ci[1]:.4f})"
-    )
-
-    print(
-        f"CL < 25 specificity: "
-        f"{cl25_spec:.4f} "
-        f"(95% CI {cl25_spec_ci[0]:.4f}-{cl25_spec_ci[1]:.4f})"
-    )
-
-    # --------------------------------------------------------
-    # Model vs CL < 25
-    # --------------------------------------------------------
-
-    (
-        _,
-        _,
-        difference_25,
-        p_25
-    ) = paired_permutation_test(
-        y_true,
-        model_pred,
-        cl_25_pred,
-        n_permutations=N_PERMUTATIONS,
-        seed=RANDOM_SEED
-    )
-
-    print(
-        f"Model vs CL < 25: "
-        f"Δ sensitivity = {difference_25:+.4f}, "
-        f"p = {p_25:.4f}"
-    )
-
-    # --------------------------------------------------------
-    # Find subgroup-specific optimal CL cutoff
-    # --------------------------------------------------------
-
-    cl_optimal_cutoff = optimal_cl_cutoff(
-        cl,
-        y_true,
-        specificity_target=0.85
-    )
-
-    cl_optimal_pred = cl < cl_optimal_cutoff
-
-    (
-        cl_opt_sens,
-        cl_opt_spec,
-        cl_opt_sens_ci,
-        cl_opt_spec_ci
-    ) = sensitivity_specificity(
-        y_true,
-        cl_optimal_pred
-    )
-
-    print()
-    print(
-        f"Optimal CL cutoff: "
-        f"{cl_optimal_cutoff:.4f}"
-    )
-
-    print(
-        f"Optimal CL sensitivity: "
-        f"{cl_opt_sens:.4f} "
-        f"(95% CI {cl_opt_sens_ci[0]:.4f}-{cl_opt_sens_ci[1]:.4f})"
-    )
-
-    print(
-        f"Optimal CL specificity: "
-        f"{cl_opt_spec:.4f} "
-        f"(95% CI {cl_opt_spec_ci[0]:.4f}-{cl_opt_spec_ci[1]:.4f})"
-    )
-
-    # Bootstrap CI for optimal cutoff and sensitivity
-    (
-        opt_sens_boot_ci,
-        opt_cutoff_boot_ci
-    ) = bootstrap_cl_sensitivity(
-        cl,
-        y_true,
-        specificity_target=0.85,
-        n_bootstrap=N_BOOTSTRAP,
-        seed=RANDOM_SEED
-    )
-
-    print(
-        f"Optimal CL sensitivity bootstrap 95% CI: "
-        f"{opt_sens_boot_ci[0]:.4f}-{opt_sens_boot_ci[1]:.4f}"
-    )
-
-    print(
-        f"Optimal CL cutoff bootstrap 95% CI: "
-        f"{opt_cutoff_boot_ci[0]:.4f}-{opt_cutoff_boot_ci[1]:.4f}"
-    )
-
-    # --------------------------------------------------------
-    # Model vs optimal CL
-    # --------------------------------------------------------
-
-    (
-        _,
-        _,
-        difference_opt,
-        p_opt
-    ) = paired_permutation_test(
-        y_true,
-        model_pred,
-        cl_optimal_pred,
-        n_permutations=N_PERMUTATIONS,
-        seed=RANDOM_SEED
-    )
-
-    print(
-        f"Model vs optimal CL: "
-        f"Δ sensitivity = {difference_opt:+.4f}, "
-        f"p = {p_opt:.4f}"
-    )
-
-    # --------------------------------------------------------
-    # Save result
-    # --------------------------------------------------------
-
-    results.append({
-        "GA_cutoff": cutoff,
-
-        "N": len(y_true),
-        "N_preterm": int(y_true.sum()),
-        "N_term": int((~y_true).sum()),
-
-        # Model
-        "model_sensitivity": model_sens,
-        "model_sens_ci_low": model_sens_ci[0],
-        "model_sens_ci_high": model_sens_ci[1],
-
-        "model_AUC": model_auc,
-        "model_AUC_ci_low": model_auc_ci[0],
-        "model_AUC_ci_high": model_auc_ci[1],
-
-        # CL < 25
-        "CL25_sensitivity": cl25_sens,
-        "CL25_sens_ci_low": cl25_sens_ci[0],
-        "CL25_sens_ci_high": cl25_sens_ci[1],
-
-        "CL25_difference_vs_model": difference_25,
-        "CL25_p_value": p_25,
-
-        # CL optimal
-        "CL_optimal_cutoff": cl_optimal_cutoff,
-        "CL_optimal_cutoff_ci_low": opt_cutoff_boot_ci[0],
-        "CL_optimal_cutoff_ci_high": opt_cutoff_boot_ci[1],
-
-        "CL_optimal_sensitivity": cl_opt_sens,
-        "CL_optimal_sens_ci_low": opt_sens_boot_ci[0],
-        "CL_optimal_sens_ci_high": opt_sens_boot_ci[1],
-
-        "CL_optimal_difference_vs_model": difference_opt,
-        "CL_optimal_p_value": p_opt,
-
-        # AUC comparison
-        "CL_AUC": cl_auc,
-        "CL_AUC_ci_low": cl_auc_ci[0],
-        "CL_AUC_ci_high": cl_auc_ci[1],
-
-        "AUC_difference_CL_vs_model": auc_difference,
-        "AUC_p_value_CL_vs_model": auc_p,
-    })
+    "AUC_difference_CL_vs_model": auc_difference,
+    "AUC_p_value_CL_vs_model": auc_p,
+})
 
 
 # ============================================================
