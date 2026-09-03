@@ -17,7 +17,6 @@ from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
 from utils.loss_utils import get_loss, fix_labels, get_mask
 from utils.metrics import Metrics
 from utils.utils import setup
-from utils.test_utils import test_model
 
 import warnings
 warnings.filterwarnings("ignore", message="The image is already gray.")
@@ -137,4 +136,8 @@ for fold in range(cfg.data.folds):
             
             metrics.log_metrics(train_loss, test_loss)
             torch.save(model.state_dict(), f"{save_path}/weights/fold_{fold}/{str(epoch).zfill(3)}.pth")        
+
+    metrics.reset()
+
+metrics.log_final_metrics()
 

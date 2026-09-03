@@ -29,7 +29,8 @@ class PreTermDataset(Dataset):
         self.setup_transforms()
         self.ID_var = ID
         self.df = df
-
+        self.get_segs = 'seg_tasks' in cfg.tasks.keys()
+        
         self.aux_vars = []
         for task in cfg.tasks.aux_tasks:
             self.aux_vars.append(task.var)
@@ -38,6 +39,9 @@ class PreTermDataset(Dataset):
         for var, cond in cfg.dataset.items():
             if cond == 'remove_on_GA':
                 self.remove_on_GA_vars.append(var)
+        
+        if self.get_segs:
+            self.seg_labels = cfg.tasks.seg_tasks.foreground
         
     
     def setup_transforms(self):
@@ -106,6 +110,10 @@ class PreTermDataset(Dataset):
                 aux_vars[var] = GA_weeks
             else:
                 aux_vars[var] = torch.tensor([float(data.get(var) or 0.0)])
+                
+        #Get segmentations
+        if self.get_segs:
+            segmentation = 
 
         #Prepare remove_on_GA 
         remove_on_GA = torch.tensor([0], dtype=torch.bool)

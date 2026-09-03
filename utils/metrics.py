@@ -200,7 +200,7 @@ class Metrics():
         ax.set_xticks(x)
         ax.set_xticklabels(metric_names)
         ax.set_ylim(0, 1.05)
-        ax.set_ylabel("Performance")
+        ax.set_ylabel("Mean across folds")
         ax.set_xlabel("Metric")
         ax.set_title(f"GA {cutoff} weeks")
         ax.legend()
@@ -212,6 +212,10 @@ class Metrics():
         plt.close(fig)
                     
     def log_final_metrics(self, n_bootstrap=2000):
+
+        self.combine_predictions()
+        self.summarize_metrics()
+
         for cutoff in self.cutoffs:
             report = []
             path = self.pred_path / f"predictions_{cutoff}.parquet"
@@ -286,7 +290,8 @@ class Metrics():
             
             with open(self.metrics_path / f"GA_{cutoff}.txt", "w") as f:
                 f.write(report)
-
+            
+            self.plot_final_metrics(results, cutoff)
         
 def get_metrics(cfg, t=0.5):
     metrics = {'Recall': tm.Recall(task='binary', threshold=t).to(cfg.device.type),
