@@ -60,11 +60,7 @@ class Metrics():
             
             for agg in ['avg', 'max']:
                 preds = torch.tensor(patient_df[agg].to_numpy(), dtype=torch.float32)
-                for metric, name in self.metrics.items():
-                    print(self.metrics)
-                    print(metric)
-                    print(name)
-                    print()
+                for name, metric in self.metrics.items():
                     metric.reset()
                     output = metric(preds, labels)
                     
