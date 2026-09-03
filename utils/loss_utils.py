@@ -43,8 +43,8 @@ def get_loss(cfg):
             
             if isinstance(loss_name, (list, ListConfig)):
                 for name in loss_name:
-                    if loss_name not in loss_map:
-                        raise ValueError(f"Loss type '{loss_name}' not implemented")
+                    if name not in loss_map:
+                        raise ValueError(f"Loss type '{name}' not implemented")
                 
                 def combined_loss(input, target, names=loss_name):
                     result = 0
