@@ -15,7 +15,7 @@ def setup(cfg):
     
     path = f"/projects/users/data/UCPH/DeepFetal/projects/preterm/training_runs/Running/{cfg.info.name}/"
     if cfg.info.name != 'test':
-        if os.path.exists():
+        if os.path.exists(path):
             raise Exception("Model experiment exists in Running folder.")
         if os.path.exists(path.replace('Running', 'Evaluated')):
             raise Exception("Model experiment exists in Evaluated folder.")
