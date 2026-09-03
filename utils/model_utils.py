@@ -85,6 +85,10 @@ def model_from_conf(cfg, **kwargs):
                 preterm_heads[str(cutoff)] = FCPredictor(vit_model.embed_dim,
                                                          cfg.model.head.dropout,
                                                          cfg.model.head.layer_dims)
+        
+        elif task == 'segmentation':
+            continue
+        
         else:
             for aux_cfg in cfg.tasks[task]:
                 aux_task_heads[aux_cfg['var']] = FCPredictor(vit_model.embed_dim,

@@ -29,7 +29,7 @@ class PreTermDataset(Dataset):
         self.setup_transforms()
         self.ID_var = ID
         self.df = df
-        self.get_segs = 'seg_tasks' in cfg.tasks.keys()
+        self.get_segs = 'segmentation' in cfg.tasks.keys()
         
         self.aux_vars = []
         for task in cfg.tasks.aux_tasks:
@@ -41,7 +41,7 @@ class PreTermDataset(Dataset):
                 self.remove_on_GA_vars.append(var)
         
         if self.get_segs:
-            self.seg_labels = cfg.tasks.seg_tasks.foreground
+            self.seg_labels = cfg.tasks.segmentation.foreground
         
     
     def setup_transforms(self):
