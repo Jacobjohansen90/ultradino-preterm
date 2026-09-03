@@ -205,7 +205,7 @@ class DataSplits:
                 train_df = train_df.filter(~pl.col(col))
                 test_df = test_df.filter(~pl.col(col))
                 
-        self.train_df = train_df
+        self.train_df = train_df.with_columns(pl.lit("Train").alias("fold"))
 
         # Get the lowest GA for each unique group
         groups = (test_df.group_by(self.unique_column).agg(pl.col("GA").min().alias("GA"))
