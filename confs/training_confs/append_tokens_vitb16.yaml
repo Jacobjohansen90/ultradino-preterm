@@ -31,9 +31,9 @@ tasks:
       weights: 0.01
       mask_value: 0
   seg_tasks:
-    - loss: ['bce', 'dice']
-      weights: 0.25
-      foreground: [3]
+    loss: ['bce', 'dice']
+    weights: 0.25
+    foreground: [3]
 
 training:
   epochs: 60
