@@ -22,7 +22,7 @@ def setup(cfg):
             
     os.makedirs(path + 'misc', exist_ok=True)
     for i in range(cfg.data.folds):
-        os.makedirs(path + 'weight/fold_' + str(i), exist_ok=True)
+        os.makedirs(path + 'weights/fold_' + str(i), exist_ok=True)
         
     OmegaConf.save(cfg, path + 'conf.yaml')        
     return path

@@ -31,6 +31,8 @@ class Metrics():
         self.pred_path.mkdir(parents=True, exist_ok=True)
         self.metrics_path.mkdir(parents=True, exist_ok=True)
         self.plot_path.mkdir(parents=True, exist_ok=True)
+        
+        print(self.metrics)
 
     def update(self, outputs, data):
         for cutoff in self.cutoffs:

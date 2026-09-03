@@ -3,7 +3,7 @@ paths:
   misc_dir: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/
   data_dir: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/
   SQL_DB: /projects/users/data/UCPH/DeepFetal/ultrasound/tables/DeepFetal_image_database_250526.sqlite
-  holdout_csv: /projects/users/data/UCPH/DeepFetal/projects/common/splits/split_V4/test_split_0.15_2026-06-08.csv
+  holdout_csv: /projects/users/data/UCPH/DeepFetal/projects/common/splits/split_preterm_custom1/test_split_0_2026-08-24.csv
   segmentation_paths: /projects/users/data/UCPH/DeepFetal/ultrasound/segmentations/
   incl_excl_cfg: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/criteria/AnyPreg.yaml
   #incl_excl_cfg: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/criteria/FirstPreg.yaml
