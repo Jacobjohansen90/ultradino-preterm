@@ -19,6 +19,8 @@ def setup(cfg):
             raise Exception("Model experiment exists in Running folder.")
         if os.path.exists(path.replace('Running', 'Evaluated')):
             raise Exception("Model experiment exists in Evaluated folder.")
+            
+    os.makedirs(path + 'misc', exist_ok=True)
     for i in range(cfg.data.folds):
         os.makedirs(path + 'weight/fold_' + str(i), exist_ok=True)
         
