@@ -205,15 +205,23 @@ class DataSplits:
                 train_df = train_df.filter(~pl.col(col))
                 test_df = test_df.filter(~pl.col(col))
                 
-        self.train_df = train_df.with_columns(pl.lit(-1).alias("fold"))
+        self.train_df = train_df.with_columns(pl.lit(-1, dtype=pl.Int64).alias("fold"))
 
-        # Get the lowest GA for each unique group
+        # Group GA cutoffs
         groups = (test_df.group_by(self.unique_column).agg(pl.col("GA").min().alias("GA"))
-                  .with_columns((pl.col("GA") // 7).alias("GA_week")))
+                  .with_columns(pl.when(pl.col("GA") < 32 * 7).then(0)
+                                .when(pl.col("GA") < 34 * 7).then(1)
+                                .when(pl.col("GA") < 37 * 7).then(2)
+                                .otherwise(3)
+                                .alias("GA_group")))
+        
+        
 
-        # Distribute groups evenly within each GA week
-        groups = (groups.with_columns(pl.int_range(pl.len()).shuffle().over("GA_week").alias("fold"))
-                  .with_columns((pl.col("fold") % self.folds).alias("fold")).select([self.unique_column, "fold"]))
+        # Distribute groups evenly within each GA group
+        groups = (groups.with_columns(pl.int_range(pl.len())
+                                      .shuffle().over("GA_group").alias("fold"))
+                  .with_columns((pl.col("fold") % self.folds).alias("fold"))
+                  .select([self.unique_column, "fold"]))
 
         # Assign the group's fold to every row
         self.test_df = test_df.join(groups, on=self.unique_column, how="left")
