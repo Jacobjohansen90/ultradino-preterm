@@ -192,14 +192,13 @@ def collate_fn(batch):
     
 class DataSplits:
     def __init__(self, cfg, unique_column='CPR_MOTHER', folds=6):
-        self.data_path = cfg.data_path
         self.unique_column=unique_column
         self.folds=folds
         self.oversample_ratio = cfg.data.oversample_ratio
         self.highest_GA = max(cfg.tasks.preterm.cutoffs)
         
-        train_df = pl.read_parquet(self.data_path + 'train.parquet')
-        test_df = pl.read_parquet(self.data_path + 'test.parquet')
+        train_df = pl.read_parquet(cfg.data.train_path)
+        test_df = pl.read_parquet(cfg.data.test_path)
         
         for col, cond in cfg.dataset.items():
             if cond == 'remove':
