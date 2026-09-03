@@ -113,7 +113,11 @@ class PreTermDataset(Dataset):
                 
         #Get segmentations
         if self.get_segs:
-            segmentation = 
+            segmentation = np.load(data.get('segmentation_path'))['seg_logits']
+            segmentation = np.isin(segmentation, self.seg_labels)
+            segmentation = torch.from_numpy(segmentation)
+        else:
+            segmentation = torch.tensor([0])
 
         #Prepare remove_on_GA 
         remove_on_GA = torch.tensor([0], dtype=torch.bool)
@@ -156,7 +160,8 @@ class PreTermDataset(Dataset):
                 'ID': ID, 
                 'remove_on_GA': remove_on_GA,
                 'progesterone': progesterone,
-                'aux_vars': aux_vars}
+                'aux_vars': aux_vars,
+                'segmentation': segmentation}
 
 
 def collate_fn(batch):
@@ -164,6 +169,7 @@ def collate_fn(batch):
     img_data = torch.stack([sample['img_data'] for sample in batch])
     ehr_data = torch.stack([sample['ehr_data'] for sample in batch])
     GA_weeks = torch.stack([sample['GA_weeks'] for sample in batch])
+    segmentation = torch.stack([sample['segmentation'] for sample in batch])
     IDs = [sample['ID'] for sample in batch]
     remove_on_GA = torch.stack([sample['remove_on_GA'] for sample in batch])
     progesterone = [sample['progesterone'] for sample in batch]
@@ -178,7 +184,8 @@ def collate_fn(batch):
                "IDs": IDs,
                "remove_on_GA": remove_on_GA,
                'progesterone': progesterone,
-               'aux_vars': aux_vars}
+               'aux_vars': aux_vars,
+               'segmentation': segmentation}
 
     return sample
    
