@@ -86,6 +86,10 @@ for fold in range(cfg.data.folds):
                         labels = labels.to(cfg.device.type)
                         preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
                         loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
+
+                elif task == 'segmentation':
+                    continue
+
                 else:
                     for aux_task in cfg.tasks[task]:
                         var, loss_fn, weight, mask_value = aux_task.values()
@@ -123,7 +127,10 @@ for fold in range(cfg.data.folds):
                             labels = labels.to(cfg.device.type)     
                             preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
                             loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
-                    
+                 
+                    elif task == 'segmentation':
+                        continue   
+                  
                     else:
                         for aux_task in cfg.tasks[task]:
                             var, loss_fn, weight, mask_value = aux_task.values()
