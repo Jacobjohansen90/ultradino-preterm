@@ -60,7 +60,7 @@ merge_tables:
         include: [V_CPR]
       - table: ${paths.input_dir_SDS}/t_diag.csv
         merge_table: ${paths.input_dir_SDS}/t_adm.csv
-	table_link: V_RECNUM
+        table_link: V_RECNUM
         merge_table_link: K_RECNUM
         include: [V_CPR, D_UDDTO]
       - table: ${paths.input_dir_SP}/Population.csv
@@ -69,9 +69,9 @@ merge_tables:
         merge_table_link: BABY_CPR
         include: [Gestationsalder]
       - table: ${paths.input_dir_SP}/Mor - Fødselsresume - DEL 1.csv
-      	merge_table: ${paths.input_dir_SP}/Population.csv
-      	table_link: BABY_Fødsel_ID
-      	merge_table_link: BABY_Fødsel_ID
+        merge_table: ${paths.input_dir_SP}/Population.csv
+        table_link: BABY_Fødsel_ID
+        merge_table_link: BABY_Fødsel_ID
         include: [BABY_CPR]
       	
 imaging:
