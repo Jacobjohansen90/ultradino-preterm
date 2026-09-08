@@ -170,7 +170,7 @@ conditional_criteria:
         table: ${paths.data_dir}/tables/t_diag.csv
         match_on: V_CPR
         date_column: D_UDDTO
-	column: C_DIAG
+        column: C_DIAG
         operator: "=="
         value: "DO343C"
 
