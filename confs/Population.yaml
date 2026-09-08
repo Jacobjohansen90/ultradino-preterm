@@ -17,8 +17,6 @@ population:
   types: #By default column types are strings. If not listed here, it will be kept as string
     GA: int
     BIRTHDAY: date
-    AGE: int
-    BMI: float
   tables: 
     - table: ${paths.input_dir_SDS}/mfr.csv
       columns:
