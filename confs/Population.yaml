@@ -2,6 +2,7 @@ version: "dataset_v6"
 
 paths:
   input_dir_SDS: /storage/archive/UCPH/DeepFetal/SDS/registers_pseudonymized/
+  input_dir_SP: /storage/archine/UCPH/DeepFetal/SP/tables/
   misc_dir: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/
   data_dir: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/
   SQL_DB: /projects/users/data/UCPH/DeepFetal/ultrasound/tables/DeepFetal_image_database_250526.sqlite
