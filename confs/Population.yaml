@@ -73,7 +73,7 @@ merge_tables:
         table_link: BABY_Fødsel_ID
         merge_table_link: BABY_Fødsel_ID
         include: [BABY_CPR]
-      	
+
 imaging:
   metadata_dicom_variables: 
     - ['manufacturer', 'str']
