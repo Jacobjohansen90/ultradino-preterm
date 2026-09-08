@@ -14,6 +14,8 @@ import numpy as np
 from PIL import Image
 from concurrent.futures import ProcessPoolExecutor
 import json
+from scipy.spatial import ConvexHull
+
 pl.Config.set_tbl_rows(-1)
 pl.Config.set_tbl_cols(-1)
 
@@ -84,10 +86,10 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
         match_on = [condition.match_on] if isinstance(condition.match_on, str) else condition.match_on
         filter_on = [filter_on] if isinstance(filter_on, str) else filter_on
         df_temp = df_temp.with_columns(pl.col(src).alias(dst) for src, dst in zip(match_on, filter_on))
-        if action == 'exclude_birth':
-            filter_on = filter_on + ["cond_col"]
-            df_temp = df_temp.with_columns(pl.col(condition.conditional_column)
-                                           .str.strptime(pl.Date).alias('cond_col'))
+        if action in ['exclude_birth', 'include_birth']:
+            filter_on = filter_on + ["date_of_occurence"]
+            df_temp = df_temp.with_columns(pl.col(condition.date_column)
+                                           .str.strptime(pl.Date).alias('date_of_occurence'))
             
     if condition.condition is None:
         table = df_temp.select(filter_on)
@@ -97,31 +99,34 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
         table = table.join(df_temp.select(filter_on), on=filter_on, how="semi")
     return table
 
-def filter_df_internal(df, criteria):
-    table = None
-    for condition in criteria.conditions:
-        table = filter_conditions(df, condition, criteria.filter_on, table, criteria.action, external=False)
-    if criteria.action == 'include':
-        df = df.join(table, on=criteria.filter_on, how='semi')
-    elif criteria.action == 'exclude':
-        df = df.join(table, on=criteria.filter_on, how='anti')
-    return df
     
-def filter_df_external(df, criteria):
+def filter_df(df, criteria):
     table = None
-
     for condition in criteria.conditions:
-        df_temp = load_table(condition.table)
-        table = filter_conditions(df_temp, condition, criteria.filter_on, table, criteria.action)
+        if condition.table:
+            df_temp = load_table(condition.table)
+            table = filter_conditions(df_temp, condition, criteria.filter_on, table, criteria.action)
+        else:
+            table = filter_conditions(df, condition, criteria.filter_on, table, criteria.action, external=False)
 
     if criteria.action == 'include':
         df = df.join(table, on=criteria.filter_on, how='semi')
+   
     elif criteria.action == 'exclude':
         df = df.join(table, on=criteria.filter_on, how='anti')
+    
+    elif criteria.action == 'include_birth':
+        matches = (df.join(table, on=criteria.filter_on, how="left")
+                   .filter((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
+                           (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
+                   .select([criteria.filter_on, "BIRTHDAY"]))
+        
+        df = df.join(matches, on=[criteria.filter_on, "BIRTHDAY"], how="semi") 
+    
     elif criteria.action == 'exclude_birth':
         matches = (df.join(table, on=criteria.filter_on, how="left")
-                   .filter((pl.col("cond_col") <= pl.col("BIRTHDAY")) &
-                           (pl.col("cond_col") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
+                   .filter((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
+                           (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
                    .select([criteria.filter_on, "BIRTHDAY"]))
         
         df = df.join(matches, on=[criteria.filter_on, "BIRTHDAY"], how="anti") 
@@ -147,19 +152,36 @@ def mark_df_external(df, criteria):
             df = df.with_columns((pl.col(criteria.mark_name) | mark).alias(criteria.mark_name))
         else:
             df = df.with_columns(mark.alias(criteria.mark_name))
-   
-    elif criteria.action == 'exclude_birth':
-        mark = (df.join(table, on=criteria.filter_on, how="left")
-                .filter((pl.col("cond_col") <= pl.col("BIRTHDAY")) &
-                        (pl.col("cond_col") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
-                .select([criteria.filter_on, "BIRTHDAY"])).unique().with_columns(pl.lit(True).alias('mark'))
 
-        df = df.join(mark, on=[criteria.filter_on, 'BIRTHDAY'], how='left')
+    elif criteria.action == 'include_birth':
+        mark = (df.join(table, on=criteria.filter_on, how="left")
+                .filter((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
+                        (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
+                .select([criteria.filter_on, "BIRTHDAY"])).unique().with_columns(pl.lit(True).alias('mark'))
+        
+        df = df.join(mark, on=[criteria.filter_on, "BIRTHDAY"], how="left") 
 
         if criteria.mark_name in df.columns:
             df = df.with_columns((pl.col(criteria.mark_name) | pl.col('mark').fill_null(False)).alias(criteria.mark_name))
         else:
             df = df.with_columns((pl.col('mark').fill_null(False)).alias(criteria.mark_name))
+        
+        df = df.drop('mark')
+
+    
+    elif criteria.action == 'exclude_birth':
+        mark = (df.join(table, on=criteria.filter_on, how="left")
+                .filter((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
+                        (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
+                .select([criteria.filter_on, "BIRTHDAY"])).unique().with_columns(pl.lit(False).alias('mark'))
+
+        df = df.join(mark, on=[criteria.filter_on, 'BIRTHDAY'], how='left')
+
+        if criteria.mark_name in df.columns:
+            df = df.with_columns(pl.when(pl.col("mark").is_not_null())
+                                 .then(False).otherwise(pl.col(criteria.mark_name)).alias(criteria.mark_name))
+        else:
+            df = df.with_columns((pl.col('mark').fill_null(True)).alias(criteria.mark_name))
         
         df = df.drop('mark')
 
@@ -250,18 +272,19 @@ def condition(conditioned, df, criteria):
 
 #%%High level inclusion / exclusion functions
 
-custom_funcs = {'filter_df_internal': filter_df_internal,
-                'filter_df_external': filter_df_external,
+custom_funcs = {'filter_df': filter_df,
                 'mark_df_external': mark_df_external,
                 'find_close_births': find_close_births}
 
 
-def link_t_tables(cfg):
-    t_adm = pl.read_csv(cfg.t_tables.adm_table, infer_schema=False)
-    for table in cfg.t_tables.tables:
-        t_table = pl.read_csv(table.table, infer_schema=False)
-        t_table = t_table.join(t_adm.select(table.include + [cfg.t_tables.link]), left_on=table.table_link, right_on=cfg.t_tables.link)
-        t_table.write_csv(cfg.paths.data_dir + 'tables/' + table.table.split('/')[-1])
+def link_tables(cfg):
+    for merge in cfg.merge_tables.merges:
+        table = pl.read_csv(merge.table, infer_schema=False)
+        merge_table = pl.read_csv(merge.merge_table, infer_schema=False)
+        table = table.join(merge_table.select(merge.include + [merge.merge_link]), 
+                           left_on=merge.table_link, right_on=merge.merge_table_link)
+        
+        table.write_csv(cfg.paths.data_dir + 'tables/' + merge.table.split('/')[-1])
     
 
 def merge_population_tables(cfg, ignore_errors=False):
@@ -271,12 +294,18 @@ def merge_population_tables(cfg, ignore_errors=False):
         table = table.select(list(cfg_table.columns.values()))
         table = table.rename({v: k for k, v in cfg_table.columns.items()})
         table = table.select(sorted(table.columns))
-        df = df.vstack(table)
+        
+        if df.height > 0:
+            table = table.join(df.select(["CPR_MOTHER", "CPR_CHILD"]),
+                               on=["CPR_MOTHER", "CPR_CHILD"],
+                               how="anti")
+            
+        df = pl.concat([df, table])
         
     for name, t in cfg.population.types.items():
         df = df.with_columns(pl.col(name).cast(type_map[t], strict=False))
         if t == 'date':
-            df = df.with_columns(pl.col(name).str.strptime(pl.Date, strict=False))
+            df = df.with_columns(pl.col(name).str.slice(0,10).str.strptime(pl.Date, strict=False))
 
     return df
 
@@ -294,24 +323,16 @@ def merge_population_and_image_df(df_img, df_pop, cfg):
     return df
 
 
-def make_train_test_split(df, cfg, cols_to_check=['CPR_MOTHER', 'CPR_CHILD', 'no_ocr_preprocessed_file_path']):
-    
+def make_train_test_split(df, cfg, split):
+
     df_holdout = pl.read_csv(cfg.paths.holdout_csv)
-        
-    df_train = df.join(df_holdout, left_on="CPR_MOTHER", right_on="CPR_MOR", how="anti")
-    df_test = df.join(df_holdout, left_on="CPR_MOTHER", right_on="CPR_MOR", how="semi")
-    
-    for col in cols_to_check:
-        overlap = (df_train.select(col).unique().join(df_test.select(col).unique(),
-                                                      on=col,
-                                                      how="inner")
-                   .get_column(col).to_list())  
-        
-        if len(overlap) > 0:
-            print(overlap)
-            df_test = df_test.filter(~pl.col(col).is_in(overlap))
-    
-    return df_train, df_test
+    if split == 'test':        
+        df = df.join(df_holdout, left_on="CPR_MOTHER", right_on="CPR_MOR", how="semi")
+    elif split == 'train':
+        df = df.join(df_holdout, left_on="CPR_MOTHER", right_on="CPR_MOR", how="anti")
+    else:
+        raise Exception(f"Split {split} not understood.")
+    return df
 
 
 def apply_inclusion_exclusion(df, cfg):
@@ -389,19 +410,23 @@ def calculate_CL(row, cervix_label=3):
     ratio_y = (img_y - y_crop) / seg_y
     new_phys_delta_y = delta_y*ratio_y*10
     
-    ys, xs = np.where(seg == cervix_label)
-    
-    if len(xs) == 0:
+    xs, ys = np.where(seg == cervix_label)
+
+    if len(xs) < 2:
         return 0.0
     
-    left_idx = xs.argmin()
-    right_idx  = xs.argmax()
-    
-    left_x, left_y = xs[left_idx], ys[left_idx]
-    right_x, right_y = xs[right_idx], ys[right_idx]
-    
-    CL = np.sqrt(((right_x - left_x) * new_phys_delta_x)**2 + ((right_y - left_y) * new_phys_delta_y)**2)
-        
+    if xs.max() - xs.min() <= ys.max() - ys.min():
+        return 0.0
+
+    coords = np.column_stack([xs * new_phys_delta_x,
+                              ys * new_phys_delta_y])
+
+    hull = ConvexHull(coords)
+    hull_coords = coords[hull.vertices]
+
+    diff = hull_coords[:, None, :] - hull_coords[None, :, :]
+    CL = np.sqrt((diff ** 2).sum(axis=2)).max()
+            
     return CL
 
 #%%SQL functions
