@@ -281,7 +281,7 @@ def link_tables(cfg):
     for merge in cfg.merge_tables.merges:
         table = pl.read_csv(merge.table, infer_schema=False)
         merge_table = pl.read_csv(merge.merge_table, infer_schema=False)
-        table = table.join(merge_table.select(merge.include + [merge.merge_link]), 
+        table = table.join(merge_table.select(merge.include + [merge.merge_table_link]), 
                            left_on=merge.table_link, right_on=merge.merge_table_link)
         
         table.write_csv(cfg.paths.data_dir + 'tables/' + merge.table.split('/')[-1])
