@@ -47,7 +47,7 @@ merge_tables:
         merge_table: ${paths.input_dir_SDS}/t_adm.csv
         table_link: V_RECNUM
         merge_table_link: K_RECNUM
-	include: [V_CPR]
+        include: [V_CPR]
       - table: ${paths.input_dir_SDS}/t_afl.csv
         merge_table: ${paths.input_dir_SDS}/t_adm.csv
         table_link: V_RECNUM
