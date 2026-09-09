@@ -141,7 +141,6 @@ def filter_df(df, criteria):
 def mark_df_external(df, criteria):
     table = None
     for condition in criteria.conditions:
-        print(condition)
         df_temp = load_table(condition.table)
         table = filter_conditions(df_temp, condition, criteria.filter_on, table, criteria.action)
            
@@ -429,10 +428,8 @@ def calculate_CL(row, cervix_label=3):
     coords = np.column_stack([xs * new_phys_delta_x,
                               ys * new_phys_delta_y])
 
-    hull = ConvexHull(coords, qhull_options="QJ") #Allows for flat simplex
-    hull_coords = coords[hull.vertices]
 
-    diff = hull_coords[:, None, :] - hull_coords[None, :, :]
+    diff = coords[:, None, :] - coords[None, :, :]
     CL = np.sqrt((diff ** 2).sum(axis=2)).max()
             
     return CL
