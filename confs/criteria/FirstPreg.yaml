@@ -497,6 +497,7 @@ conditional_criteria:
     #Progesterone
   - name: Progesterone
     function: mark_df
+    default: no_mark
     mark_name: progesterone
     actions:
     - action: include_birth

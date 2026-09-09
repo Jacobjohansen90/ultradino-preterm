@@ -105,13 +105,11 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
     
 def filter_df(df, criteria):
     df = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("remove"))
-    print(criteria.name)
     for action in criteria.actions: 
         table = None
         filter_on = [action.filter_on] if isinstance(action.filter_on, str) else action.filter_on
         for condition in action.conditions:
             if 'table' in condition:
-                print(condition.table)
                 df_temp = load_table(condition.table)
                 table = filter_conditions(df_temp, condition, filter_on, table, action.action)
             else:
@@ -185,7 +183,6 @@ def filter_df(df, criteria):
 
 def mark_df(df, criteria):
     df = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias(criteria.mark_name))
-    print(criteria.name)
     for action in criteria.actions:
         table = None
         filter_on = [action.filter_on] if isinstance(action.filter_on, str) else action.filter_on
