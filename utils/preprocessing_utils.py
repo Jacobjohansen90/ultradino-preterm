@@ -89,7 +89,7 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
         if action in ['exclude_birth', 'include_birth']:
             filter_on = filter_on + ["date_of_occurence"]
             df_temp = df_temp.with_columns(pl.col(condition.date_column)
-                                           .str.strptime(pl.Date).alias('date_of_occurence'))
+                                           .str.slice(0,10).strptime(pl.Date).alias('date_of_occurence'))
             
     if condition.condition is None:
         table = df_temp.select(filter_on)
