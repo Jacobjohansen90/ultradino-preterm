@@ -175,7 +175,7 @@ population_criteria:
         date_column: Kontakt_dato
         column: Para
         operator: ">="
-        value: "2"
+        value: 2
 
 
     #Non-twins
