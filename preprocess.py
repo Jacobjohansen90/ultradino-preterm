@@ -80,7 +80,6 @@ for incl_excl in['test', 'train']:
     cfg_incl_excl.paths = cfg.paths
 
     df_temp, discards, conditioned = apply_inclusion_exclusion(df_temp, cfg_incl_excl)
-    print(df_temp.height)
     with open(cfg.paths.data_dir + f"logs/{incl_excl}_discards.json", "w") as file:
         json.dump(discards, file)
     
@@ -88,18 +87,20 @@ for incl_excl in['test', 'train']:
         json.dump(conditioned, file)
     
     
-    logger.info(f"{incl_excl} data contains {len(df_temp)} images - " + str(datetime.now().strftime('%H:%M:%S')))
-    logger.info(f"{incl_excl} data contains {df_temp['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
-    logger.info(f"{incl_excl} data contains {df_temp['CPR_CHILD'].n_unique()} children - " + str(datetime.now().strftime('%H:%M:%S')))
 
-    #%%Calculate cervix length for remaining images
+    #Calculate cervix length for remaining images
     df_temp = get_CL(df_temp, cfg)
 
-    #%%Make train/test split and save the data
+    #Make train/test split and save the data
 
     df_temp = make_train_test_split(df_temp, cfg, split=incl_excl)
     df_temp.write_parquet(cfg.paths.data_dir + f"{incl_excl}.parquet")
 
+    logger.info(f"{incl_excl} data contains {len(df_temp)} images - " + str(datetime.now().strftime('%H:%M:%S')))
+    logger.info(f"{incl_excl} data contains {df_temp['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
+    logger.info(f"{incl_excl} data contains {df_temp['CPR_CHILD'].n_unique()} children - " + str(datetime.now().strftime('%H:%M:%S')))
+
+    
 df_train = pl.read_parquet(cfg.paths.data_dir + 'train.parquet')
 df_test = pl.read_parquet(cfg.paths.data_dir + 'test.parquet')
 
