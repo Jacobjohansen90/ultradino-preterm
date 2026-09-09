@@ -132,6 +132,17 @@ def filter_df(df, criteria):
             
             df_temp = df.join(matches, on=[action.filter_on, "BIRTHDAY"], how="semi") 
         
+        elif action.action == 'include_birth_strict':
+            joined = (df.join(table, on=action.filter_on, how="left")
+                      .with_columns(((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
+                                     (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
+                                    .alias("_valid")))           
+        
+            matches = (joined.group_by([action.filter_on, "BIRTHDAY"]).agg(pl.col("_valid").all())
+                       .filter(pl.col("_valid")).select([action.filter_on, "BIRTHDAY"]))
+            
+            df_temp = df.join(matches, on=[action.filter_on, "BIRTHDAY"], how="semi") 
+        
         elif action.action == 'exclude_birth':
             matches = (df.join(table, on=action.filter_on, how="left")
                        .filter(pl.col("invalid_date") |
@@ -186,7 +197,7 @@ def mark_df(df, criteria):
                 df = df.with_columns((pl.col('mark').fill_null(False)).alias(criteria.mark_name))
 
             df = df.drop('mark')
-                    
+
         elif action.action == 'exclude_birth':
             print("WARNING - Exclude_birth for mark_df is not properbly implemented and tested. Logic may be inconsistent")
             mark = (df.join(table, on=action.filter_on, how="left")

@@ -160,7 +160,7 @@ population_criteria:
           column: Paritet
           operator: "!="
           value: "1"
-    - action: exclude_birth
+    - action: include_birth_strict
       filter_on: CPR_MOTHER
       conditions:
         - condition: 
@@ -168,7 +168,7 @@ population_criteria:
           match_on: MOR_CPR
           date_column: Kontakt dato
           column: Para
-          operator: ">="
+          operator: "<"
           value: 2
     - action: include_birth
       filter_on: CPR_MOTHER
