@@ -22,25 +22,25 @@ pl.Config.set_tbl_cols(-1)
 
 #%%Operator functions
 
-def unique(df, column, value):
+def unique(column, value):
     if value is True:
         return pl.len().over(column) == 1
     elif value is False:
         return pl.len().over(column) != 1
 
 
-def in_list(df, column, value):
+def in_list(column, value):
     return pl.col(column).is_in(value)
 
 
-def starts_with(df, column, value):
+def starts_with(column, value):
     if isinstance(value, (list, ListConfig)):
         return pl.any_horizontal([pl.col(column).str.starts_with(v) for v in value])
     else:
         return pl.col(column).str.starts_with(value)
 
 
-def is_null(df, column, value):
+def is_null(column, value):
     return pl.col(column).is_null()
 
 
@@ -76,7 +76,6 @@ def load_table(path, ignore_errors=False, has_header=True):
 
 def filter_conditions(df, condition, filter_on, table, action, external=True):
     df_temp = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("_matching"))    
-    print(condition)
     df_temp = df_temp.with_columns(OPS[condition.operator](pl.col(condition.column), condition.value).alias("_matching"))
     filter_on = [filter_on] if isinstance(filter_on, str) else filter_on
     if external:
