@@ -75,8 +75,14 @@ def load_table(path, ignore_errors=False, has_header=True):
 
 
 def filter_conditions(df, condition, filter_on, table, action, external=True):
-    df_temp = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("_matching"))    
-    df_temp = df_temp.with_columns(OPS[condition.operator](pl.col(condition.column), condition.value).alias("_matching"))
+    df_temp = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("_matching"))   
+    if condition.operator in [">", "<", ">=", "<=", "-", "+"]:
+        df_temp = df_temp.with_columns(OPS[condition.operator](pl.col(condition.column).cast(pl.Float32, strict=False), 
+                                                               condition.value).alias("_matching"))
+    else:
+        df_temp = df_temp.with_columns(OPS[condition.operator](pl.col(condition.column), condition.value).alias("_matching"))
+        
+        
     filter_on = [filter_on] if isinstance(filter_on, str) else filter_on
     if external:
         match_on = [condition.match_on] if isinstance(condition.match_on, str) else condition.match_on
@@ -112,32 +118,17 @@ def filter_df(df, criteria):
                 table = filter_conditions(df, condition, action.filter_on, table, action.action, external=False)
     
         if action.action == 'include':
-            matches = (
-                table
-                .filter(pl.col("_matching") == True)
-                .select(action.filter_on)
-                .to_struct()
-            )
+            matches = (table.filter(pl.col("_matching") == True).select(action.filter_on).to_struct())
         
-            df = df.with_columns(
-                pl.when(pl.col("remove") == True)
-                .then(True)
-                .when(pl.struct(action.filter_on).is_in(matches))
-                .then(False)
-                .otherwise(pl.col("remove"))
-                .alias("remove")
-            )
-    
-        # if action.action == 'include':
-        #     print(df.columns)
-        #     df = df.with_columns(pl.when(pl.col("remove") == True).then(True)
-        #                          .when(pl.col(action.filter_on).is_in(table.filter(pl.col('_matching') == True)[action.filter_on]))
-        #                          .then(False).otherwise(pl.col("remove")).alias("remove"))
+            df = df.with_columns(pl.when(pl.col("remove") == True).then(True)
+                                 .when(pl.struct(action.filter_on).is_in(matches)).then(False)
+                                 .otherwise(pl.col("remove")).alias("remove"))
        
         elif action.action == 'exclude':
-            df = df.with_columns(pl.when(pl.col(action.filter_on).is_in(table.filter(pl.col("_matching") == True)[action.filter_on]))
-                                 .then(True).otherwise(pl.col("remove")).alias("remove"))
-        
+            matches = (table.filter(pl.col("_matching") == True).select(action.filter_on).to_struct())
+
+            df = df.with_columns(pl.when(pl.struct(action.filter_on).is_in(matches)).then(True)
+                                 .otherwise(pl.col("remove")).alias("remove"))
         
         elif action.action == 'include_birth':
             if getattr(action, "strict", False):
