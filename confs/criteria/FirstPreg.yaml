@@ -37,7 +37,7 @@ image_criteria:
         - condition:
           column: no_ocr_preprocessed_file_path
           operator: "is_null"
-          value: 
+          value: None
 
   - name: GA at scan
     function: filter_df
