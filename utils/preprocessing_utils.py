@@ -93,7 +93,7 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
         if action in ['exclude_birth', 'include_birth']:
             filter_on = filter_on + ["date_of_occurence"]
             df_temp = df_temp.with_columns(pl.col(condition.date_column)
-                                           .str.slice(0,10).str.strptime(pl.Date).alias('date_of_occurence'))
+                                           .str.slice(0,10).str.strptime(pl.Date, strict=False).alias('date_of_occurence'))
             
     if condition.condition is None:
         table = df_temp.select(filter_on)
@@ -129,7 +129,8 @@ def filter_df(df, criteria):
     
     elif criteria.action == 'exclude_birth':
         matches = (df.join(table, on=criteria.filter_on, how="left")
-                   .filter((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
+                   .filter(pl.col("date_of_occurence").is_null() |
+                           (pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
                            (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
                    .select([criteria.filter_on, "BIRTHDAY"]))
         
@@ -176,7 +177,8 @@ def mark_df_external(df, criteria):
     
     elif criteria.action == 'exclude_birth':
         mark = (df.join(table, on=criteria.filter_on, how="left")
-                .filter((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
+                .filter(pl.col("date_of_occurence").is_null() |
+                        (pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
                         (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
                 .select([criteria.filter_on, "BIRTHDAY"])).unique().with_columns(pl.lit(False).alias('mark'))
 
