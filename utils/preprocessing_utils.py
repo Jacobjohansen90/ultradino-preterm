@@ -294,7 +294,7 @@ def condition(conditioned, df, criteria):
 #%%High level inclusion / exclusion functions
 
 custom_funcs = {'filter_df': filter_df,
-                'mark_df_external': mark_df,
+                'mark_df': mark_df,
                 'find_close_births': find_close_births}
 
 
