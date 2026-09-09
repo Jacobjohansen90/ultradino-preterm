@@ -88,7 +88,7 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
         match_on = [condition.match_on] if isinstance(condition.match_on, str) else condition.match_on
         df_temp = df_temp.with_columns(pl.col(src).alias(dst) for src, dst in zip(match_on, filter_on))
         if action in ['exclude_birth', 'include_birth']:
-            filter_on = filter_on + ["date_of_occurence", "invalid_date"]
+            filter_on = filter_on + ["date_of_occurence"]
             df_temp = df_temp.with_columns(pl.col(condition.date_column)
                                            .str.slice(0,10).str.strptime(pl.Date, strict=False).alias('date_of_occurence'))
             
