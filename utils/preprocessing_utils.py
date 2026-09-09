@@ -77,10 +77,9 @@ def load_table(path, ignore_errors=False, has_header=True):
 def filter_conditions(df, condition, filter_on, table, action, external=True):
     df_temp = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("_matching"))    
     df_temp = df_temp.with_columns(OPS[condition.operator](pl.col(condition.column), condition.value).alias("_matching"))
-
+    filter_on = [filter_on] if isinstance(filter_on, str) else filter_on
     if external:
         match_on = [condition.match_on] if isinstance(condition.match_on, str) else condition.match_on
-        filter_on = [filter_on] if isinstance(filter_on, str) else filter_on
         df_temp = df_temp.with_columns(pl.col(src).alias(dst) for src, dst in zip(match_on, filter_on))
         if action in ['exclude_birth', 'include_birth']:
             filter_on = filter_on + ["date_of_occurence", "invalid_date"]
