@@ -345,7 +345,7 @@ conditional_criteria:
 
   - name: C-section during birth
     action: include
-    filter_on: [BIRTH_ID]
+    filter_on: BIRTH_ID
     function: mark_df_external
     mark_name: c-section_during_birth
     conditions:
