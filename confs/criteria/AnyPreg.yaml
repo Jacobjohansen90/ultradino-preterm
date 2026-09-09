@@ -4,496 +4,484 @@ paths:
 #Operators work as: column_1 [operator] column_2
 image_criteria:
   - name: Image must be Cervix
-    action: include
-    filter_on: file_path
-    function: filter_df
-    conditions:
-      - condition:
-        column: is_cervix
-        operator: "=="
-        value: "1"
+    actions:
+    - action: include
+      filter_on: file_path
+      function: filter_df
+      conditions:
+        - condition:
+          column: is_cervix
+          operator: "=="
+          value: "1"
 
   - name: No flow imgs
-    action: exclude
-    filter_on: file_path
-    function: filter_df
-    conditions:
-      - condition:
-        column: is_flow
-        operator: "=="
-        value: True
+    actions:
+    - action: exclude
+      filter_on: file_path
+      function: filter_df
+      conditions:
+        - condition:
+          column: is_flow
+          operator: "=="
+          value: True
 
   - name: Image must be no_ocr processed
-    action: exclude
-    filter_on: file_path
-    function: filter_df
-    conditions:
-      - condition:
-        column: no_ocr_preprocessed_file_path
-        operator: "is_null"
-        value: 
+    actions:
+    - action: exclude
+      filter_on: file_path
+      function: filter_df
+      conditions:
+        - condition:
+          column: no_ocr_preprocessed_file_path
+          operator: "is_null"
+          value: 
 
   - name: GA at scan
-    action: include
-    filter_on: [file_path, CPR_CHILD]
-    function: filter_df
-    conditions:
-      - condition: 
-        column: GA_at_scan
-        operator: ">="
-        value: 112 #16 weeks
-      - condition: and
-        column: GA_at_scan
-        operator: "<="
-        value: 168 #24 weeks
+    actions:
+    - action: include
+      filter_on: [file_path, CPR_CHILD]
+      function: filter_df
+      conditions:
+        - condition: 
+          column: GA_at_scan
+          operator: ">="
+          value: 112 #16 weeks
+        - condition: and
+          column: GA_at_scan
+          operator: "<="
+          value: 168 #24 weeks
 
   - name: Scan to delivery
-    action: include
-    filter_on: [file_path, CPR_CHILD]
-    function: filter_df
-    conditions:
-      - condition: 
-        column: scan_to_delivery
-        operator: ">="
-        value: 0 #0 weeks
-      - condition: and
-        column: scan_to_delivery
-        operator: "<="
-        value: 210 #30 weeks
+    actions:
+    - action: include
+      filter_on: [file_path, CPR_CHILD]
+      function: filter_df
+      conditions:
+        - condition: 
+          column: scan_to_delivery
+          operator: ">="
+          value: 0 #0 weeks
+        - condition: and
+          column: scan_to_delivery
+          operator: "<="
+          value: 210 #30 weeks
  
  
 population_criteria:
     #Must have CPR
   - name: Child has CPR
-    action: exclude
-    filter_on: CPR_CHILD
-    function: filter_df
-    conditions:
-      - condition: 
-        column: CPR_CHILD
-        operator: "=="
-        value: "INVALID"
+    actions:
+    - action: exclude
+      filter_on: CPR_CHILD
+      function: filter_df
+      conditions:
+        - condition: 
+          column: CPR_CHILD
+          operator: "=="
+          value: "INVALID"
     
     #Births must not be close
   - name: No close births
-    action: exclude
-    filter_on: ['CPR_MOTHER', 'CPR_CHILD']
-    function: find_close_births
-    column: BIRTHDAY
-    threshold: 280
+    actions:
+    - action: exclude
+      filter_on: ['CPR_MOTHER', 'CPR_CHILD']
+      function: find_close_births
+      column: BIRTHDAY
+      threshold: 280
 
     #Must have GA
   - name: Has GA
-    action: include
-    filter_on: CPR_CHILD
-    function: filter_df
-    conditions:
-      - condition: 
-        table: ${paths.input_dir_SDS}/mfr.csv
-        match_on: CPR_BARN
-        column: GESTATIONSALDER_DAGE
-        operator: ">"
-        value: 0
-      - condition: or
-        table: ${paths.input_dir_SDS}/nyfoedte.csv
-        match_on: CPRnummer_Barn
-        column: Gestationsalder
-        operator: ">"
-        value: 0
-      - condition: or
-        table: ${paths.data_dir}/tables/Population.csv
-        match_on: BABY_CPR
-        column: Gestationsalder
-        operator: ">"
-        value: 0
+    actions:
+    - action: include
+      filter_on: CPR_CHILD
+      function: filter_df
+      conditions:
+        - condition: 
+          table: ${paths.input_dir_SDS}/mfr.csv
+          match_on: CPR_BARN
+          column: GESTATIONSALDER_DAGE
+          operator: ">"
+          value: 0
+        - condition: or
+          table: ${paths.input_dir_SDS}/nyfoedte.csv
+          match_on: CPRnummer_Barn
+          column: Gestationsalder
+          operator: ">"
+          value: 0
+        - condition: or
+          table: ${paths.data_dir}/tables/Population.csv
+          match_on: BABY_CPR
+          column: Gestationsalder
+          operator: ">"
+          value: 0
         
     #Only live birth
   - name: Live birth 
-    action: exclude
-    filter_on: CPR_CHILD
-    function: filter_df
-    conditions:
-      - condition: 
-        table: ${paths.input_dir_SDS}/mfr.csv
-        match_on: CPR_BARN
-        column: LEVENDE_ELLER_DOEDFOEDT
-        operator: "!="
-        value: Levendefødt
-      - condition: or
-        table: ${paths.input_dir_SDS}/nyfoedte.csv
-        match_on: CPRnummer_Barn
-        column: LevendefoedtDoedfoedt
-        operator: "!="
-        value: "1"
-      - condition: or
-        table: ${paths.data_dir}/tables/Mor - Fødselsresume - DEL 1.csv
-        match_on: BABY_CPR
-        column: "Foetus mortuus "
-        operator: "!="
-        value: "Levende"
+    actions:
+    - action: exclude
+      filter_on: CPR_CHILD
+      function: filter_df
+      conditions:
+        - condition: 
+          table: ${paths.input_dir_SDS}/mfr.csv
+          match_on: CPR_BARN
+          column: LEVENDE_ELLER_DOEDFOEDT
+          operator: "!="
+          value: Levendefødt
+        - condition: or
+          table: ${paths.input_dir_SDS}/nyfoedte.csv
+          match_on: CPRnummer_Barn
+          column: LevendefoedtDoedfoedt
+          operator: "!="
+          value: "1"
+        - condition: or
+          table: ${paths.data_dir}/tables/Mor - Fødselsresume - DEL 1.csv
+          match_on: BABY_CPR
+          column: "Foetus mortuus "
+          operator: "!="
+          value: "Levende"
 
 conditional_criteria:
     #Cerclage
   - name: Cerclage
-    action: include
-    filter_on: BIRTH_ID
-    function: mark_df_external
-    mark_name: cerclage
-    conditions:
-      - condition: 
-        table: ${paths.input_dir_SDS}/mor_diagnoser.csv
-        match_on: DW_EK_Foedsel
-        column: DiagnoseKode
-        operator: "=="
-        value: "DO343C"
-      - condition: or
-        table: ${paths.input_dir_SDS}/mor_procedurer.csv
-        match_on: DW_EK_Foedsel
-        column: ProcedureKode
-        operator: "in"
-        value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
-
-  - name: Cerclage
-    action: include_birth
-    filter_on: CPR_MOTHER
-    function: mark_df_external
-    mark_name: cerclage
-    conditions:
-      - condition: 
-        table: ${paths.data_dir}/tables/t_sksopr.csv
-        match_on: V_CPR
-        date_column: D_ODTO
-        column: C_OPR
-        operator: "in"
-        value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
-      - condition: or
-        table: ${paths.data_dir}/tables/t_diag.csv
-        match_on: V_CPR
-        date_column: D_UDDTO
-        column: C_DIAG
-        operator: "=="
-        value: "DO343C"
-
-  - name: Cerclage
-    action: include_birth
-    filter_on: CPR_MOTHER
-    function: mark_df_external
-    mark_name: cerclage
-    conditions:
-      - condition: 
-        table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
-        match_on: MOR_CPR
-        date_column: ServiceDatetime
-        column: ProcedureCode
-        operator: "in"
-        value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
-      - condition: or
-        table: ${paths.input_dir_SP}/Mor - CPMI - Diagnoseliste.csv
-        match_on: MOR_CPR
-        date_column: Noteret_dato
-        column: Diagnosekode
-        operator: "=="
-        value: "DO343C"
-
-
+    actions:
+    - action: include
+      filter_on: BIRTH_ID
+      function: mark_df
+      mark_name: cerclage
+      conditions:
+        - condition: 
+          table: ${paths.input_dir_SDS}/mor_diagnoser.csv
+          match_on: DW_EK_Foedsel
+          column: DiagnoseKode
+          operator: "=="
+          value: "DO343C"
+        - condition: or
+          table: ${paths.input_dir_SDS}/mor_procedurer.csv
+          match_on: DW_EK_Foedsel
+          column: ProcedureKode
+          operator: "in"
+          value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
+    - action: include_birth
+      filter_on: CPR_MOTHER
+      function: mark_df
+      mark_name: cerclage
+      conditions:
+        - condition: 
+          table: ${paths.data_dir}/tables/t_sksopr.csv
+          match_on: V_CPR
+          date_column: D_ODTO
+          column: C_OPR
+          operator: "in"
+          value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
+        - condition: or
+          table: ${paths.data_dir}/tables/t_diag.csv
+          match_on: V_CPR
+          date_column: D_UDDTO
+          column: C_DIAG
+          operator: "=="
+          value: "DO343C"
+    - action: include_birth
+      filter_on: CPR_MOTHER
+      function: mark_df
+      mark_name: cerclage
+      conditions:
+        - condition: 
+          table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
+          match_on: MOR_CPR
+          date_column: ServiceDatetime
+          column: ProcedureCode
+          operator: "in"
+          value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
+        - condition: or
+          table: ${paths.input_dir_SP}/Mor - CPMI - Diagnoseliste.csv
+          match_on: MOR_CPR
+          date_column: Noteret_dato
+          column: Diagnosekode
+          operator: "=="
+          value: "DO343C"
+          
     #C-section (kejsersnit)
   - name: C-section
-    action: include
-    filter_on: CPR_CHILD
-    function: mark_df_external
-    mark_name: c-section
-    conditions:
-      - condition:
-        table: ${paths.input_dir_SDS}/nyfoedte.csv
-        match_on: CPRnummer_Barn
-        column: Kejsersnit
-        operator: "!="
-        value: "-1"
-      - condition: or
-        table: ${paths.input_dir_SDS}/mfr.csv
-        match_on: CPR_BARN
-        column: MARKOER_KEJSERSNIT
-        operator: "=="
-        value: "1"
-
-  - name: C-section
-    action: include_birth
-    filter_on: CPR_MOTHER
-    function: mark_df_external
-    mark_name: c-section
-    conditions:
-      - condition: 
-        table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
-        match_on: MOR_CPR
-        date_column: ServiceDatetime
-        column: ProcedureCode
-        operator: "starts_with"
-        value: "KMCA"
-      - condition: or
-        table: ${paths.data_dir}/tables/t_sksopr.csv
-        match_on: V_CPR
-        date_column: D_ODTO
-        column: C_OPR
-        operator: "starts_with"
-        value: "KMCA"
+    actions:
+    - action: include
+      filter_on: CPR_CHILD
+      function: mark_df
+      mark_name: c-section
+      conditions:
+        - condition:
+          table: ${paths.input_dir_SDS}/nyfoedte.csv
+          match_on: CPRnummer_Barn
+          column: Kejsersnit
+          operator: "!="
+          value: "-1"
+        - condition: or
+          table: ${paths.input_dir_SDS}/mfr.csv
+          match_on: CPR_BARN
+          column: MARKOER_KEJSERSNIT
+          operator: "=="
+          value: "1"
+    - action: include_birth
+      filter_on: CPR_MOTHER
+      function: mark_df
+      mark_name: c-section
+      conditions:
+        - condition: 
+          table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
+          match_on: MOR_CPR
+          date_column: ServiceDatetime
+          column: ProcedureCode
+          operator: "starts_with"
+          value: "KMCA"
+        - condition: or
+          table: ${paths.data_dir}/tables/t_sksopr.csv
+          match_on: V_CPR
+          date_column: D_ODTO
+          column: C_OPR
+          operator: "starts_with"
+          value: "KMCA"
 
     #C-section during birth
   - name: C-section during birth
-    action: include_birth
-    filter_on: CPR_MOTHER
-    function: mark_df_external
-    mark_name: c-section_during_birth
-    conditions:
-      - condition: 
-        table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
-        match_on: MOR_CPR
-        date_column: ServiceDatetime
-        column: ProcedureCode
-        operator: "in"
-        value: [KMCA10D, KMCA10E]
-      - condition: or
-        table: ${paths.data_dir}/tables/t_sksopr.csv
-        match_on: V_CPR
-        date_column: D_ODTO
-        column: C_OPR
-        operator: "in"
-        value: [KMCA10D, KMCA10E]
-
-  - name: C-section during birth
-    action: include
-    filter_on: BIRTH_ID
-    function: mark_df_external
-    mark_name: c-section_during_birth
-    conditions:
-      - condition: 
-        table: ${paths.input_dir_SDS}/mor_procedurer.csv
-        match_on: DW_EK_Foedsel
-        column: ProcedureKode
-        operator: "in"
-        value: [KMCA10D, KMCA10E]
+    actions:
+    - action: include_birth
+      filter_on: CPR_MOTHER
+      function: mark_df
+      mark_name: c-section_during_birth
+      conditions:
+        - condition: 
+          table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
+          match_on: MOR_CPR
+          date_column: ServiceDatetime
+          column: ProcedureCode
+          operator: "in"
+          value: [KMCA10D, KMCA10E]
+        - condition: or
+          table: ${paths.data_dir}/tables/t_sksopr.csv
+          match_on: V_CPR
+          date_column: D_ODTO
+          column: C_OPR
+          operator: "in"
+          value: [KMCA10D, KMCA10E]
+    - action: include
+      filter_on: BIRTH_ID
+      function: mark_df
+      mark_name: c-section_during_birth
+      conditions:
+        - condition: 
+          table: ${paths.input_dir_SDS}/mor_procedurer.csv
+          match_on: DW_EK_Foedsel
+          column: ProcedureKode
+          operator: "in"
+          value: [KMCA10D, KMCA10E]
 
     #Contraction with preterm birth
   - name: Contractions with preterm birth
-    action: include_birth
-    filter_on: CPR_MOTHER
-    function: mark_df_external
-    mark_name: contractions_with_preterm_birth
-    conditions:
-      - condition:
-        table: ${paths.data_dir}/tables/t_diag.csv
-        match_on: V_CPR
-        date_column: D_UDDTO
-        column: C_DIAG
-        operator: "=="
-        value: "DO601"
-      - condition: or
-        table: ${paths.input_dir_SP}/Mor - CPMI - Diagnoseliste.csv
-        match_on: MOR_CPR
-        date_column: Noteret_dato
-        column: Diagnosekode
-        operator: "=="
-        value: "DO601"
-
-  - name: Contractions with preterm birth
-    action: include
-    filter_on: BIRTH_ID
-    function: mark_df_external
-    mark_name: contractions_with_preterm_birth
-    conditions:
-      - condition: 
-        table: ${paths.input_dir_SDS}/mor_diagnoser.csv
-        match_on: DW_EK_Foedsel
-        column: DiagnoseKode
-        operator: "=="
-        value: "DO601"
+    actions:
+    - action: include_birth
+      filter_on: CPR_MOTHER
+      function: mark_df
+      mark_name: contractions_with_preterm_birth
+      conditions:
+        - condition:
+          table: ${paths.data_dir}/tables/t_diag.csv
+          match_on: V_CPR
+          date_column: D_UDDTO
+          column: C_DIAG
+          operator: "=="
+          value: "DO601"
+        - condition: or
+          table: ${paths.input_dir_SP}/Mor - CPMI - Diagnoseliste.csv
+          match_on: MOR_CPR
+          date_column: Noteret_dato
+          column: Diagnosekode
+          operator: "=="
+          value: "DO601"
+    - action: include
+      filter_on: BIRTH_ID
+      function: mark_df_external
+      mark_name: contractions_with_preterm_birth
+      conditions:
+        - condition: 
+          table: ${paths.input_dir_SDS}/mor_diagnoser.csv
+          match_on: DW_EK_Foedsel
+          column: DiagnoseKode
+          operator: "=="
+          value: "DO601"
 
     #Induced
   - name: Induced
-    action: include
-    filter_on: CPR_CHILD
-    function: mark_df_external
-    mark_name: induced
-    conditions:
-      - condition:
-        table: ${paths.input_dir_SDS}/mfr.csv
-        match_on: CPR_BARN
-        column: MARKOER_IGANGSAETTELSE
-        operator: "=="
-        value: "1"
-      - condition: or
-        table: ${paths.input_dir_SDS}/nyfoedte.csv
-        match_on: CPRnummer_Barn
-        column: Igangsaettelse_Ballonkateter
-        operator: "=="
-        value: "Ja"
-      - condition: or
-        table: ${paths.input_dir_SDS}/nyfoedte.csv
-        match_on: CPRnummer_Barn
-        column: Igangsaettelse_Medicinsk
-        operator: "=="
-        value: "Ja"
-      - condition: or
-        table: ${paths.input_dir_SDS}/nyfoedte.csv
-        match_on: CPRnummer_Barn
-        column: Igangsaettelse_HSP
-        operator: "=="
-        value: "Ja"
- 
-  - name: Induced
-    action: include_birth
-    filter_on: CPR_MOTHER
-    function: mark_df_external
-    mark_name: induced
-    conditions:
-      - condition:
-        table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
-        match_on: MOR_CPR
-        date_column: ServiceDatetime
-        column: ProcedureCode
-        operator: "in"
-        value: [KMAC00, KMAC96A, BKHD2, BKHD20]
-      - condition: or
-        table: ${paths.input_dir_SP}/Mor - CPMI - Diagnoseliste.csv
-        match_on: MOR_CPR
-        date_column: Noteret_dato
-        column: Diagnosekode
-        operator: "starts_with"
-        value: [DO837, DO847]
-
-  - name: Induced
-    action: include
-    filter_on: BIRTH_ID
-    function: mark_df_external
-    mark_name: induced
-    conditions:
-      - condition:
-        table: ${paths.input_dir_SP}/Mor - Fødselsresume - DEL 1.csv
-        match_on: BABY_Fødsel_ID
-        column: Måde
-        operator: "in"
-        value: [Vaginal, igangsat; Vaginal, igangsat (Udgået)]
+    actions:
+    - action: include
+      filter_on: CPR_CHILD
+      function: mark_df
+      mark_name: induced
+      conditions:
+        - condition:
+          table: ${paths.input_dir_SDS}/mfr.csv
+          match_on: CPR_BARN
+          column: MARKOER_IGANGSAETTELSE
+          operator: "=="
+          value: "1"
+        - condition: or
+          table: ${paths.input_dir_SDS}/nyfoedte.csv
+          match_on: CPRnummer_Barn
+          column: Igangsaettelse_Ballonkateter
+          operator: "=="
+          value: "Ja"
+        - condition: or
+          table: ${paths.input_dir_SDS}/nyfoedte.csv
+          match_on: CPRnummer_Barn
+          column: Igangsaettelse_Medicinsk
+          operator: "=="
+          value: "Ja"
+        - condition: or
+          table: ${paths.input_dir_SDS}/nyfoedte.csv
+          match_on: CPRnummer_Barn
+          column: Igangsaettelse_HSP
+          operator: "=="
+          value: "Ja"
+    - action: include_birth
+      filter_on: CPR_MOTHER
+      function: mark_df
+      mark_name: induced
+      conditions:
+        - condition:
+          table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
+          match_on: MOR_CPR
+          date_column: ServiceDatetime
+          column: ProcedureCode
+          operator: "in"
+          value: [KMAC00, KMAC96A, BKHD2, BKHD20]
+        - condition: or
+          table: ${paths.input_dir_SP}/Mor - CPMI - Diagnoseliste.csv
+          match_on: MOR_CPR
+          date_column: Noteret_dato
+          column: Diagnosekode
+          operator: "starts_with"
+          value: [DO837, DO847]
+    - action: include
+      filter_on: BIRTH_ID
+      function: mark_df_external
+      mark_name: induced
+      conditions:
+        - condition:
+          table: ${paths.input_dir_SP}/Mor - Fødselsresume - DEL 1.csv
+          match_on: BABY_Fødsel_ID
+          column: Måde
+          operator: "in"
+          value: [Vaginal, igangsat; Vaginal, igangsat (Udgået)]
 
     #PPROM
   - name: PPROM
-    action: include
-    filter_on: CPR_CHILD
-    function: mark_df_external
-    mark_name: pprom
-    conditions:
-      - condition:
-        table: ${paths.input_dir_SDS}/mfr.csv
-        match_on: CPR_BARN
-        column: PPROM
-        operator: "in"
-        value: [DO422, DO420, DO424]
-        
-  - name: PPROM
-    action: include
-    filter_on: BIRTH_ID
-    function: mark_df_external
-    mark_name: pprom
-    conditions:
-      - condition:
-        table: ${paths.input_dir_SDS}/mor_diagnoser.csv
-        match_on: DW_EK_Foedsel
-        column: DiagnoseKode
-        operator: "in"
-        value: [DO422, DO420, DO424]
- 
-  - name: PPROM
-    action: include_birth
-    filter_on: CPR_MOTHER
-    function: mark_df_external
-    mark_name: pprom
-    conditions:
-      - condition:
-        table: ${paths.data_dir}/tables/t_diag.csv
-        match_on: V_CPR
-        date_column: D_UDDTO
-        column: C_DIAG
-        operator: "in"
-        value: [DO422, DO420, DO424]
-        
-  - name: PPROM
-    action: include_birth
-    filter_on: CPR_MOTHER
-    function: mark_df_external
-    mark_name: pprom
-    conditions:
-      - condition:
-        table: ${paths.input_dir_SP}/Mor - CPMI - Diagnoseliste.csv
-        match_on: MOR_CPR
-        date_column: Noteret_dato
-        column: Diagnosekode
-        operator: "in"
-        value: [DO422, DO420, DO424]
+    actions:
+    - action: include
+      filter_on: CPR_CHILD
+      function: mark_df
+      mark_name: pprom
+      conditions:
+        - condition:
+          table: ${paths.input_dir_SDS}/mfr.csv
+          match_on: CPR_BARN
+          column: PPROM
+          operator: "in"
+          value: [DO422, DO420, DO424]
+    - action: include
+      filter_on: BIRTH_ID
+      function: mark_df
+      mark_name: pprom
+      conditions:
+        - condition:
+          table: ${paths.input_dir_SDS}/mor_diagnoser.csv
+          match_on: DW_EK_Foedsel
+          column: DiagnoseKode
+          operator: "in"
+          value: [DO422, DO420, DO424]
+    - action: include_birth
+      filter_on: CPR_MOTHER
+      function: mark_df
+      mark_name: pprom
+      conditions:
+        - condition:
+          table: ${paths.data_dir}/tables/t_diag.csv
+          match_on: V_CPR
+          date_column: D_UDDTO
+          column: C_DIAG
+          operator: "in"
+          value: [DO422, DO420, DO424]
+        - condition:
+          table: ${paths.input_dir_SP}/Mor - CPMI - Diagnoseliste.csv
+          match_on: MOR_CPR
+          date_column: Noteret_dato
+          column: Diagnosekode
+          operator: "in"
+          value: [DO422, DO420, DO424]
  
     #Progesterone
   - name: Progesterone
-    action: include_birth
-    filter_on: CPR_MOTHER
-    function: mark_df_external
-    mark_name: progesterone
-    conditions:
-      - condition:
-        table: ${paths.input_dir_SDS}/epikur_1.csv
-        match_on: cpr
-        date_column: eksd
-        column: atc
-        operator: "starts_with"
-        value: "G03DA04"
-      - condition: or
-        table: ${paths.input_dir_SDS}/epikur_2.csv
-        match_on: cpr
-        date_column: eksd
-        column: atc
-        operator: "starts_with"
-        value: "G03DA04"
-      - condition: or
-        table: ${paths.input_dir_SDS}/epikur_3.csv
-        match_on: cpr
-        date_column: eksd
-        column: atc
-        operator: "starts_with"
-        value: "G03DA04"
-      - condition: or
-        table: ${paths.data_dir}/tables/t_sksube.csv
-        match_on: V_CPR
-        date_column: D_ODTO
-        column: C_TILOPR
-        operator: "=="
-        value: "BKHA1"
-      - condition: or
-        table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
-        match_on: MOR_CPR
-        date_column: ServiceDatetime
-        column: ProcedureCode
-        operator: "=="
-        value: "BKHA1"
-      - condition: or
-        table: ${paths.input_dir_SP}/Mor - Ordinationer.csv
-        match_on: MOR_CPR
-        date_column: Ordinationstidspunkt
-        column: ATC
-        operator: "starts_with"
-        value: "G03DA04"
-      - condition: or
-        table: ${paths.input_dir_SP}/Mor - CPMI - Medicin.csv
-        match_on: MOR_CPR
-        date_column: Bestillingsdato
-        column: ATC
-        operator: "starts_with"
-        value: "G03DA04"  
-  
-  - name: Progesterone
-    action: include
-    filter_on: BIRTH_ID 
-    function: mark_df_external
-    mark_name: progesterone
-    conditions:
-      - condition: 
-        table: ${paths.input_dir_SDS}/mor_diagnoser.csv
-        match_on: DW_EK_Foedsel
-        column: DiagnoseKode
-        operator: "=="
-        value: "BKHA1"
+    actions:
+    - action: include_birth
+      filter_on: CPR_MOTHER
+      function: mark_df_external
+      mark_name: progesterone
+      conditions:
+        - condition:
+          table: ${paths.input_dir_SDS}/epikur_1.csv
+          match_on: cpr
+          date_column: eksd
+          column: atc
+          operator: "starts_with"
+          value: "G03DA04"
+        - condition: or
+          table: ${paths.input_dir_SDS}/epikur_2.csv
+          match_on: cpr
+          date_column: eksd
+          column: atc
+          operator: "starts_with"
+          value: "G03DA04"
+        - condition: or
+          table: ${paths.input_dir_SDS}/epikur_3.csv
+          match_on: cpr
+          date_column: eksd
+          column: atc
+          operator: "starts_with"
+          value: "G03DA04"
+        - condition: or
+          table: ${paths.data_dir}/tables/t_sksube.csv
+          match_on: V_CPR
+          date_column: D_ODTO
+          column: C_TILOPR
+          operator: "=="
+          value: "BKHA1"
+        - condition: or
+          table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
+          match_on: MOR_CPR
+          date_column: ServiceDatetime
+          column: ProcedureCode
+          operator: "=="
+          value: "BKHA1"
+        - condition: or
+          table: ${paths.input_dir_SP}/Mor - Ordinationer.csv
+          match_on: MOR_CPR
+          date_column: Ordinationstidspunkt
+          column: ATC
+          operator: "starts_with"
+          value: "G03DA04"
+        - condition: or
+          table: ${paths.input_dir_SP}/Mor - CPMI - Medicin.csv
+          match_on: MOR_CPR
+          date_column: Bestillingsdato
+          column: ATC
+          operator: "starts_with"
+          value: "G03DA04"  
+    - action: include
+      filter_on: BIRTH_ID 
+      function: mark_df_external
+      mark_name: progesterone
+      conditions:
+        - condition: 
+          table: ${paths.input_dir_SDS}/mor_diagnoser.csv
+          match_on: DW_EK_Foedsel
+          column: DiagnoseKode
+          operator: "=="
+          value: "BKHA1"
