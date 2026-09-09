@@ -4,10 +4,10 @@ paths:
 #Operators work as: column_1 [operator] column_2
 image_criteria:
   - name: Image must be Cervix
+    function: filter_df
     actions:
     - action: include
       filter_on: file_path
-      function: filter_df
       conditions:
         - condition:
           column: is_cervix
@@ -15,10 +15,10 @@ image_criteria:
           value: "1"
 
   - name: No flow imgs
+    function: filter_df
     actions:
     - action: exclude
       filter_on: file_path
-      function: filter_df
       conditions:
         - condition:
           column: is_flow
@@ -26,10 +26,10 @@ image_criteria:
           value: True
 
   - name: Image must be no_ocr processed
+    function: filter_df
     actions:
     - action: exclude
       filter_on: file_path
-      function: filter_df
       conditions:
         - condition:
           column: no_ocr_preprocessed_file_path
@@ -37,10 +37,10 @@ image_criteria:
           value: 
 
   - name: GA at scan
+    function: filter_df
     actions:
     - action: include
       filter_on: [file_path, CPR_CHILD]
-      function: filter_df
       conditions:
         - condition: 
           column: GA_at_scan
@@ -52,10 +52,10 @@ image_criteria:
           value: 168 #24 weeks
 
   - name: Scan to delivery
+    function: filter_df
     actions:
     - action: include
       filter_on: [file_path, CPR_CHILD]
-      function: filter_df
       conditions:
         - condition: 
           column: scan_to_delivery
@@ -70,10 +70,10 @@ image_criteria:
 population_criteria:
     #Must have CPR
   - name: Child has CPR
+    function: filter_df
     actions:
     - action: exclude
       filter_on: CPR_CHILD
-      function: filter_df
       conditions:
         - condition: 
           column: CPR_CHILD
@@ -82,19 +82,19 @@ population_criteria:
     
     #Births must not be close
   - name: No close births
+    function: find_close_births
     actions:
     - action: exclude
       filter_on: ['CPR_MOTHER', 'CPR_CHILD']
-      function: find_close_births
       column: BIRTHDAY
       threshold: 280
 
     #Must have GA
   - name: Has GA
+    function: filter_df
     actions:
     - action: include
       filter_on: CPR_CHILD
-      function: filter_df
       conditions:
         - condition: 
           table: ${paths.input_dir_SDS}/mfr.csv
@@ -117,10 +117,10 @@ population_criteria:
         
     #Only live birth
   - name: Live birth 
+    function: filter_df
     actions:
     - action: exclude
       filter_on: CPR_CHILD
-      function: filter_df
       conditions:
         - condition: 
           table: ${paths.input_dir_SDS}/mfr.csv
@@ -143,10 +143,10 @@ population_criteria:
 
     #Only first pregnancy 
   - name: First Pregnancy
+    function: filter_df
     actions:
     - action: exclude
       filter_on: CPR_CHILD
-      function: filter_df
       conditions:
         - condition: 
           table: ${paths.input_dir_SDS}/mfr.csv
@@ -162,7 +162,6 @@ population_criteria:
           value: "1"
     - action: exclude_birth
       filter_on: CPR_MOTHER
-      function: filter_df
       conditions:
         - condition: 
           table: ${paths.input_dir_SP}/Mor - Obstetrisk Historik DEL 1.csv
@@ -173,7 +172,6 @@ population_criteria:
           value: 2
     - action: include_birth
       filter_on: CPR_MOTHER
-      function: filter_df
       conditions:
         - condition: 
           table: ${paths.input_dir_SP}/Mor - CPMI - Diagnoseliste.csv
@@ -186,10 +184,10 @@ population_criteria:
 
     #Non-twins
   - name: No multi-births
+    function: filter_df
     actions:
     - action: include
       filter_on: [CPR_MOTHER, BIRTH_ID]
-      function: filter_df
       conditions:
         - condition: 
           table: ${paths.input_dir_SDS}/mfr.csv
@@ -211,7 +209,6 @@ population_criteria:
           value: True
     - action: exclude_birth
       filter_on: CPR_MOTHER
-      function: filter_df
       conditions:
         - condition: 
           table: ${paths.input_dir_SP}/Mor - Obstetrisk Historik DEL 1.csv
@@ -224,10 +221,10 @@ population_criteria:
 conditional_criteria:
     #Cerclage
   - name: Cerclage
+    function: mark_df
     actions:
     - action: include
       filter_on: BIRTH_ID
-      function: mark_df
       mark_name: cerclage
       conditions:
         - condition: 
@@ -244,7 +241,6 @@ conditional_criteria:
           value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
     - action: include_birth
       filter_on: CPR_MOTHER
-      function: mark_df
       mark_name: cerclage
       conditions:
         - condition: 
@@ -263,7 +259,6 @@ conditional_criteria:
           value: "DO343C"
     - action: include_birth
       filter_on: CPR_MOTHER
-      function: mark_df
       mark_name: cerclage
       conditions:
         - condition: 
@@ -283,10 +278,10 @@ conditional_criteria:
           
     #C-section (kejsersnit)
   - name: C-section
+    function: mark_df
     actions:
     - action: include
       filter_on: CPR_CHILD
-      function: mark_df
       mark_name: c-section
       conditions:
         - condition:
@@ -303,7 +298,6 @@ conditional_criteria:
           value: "1"
     - action: include_birth
       filter_on: CPR_MOTHER
-      function: mark_df
       mark_name: c-section
       conditions:
         - condition: 
@@ -323,10 +317,10 @@ conditional_criteria:
 
     #C-section during birth
   - name: C-section during birth
+    function: mark_df
     actions:
     - action: include_birth
       filter_on: CPR_MOTHER
-      function: mark_df
       mark_name: c-section_during_birth
       conditions:
         - condition: 
@@ -345,7 +339,6 @@ conditional_criteria:
           value: [KMCA10D, KMCA10E]
     - action: include
       filter_on: BIRTH_ID
-      function: mark_df
       mark_name: c-section_during_birth
       conditions:
         - condition: 
@@ -357,10 +350,10 @@ conditional_criteria:
 
     #Contraction with preterm birth
   - name: Contractions with preterm birth
+    function: mark_df
     actions:
     - action: include_birth
       filter_on: CPR_MOTHER
-      function: mark_df
       mark_name: contractions_with_preterm_birth
       conditions:
         - condition:
@@ -379,7 +372,6 @@ conditional_criteria:
           value: "DO601"
     - action: include
       filter_on: BIRTH_ID
-      function: mark_df_external
       mark_name: contractions_with_preterm_birth
       conditions:
         - condition: 
@@ -391,10 +383,10 @@ conditional_criteria:
 
     #Induced
   - name: Induced
+    function: mark_df
     actions:
     - action: include
       filter_on: CPR_CHILD
-      function: mark_df
       mark_name: induced
       conditions:
         - condition:
@@ -423,7 +415,6 @@ conditional_criteria:
           value: "Ja"
     - action: include_birth
       filter_on: CPR_MOTHER
-      function: mark_df
       mark_name: induced
       conditions:
         - condition:
@@ -442,7 +433,6 @@ conditional_criteria:
           value: [DO837, DO847]
     - action: include
       filter_on: BIRTH_ID
-      function: mark_df_external
       mark_name: induced
       conditions:
         - condition:
@@ -454,10 +444,10 @@ conditional_criteria:
 
     #PPROM
   - name: PPROM
+    function: mark_df
     actions:
     - action: include
       filter_on: CPR_CHILD
-      function: mark_df
       mark_name: pprom
       conditions:
         - condition:
@@ -468,7 +458,6 @@ conditional_criteria:
           value: [DO422, DO420, DO424]
     - action: include
       filter_on: BIRTH_ID
-      function: mark_df
       mark_name: pprom
       conditions:
         - condition:
@@ -479,7 +468,6 @@ conditional_criteria:
           value: [DO422, DO420, DO424]
     - action: include_birth
       filter_on: CPR_MOTHER
-      function: mark_df
       mark_name: pprom
       conditions:
         - condition:
@@ -499,10 +487,10 @@ conditional_criteria:
  
     #Progesterone
   - name: Progesterone
+    function: mark_df
     actions:
     - action: include_birth
       filter_on: CPR_MOTHER
-      function: mark_df_external
       mark_name: progesterone
       conditions:
         - condition:
@@ -556,7 +544,6 @@ conditional_criteria:
           value: "G03DA04"  
     - action: include
       filter_on: BIRTH_ID 
-      function: mark_df_external
       mark_name: progesterone
       conditions:
         - condition: 
