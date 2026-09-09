@@ -205,7 +205,7 @@ population_criteria:
 
   - name: No multi-births
     action: exclude_birth
-    filter_on: [CPR_MOTHER]
+    filter_on: CPR_MOTHER
     function: filter_df
     conditions:
       - condition: 
