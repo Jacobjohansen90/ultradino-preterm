@@ -91,9 +91,12 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
         filter_on = [filter_on] if isinstance(filter_on, str) else filter_on
         df_temp = df_temp.with_columns(pl.col(src).alias(dst) for src, dst in zip(match_on, filter_on))
         if action in ['exclude_birth', 'include_birth']:
-            filter_on = filter_on + ["date_of_occurence"]
+            filter_on = filter_on + ["date_of_occurence", "invalid_date"]
             df_temp = df_temp.with_columns(pl.col(condition.date_column)
                                            .str.slice(0,10).str.strptime(pl.Date, strict=False).alias('date_of_occurence'))
+
+            df_temp = df_temp.with_columns((pl.col(condition.date_column).is_not_null() &
+                                            pl.col("date_of_occurence").is_null()).alias("invalid_date"))
             
     if condition.condition is None:
         table = df_temp.select(filter_on)
@@ -131,7 +134,7 @@ def filter_df(df, criteria):
     
     elif criteria.action == 'exclude_birth':
         matches = (df.join(table, on=criteria.filter_on, how="left")
-                   .filter(pl.col("date_of_occurence").is_null() |
+                   .filter(pl.col("invalid_date") |
                            (pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
                            (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
                    .select([criteria.filter_on, "BIRTHDAY"]))
@@ -178,7 +181,7 @@ def mark_df_external(df, criteria):
     
     elif criteria.action == 'exclude_birth':
         mark = (df.join(table, on=criteria.filter_on, how="left")
-                .filter(pl.col("date_of_occurence").is_null() |
+                .filter(pl.col("invalid_date") |
                         (pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
                         (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
                 .select([criteria.filter_on, "BIRTHDAY"])).unique().with_columns(pl.lit(False).alias('mark'))
