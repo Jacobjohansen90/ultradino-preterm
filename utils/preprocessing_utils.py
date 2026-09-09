@@ -14,7 +14,6 @@ import numpy as np
 from PIL import Image
 from concurrent.futures import ProcessPoolExecutor
 import json
-from scipy.spatial import ConvexHull
 from omegaconf import ListConfig
 
 pl.Config.set_tbl_rows(-1)
