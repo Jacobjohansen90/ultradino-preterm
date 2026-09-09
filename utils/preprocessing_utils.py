@@ -331,7 +331,6 @@ def merge_population_and_image_df(df_img, df_pop, cfg):
 
 
 def make_train_test_split(df, cfg, split):
-
     df_holdout = pl.read_csv(cfg.paths.holdout_csv)
     if split == 'test':        
         df = df.join(df_holdout, left_on="CPR_MOTHER", right_on="CPR_MOR", how="semi")
@@ -430,7 +429,7 @@ def calculate_CL(row, cervix_label=3):
     coords = np.column_stack([xs * new_phys_delta_x,
                               ys * new_phys_delta_y])
 
-    hull = ConvexHull(coords)
+    hull = ConvexHull(coords, qhull_options="QJ") #Allows for flat simplex
     hull_coords = coords[hull.vertices]
 
     diff = hull_coords[:, None, :] - hull_coords[None, :, :]
