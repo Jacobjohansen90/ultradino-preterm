@@ -76,11 +76,9 @@ def load_table(path, ignore_errors=False, has_header=True):
 
 def filter_conditions(df, condition, filter_on, table, action, external=True):
     if condition.operator in [">", "<", ">=", "<=", "-", "+"]:
-        print(condition.table)
         df_temp = df.with_columns(OPS[condition.operator](pl.col(condition.column).cast(pl.Float32, strict=False), 
                                                                condition.value).alias("_matching"))
     else:
-        print(condition.table)
         df_temp = df.with_columns(OPS[condition.operator](pl.col(condition.column), condition.value).alias("_matching"))
         
     if external:
@@ -112,6 +110,7 @@ def filter_df(df, criteria):
         filter_on = [action.filter_on] if isinstance(action.filter_on, str) else action.filter_on
         for condition in action.conditions:
             if 'table' in condition:
+                print(condition.table)
                 df_temp = load_table(condition.table)
                 table = filter_conditions(df_temp, condition, filter_on, table, action.action)
             else:
