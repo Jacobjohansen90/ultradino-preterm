@@ -190,7 +190,7 @@ conditional_criteria:
       - condition: or
         table: ${paths.input_dir_SP}/Mor - CPMI - Diagnoseliste.csv
         match_on: MOR_CPR
-        date_column: D_UDDTO
+        date_column: Noteret_dato
         column: Diagnosekode
         operator: "=="
         value: "DO343C"
