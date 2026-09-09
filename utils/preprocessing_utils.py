@@ -76,6 +76,7 @@ def load_table(path, ignore_errors=False, has_header=True):
 
 def filter_conditions(df, condition, filter_on, table, action, external=True):
     df_temp = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("_matching"))    
+    print(condition)
     df_temp = df_temp.with_columns(OPS[condition.operator](pl.col(condition.column), condition.value).alias("_matching"))
     filter_on = [filter_on] if isinstance(filter_on, str) else filter_on
     if external:
