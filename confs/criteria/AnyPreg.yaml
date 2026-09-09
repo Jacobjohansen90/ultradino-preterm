@@ -4,6 +4,7 @@ paths:
 #Operators work as: column_1 [operator] column_2
 image_criteria:
   - name: Image must be Cervix
+    default: remove
     function: filter_df
     actions:
     - action: include
@@ -15,6 +16,7 @@ image_criteria:
           value: "1"
 
   - name: No flow imgs
+    default: keep
     function: filter_df
     actions:
     - action: exclude
@@ -27,6 +29,7 @@ image_criteria:
 
   - name: Image must be no_ocr processed
     function: filter_df
+    default: keep
     actions:
     - action: exclude
       filter_on: file_path
@@ -34,10 +37,11 @@ image_criteria:
         - condition:
           column: no_ocr_preprocessed_file_path
           operator: "is_null"
-          value: 
+          value: None
 
   - name: GA at scan
     function: filter_df
+    default: keep
     actions:
     - action: include
       filter_on: [file_path, CPR_CHILD]
@@ -53,6 +57,7 @@ image_criteria:
 
   - name: Scan to delivery
     function: filter_df
+    default: remove
     actions:
     - action: include
       filter_on: [file_path, CPR_CHILD]
@@ -71,6 +76,7 @@ population_criteria:
     #Must have CPR
   - name: Child has CPR
     function: filter_df
+    default: keep
     actions:
     - action: exclude
       filter_on: CPR_CHILD
@@ -81,8 +87,9 @@ population_criteria:
           value: "INVALID"
     
     #Births must not be close
-  - name: No close births
+  - name: No close birth
     function: find_close_births
+    default: keep
     actions:
     - action: exclude
       filter_on: ['CPR_MOTHER', 'CPR_CHILD']
@@ -92,6 +99,7 @@ population_criteria:
     #Must have GA
   - name: Has GA
     function: filter_df
+    default: keep
     actions:
     - action: include
       filter_on: CPR_CHILD
@@ -118,6 +126,7 @@ population_criteria:
     #Only live birth
   - name: Live birth 
     function: filter_df
+    default: keep
     actions:
     - action: exclude
       filter_on: CPR_CHILD
@@ -146,6 +155,7 @@ conditional_criteria:
     #Cerclage
   - name: Cerclage
     function: mark_df
+    default: no_mark
     mark_name: cerclage
     actions:
     - action: include
@@ -201,6 +211,7 @@ conditional_criteria:
     #C-section (kejsersnit)
   - name: C-section
     function: mark_df
+    default: no_mark
     mark_name: c-section
     actions:
     - action: include
@@ -239,6 +250,7 @@ conditional_criteria:
     #C-section during birth
   - name: C-section during birth
     function: mark_df
+    default: no_mark
     mark_name: c-section_during_birth
     actions:
     - action: include_birth
@@ -271,6 +283,7 @@ conditional_criteria:
     #Contraction with preterm birth
   - name: Contractions with preterm birth
     function: mark_df
+    default: no_mark    
     mark_name: contractions_with_preterm_birth
     actions:
     - action: include_birth
@@ -303,6 +316,7 @@ conditional_criteria:
     #Induced
   - name: Induced
     function: mark_df
+    default: no_mark    
     mark_name: induced
     actions:
     - action: include
@@ -362,6 +376,7 @@ conditional_criteria:
     #PPROM
   - name: PPROM
     function: mark_df
+    default: no_mark    
     mark_name: pprom
     actions:
     - action: include
@@ -403,6 +418,7 @@ conditional_criteria:
     #Progesterone
   - name: Progesterone
     function: mark_df
+    default: no_mark
     mark_name: progesterone
     actions:
     - action: include_birth
