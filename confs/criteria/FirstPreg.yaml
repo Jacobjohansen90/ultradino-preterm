@@ -491,7 +491,7 @@ conditional_criteria:
     mark_name: pprom
     conditions:
       - condition:
-        table: ${paths.input_dir_SDS}/t_diag.csv
+        table: ${paths.data_dir}/tables/t_diag.csv
         match_on: V_CPR
         date_column: D_UDDTO
         column: C_DIAG
