@@ -112,10 +112,27 @@ def filter_df(df, criteria):
                 table = filter_conditions(df, condition, action.filter_on, table, action.action, external=False)
     
         if action.action == 'include':
-            print(df.columns)
-            df = df.with_columns(pl.when(pl.col("remove") == True).then(True)
-                                 .when(pl.col(action.filter_on).is_in(table.filter(pl.col('_matching') == True)[action.filter_on]))
-                                 .then(False).otherwise(pl.col("remove")).alias("remove"))
+            matches = (
+                table
+                .filter(pl.col("_matching") == True)
+                .select(action.filter_on)
+                .to_struct()
+            )
+        
+            df = df.with_columns(
+                pl.when(pl.col("remove") == True)
+                .then(True)
+                .when(pl.struct(action.filter_on).is_in(matches))
+                .then(False)
+                .otherwise(pl.col("remove"))
+                .alias("remove")
+            )
+    
+        # if action.action == 'include':
+        #     print(df.columns)
+        #     df = df.with_columns(pl.when(pl.col("remove") == True).then(True)
+        #                          .when(pl.col(action.filter_on).is_in(table.filter(pl.col('_matching') == True)[action.filter_on]))
+        #                          .then(False).otherwise(pl.col("remove")).alias("remove"))
        
         elif action.action == 'exclude':
             df = df.with_columns(pl.when(pl.col(action.filter_on).is_in(table.filter(pl.col("_matching") == True)[action.filter_on]))
@@ -132,7 +149,7 @@ def filter_df(df, criteria):
                 
             else:
                 matches = (df.join(table, on=action.filter_on, how="left")
-                           .filter((pl.col("_matching") == True) &
+                           .filter((pl.col("_matching") == True) & 
                                    (pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
                                    (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
                            .select([action.filter_on, "BIRTHDAY"]).unique())
