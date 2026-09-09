@@ -138,8 +138,8 @@ def filter_df(df, criteria):
                                      (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
                                     .alias("_valid")))           
         
-            matches = (joined.group_by([action.filter_on, "BIRTHDAY"]).agg(pl.col("_valid").all())
-                       .filter(pl.col("_valid")).select([action.filter_on, "BIRTHDAY"]))
+            matches = (joined.group_by([action.filter_on, "BIRTHDAY"]).agg(pl.col("_valid").all().alias("_all_valid"))
+                       .filter(pl.col("_all_valid")).select([action.filter_on, "BIRTHDAY"]))
             
             df_temp = df.join(matches, on=[action.filter_on, "BIRTHDAY"], how="semi") 
         
