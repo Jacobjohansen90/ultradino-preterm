@@ -160,17 +160,17 @@ def mark_df(df, criteria):
                 
         if action.action == 'include':
             mark = pl.col(action.filter_on).is_in(table[action.filter_on])
-            if action.mark_name in df.columns:
-                df = df.with_columns((pl.col(action.mark_name) | mark).alias(action.mark_name))
+            if criteria.mark_name in df.columns:
+                df = df.with_columns((pl.col(criteria.mark_name) | mark).alias(criteria.mark_name))
             else:
-                df = df.with_columns(mark.alias(action.mark_name))
+                df = df.with_columns(mark.alias(criteria.mark_name))
     
         elif action.action == 'exclude':
             mark = ~pl.col(action.filter_on).is_in(table[action.filter_on])
-            if action.mark_name in df.columns:
-                df = df.with_columns((pl.col(action.mark_name) | mark).alias(action.mark_name))
+            if criteria.mark_name in df.columns:
+                df = df.with_columns((pl.col(criteria.mark_name) | mark).alias(criteria.mark_name))
             else:
-                df = df.with_columns(mark.alias(action.mark_name))
+                df = df.with_columns(mark.alias(criteria.mark_name))
     
         elif action.action == 'include_birth':
             mark = (df.join(table, on=action.filter_on, how="left")
@@ -180,10 +180,10 @@ def mark_df(df, criteria):
 
             df = df.join(mark, on=[action.filter_on, "BIRTHDAY"], how="left") 
             
-            if action.mark_name in df.columns:
-                df = df.with_columns((pl.col(action.mark_name) | pl.col('mark').fill_null(False)).alias(action.mark_name))
+            if criteria.mark_name in df.columns:
+                df = df.with_columns((pl.col(criteria.mark_name) | pl.col('mark').fill_null(False)).alias(criteria.mark_name))
             else:
-                df = df.with_columns((pl.col('mark').fill_null(False)).alias(action.mark_name))
+                df = df.with_columns((pl.col('mark').fill_null(False)).alias(criteria.mark_name))
 
             df = df.drop('mark')
                     
@@ -197,7 +197,7 @@ def mark_df(df, criteria):
     
             df = df.join(mark, on=[criteria.filter_on, 'BIRTHDAY'], how='left')
     
-            if action.mark_name in df.columns:
+            if criteria.mark_name in df.columns:
                 df = df.with_columns(pl.when(pl.col("mark").is_not_null())
                                      .then(False).otherwise(pl.col(criteria.mark_name)).alias(criteria.mark_name))
             else:
