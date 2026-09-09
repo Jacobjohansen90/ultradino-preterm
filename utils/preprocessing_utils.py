@@ -102,7 +102,6 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
 def filter_df(df, criteria):
     df = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("remove"))
     print(criteria.name)
-    print(df.columns)
     for action in criteria.actions: 
         table = None
         for condition in action.conditions:
@@ -113,6 +112,7 @@ def filter_df(df, criteria):
                 table = filter_conditions(df, condition, action.filter_on, table, action.action, external=False)
     
         if action.action == 'include':
+            print(df.columns)
             df = df.with_columns(pl.when(pl.col("remove") == True).then(True)
                                  .when(pl.col(action.filter_on).is_in(table.filter(pl.col('_matching') == True)[action.filter_on]))
                                  .then(False).otherwise(pl.col("remove")).alias("remove"))
