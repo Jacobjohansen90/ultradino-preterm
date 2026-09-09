@@ -24,25 +24,25 @@ pl.Config.set_tbl_cols(-1)
 
 def unique(df, column, value):
     if value is True:
-        df = df.filter(pl.len().over(column) == 1)
+        return pl.len().over(column) == 1
     elif value is False:
-        df = df.filter(pl.len().over(column) != 1)
-    return df
+        return pl.len().over(column) != 1
+
 
 def in_list(df, column, value):
-    df = df.filter(pl.col(column).is_in(value))
-    return df
+    return pl.col(column).is_in(value)
+
 
 def starts_with(df, column, value):
     if isinstance(value, (list, ListConfig)):
-        df = df.filter(pl.any_horizontal([pl.col(column).str.starts_with(v) for v in value]))
+        return pl.any_horizontal([pl.col(column).str.starts_with(v) for v in value])
     else:
-        df = df.filter(pl.col(column).str.starts_with(value))
-    return df
+        return pl.col(column).str.starts_with(value)
+
 
 def is_null(df, column, value):
-    df = df.filter(pl.col(column).is_null())
-    return df
+    return pl.col(column).is_null()
+
 
 OPS = {">": operator.gt,
        "<": operator.lt,
@@ -51,12 +51,11 @@ OPS = {">": operator.gt,
        "==": operator.eq,
        "!=": operator.ne,
        '-': operator.sub,
-       '+': operator.add}
-
-custom_OPS = {"unique": unique,
-              "in": in_list,
-              "starts_with": starts_with,
-              "is_null": is_null}
+       '+': operator.add,
+       "unique": unique,
+       "in": in_list,
+       "starts_with": starts_with,
+       "is_null": is_null}
 
 type_map = {"str": pl.Utf8,
             "float": pl.Float64,
@@ -74,40 +73,35 @@ def load_table(path, ignore_errors=False, has_header=True):
     else:
         raise NotImplementedError(f"Unknown file type for path: {path}")
 
-def filter_conditions(df, condition, filter_on, table, action, external=True):      
-    if condition.operator in custom_OPS.keys():
-        df_temp = custom_OPS[condition.operator](df, condition.column, condition.value)
-    else:    
-        if condition.operator in ['>', '<', '>=', '<=', '-', '+']:
-            df_temp = df.with_columns(pl.col(condition.column).cast(pl.Int64, strict=False))
-            df_temp = df_temp.filter(pl.col(condition.column).is_not_null())
-        else:
-            df_temp = df
-        df_temp = df_temp.filter(OPS[condition.operator](pl.col(condition.column), condition.value))
+
+def filter_conditions(df, condition, filter_on, table, action, external=True):
+    df_temp = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("_matching"))    
+    df_temp = df_temp.with_columns(OPS[condition.operator](pl.col(condition.column), condition.value).alias("_matching"))
 
     if external:
         match_on = [condition.match_on] if isinstance(condition.match_on, str) else condition.match_on
         filter_on = [filter_on] if isinstance(filter_on, str) else filter_on
         df_temp = df_temp.with_columns(pl.col(src).alias(dst) for src, dst in zip(match_on, filter_on))
-        if action in ['exclude_birth', 'include_birth', 'include_birth_strict', 'exclude_birth_strict']:
+        if action in ['exclude_birth', 'include_birth']:
             filter_on = filter_on + ["date_of_occurence", "invalid_date"]
             df_temp = df_temp.with_columns(pl.col(condition.date_column)
                                            .str.slice(0,10).str.strptime(pl.Date, strict=False).alias('date_of_occurence'))
-
-            df_temp = df_temp.with_columns((pl.col(condition.date_column).is_not_null() &
-                                            pl.col("date_of_occurence").is_null()).alias("invalid_date"))
             
     if condition.condition is None:
-        table = df_temp.select(filter_on)
+        table = df_temp.select(filter_on + ['_matching'])
+    
     elif condition.condition == "or":
-        table = pl.concat([table, df_temp.select(filter_on)]).unique()
+        table = (pl.concat([table, df_temp.select(filter_on + ['_matching'])])
+                 .group_by(filter_on).agg(pl.col('_matching').any().alias('_matching')))
+        
     elif condition.condition == "and":
-        table = table.join(df_temp.select(filter_on), on=filter_on, how="semi")
+        table = (pl.concat([table, df_temp.select(filter_on + ['_matching'])])
+                 .group_by(filter_on).agg(pl.col('_matching').fill_null(False).all().alias('_matching')))
     return table
 
     
 def filter_df(df, criteria):
-    dfs = []
+    df = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("remove"))
     print(criteria.name)
     for action in criteria.actions: 
         table = None
@@ -119,48 +113,63 @@ def filter_df(df, criteria):
                 table = filter_conditions(df, condition, action.filter_on, table, action.action, external=False)
     
         if action.action == 'include':
-            df_temp = df.join(table, on=action.filter_on, how='semi')
+            df = df.with_columns(pl.when(pl.col("remove") == True).then(True)
+                                 .when(pl.col(action.filter_on).is_in(table.filter(pl.col('_matching') == True)[action.filter_on]))
+                                 .then(False).otherwise(pl.col("remove")).alias("remove"))
        
         elif action.action == 'exclude':
-            df_temp = df.join(table, on=action.filter_on, how='anti')
+            df = df.with_columns(pl.when(pl.col(action.filter_on).is_in(table.filter(pl.col("_matching") == True)[action.filter_on]))
+                                 .then(True).otherwise(pl.col("remove")).alias("remove"))
+        
         
         elif action.action == 'include_birth':
-            matches = (df.join(table, on=action.filter_on, how="left")
-                       .filter((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
-                               (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
-                       .select([action.filter_on, "BIRTHDAY"]))
+            if getattr(action, "strict", False):
+                matches = (df.join(table, on=action.filter_on, how="left").filter(pl.col("date_of_occurence").is_not_null())
+                           .filter((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
+                                   (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
+                           .group_by([action.filter_on, "BIRTHDAY"]).agg(pl.col("_matching").all())
+                           .filter(pl.col("_matching")).select([action.filter_on, "BIRTHDAY"]))
+                
+            else:
+                matches = (df.join(table, on=action.filter_on, how="left")
+                           .filter((pl.col("_matching") == True) &
+                                   (pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
+                                   (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
+                           .select([action.filter_on, "BIRTHDAY"]).unique())
             
-            df_temp = df.join(matches, on=[action.filter_on, "BIRTHDAY"], how="semi") 
+            df = df.with_columns(pl.when(pl.col("remove") == True).then(True)
+                                 .when(pl.struct([action.filter_on, "BIRTHDAY"]).is_in(matches.to_struct()))
+                                 .then(False).otherwise(pl.col("remove")).alias("remove"))     
+
         
-        elif action.action == 'include_birth_strict':
-            joined = (df.join(table, on=action.filter_on, how="left")
-                      .with_columns(((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
-                                     (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
-                                    .alias("_valid")))           
-        
-            matches = (joined.group_by([action.filter_on, "BIRTHDAY"]).agg(pl.col("_valid").all().alias("_all_valid"))
-                       .filter(pl.col("_all_valid")).select([action.filter_on, "BIRTHDAY"]))
-            
-            df_temp = df.join(matches, on=[action.filter_on, "BIRTHDAY"], how="semi") 
-        
+
         elif action.action == 'exclude_birth':
             matches = (df.join(table, on=action.filter_on, how="left")
-                       .filter(pl.col("invalid_date") |
-                               (pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
-                               (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
-                       .select([action.filter_on, "BIRTHDAY"]))
-            
-            df_temp = df.join(matches, on=[action.filter_on, "BIRTHDAY"], how="anti") 
+                       .filter((pl.col("_matching") == True) &
+                               (pl.col("date_of_occurence").is_null() |
+                                ((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
+                                 (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))))
+                       .select([action.filter_on, "BIRTHDAY"]).unique())
 
-        dfs.append(df_temp)
-        print(df_temp.height)
-
-    final_df = pl.concat(dfs).unique(subset=["no_ocr_preprocessed_file_path", "CPR_CHILD"])
-
-    return final_df
+            df = df.with_columns(pl.when(pl.struct([action.filter_on, "BIRTHDAY"]).is_in(matches.to_struct()))
+                                 .then(True).otherwise(pl.col("remove")).alias("remove"))
+    
+    if criteria.default == 'keep':
+        df = df.with_columns(pl.col("remove").fill_null(False).alias("remove"))
+    elif criteria.default == 'remove':
+        df = df.with_columns(pl.col("remove").fill_null(True).alias("remove"))
+    else:
+        raise Exception(f"Default behaviour {criteria.default} not implemented")
         
+    final_df = df.filter(~pl.col("remove")).drop("remove")
+    
+    return final_df
+
+
 def mark_df(df, criteria):
+    df = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias(criteria.mark_name))
     print(criteria.name)
+
     for action in criteria.actions:
         table = None
         for condition in action.conditions:
@@ -169,55 +178,49 @@ def mark_df(df, criteria):
                 table = filter_conditions(df_temp, condition, action.filter_on, table, action.action)
             else:
                 table = filter_conditions(df, condition, action.filter_on, table, action.action, external=False)
-                
+
         if action.action == 'include':
-            mark = pl.col(action.filter_on).is_in(table[action.filter_on])
-            if criteria.mark_name in df.columns:
-                df = df.with_columns((pl.col(criteria.mark_name) | mark).alias(criteria.mark_name))
-            else:
-                df = df.with_columns(mark.alias(criteria.mark_name))
-    
+            mark = pl.col(action.filter_on).is_in(table.filter(pl.col('_matching') == True)[action.filter_on])
+
+            df = df.with_columns((pl.col(criteria.mark_name) | mark).alias(criteria.mark_name))
+
         elif action.action == 'exclude':
-            mark = ~pl.col(action.filter_on).is_in(table[action.filter_on])
-            if criteria.mark_name in df.columns:
-                df = df.with_columns((pl.col(criteria.mark_name) | mark).alias(criteria.mark_name))
-            else:
-                df = df.with_columns(mark.alias(criteria.mark_name))
-    
+            mark = pl.col(action.filter_on).is_in(table.filter(pl.col('_matching') == False)[action.filter_on])
+        
+            df = df.with_columns((pl.col(criteria.mark_name) | mark).alias(criteria.mark_name))
+
         elif action.action == 'include_birth':
-            mark = (df.join(table, on=action.filter_on, how="left")
-                    .filter((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
-                            (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
-                    .select([action.filter_on, "BIRTHDAY"])).unique().with_columns(pl.lit(True).alias('mark'))
-
-            df = df.join(mark, on=[action.filter_on, "BIRTHDAY"], how="left") 
-            
-            if criteria.mark_name in df.columns:
-                df = df.with_columns((pl.col(criteria.mark_name) | pl.col('mark').fill_null(False)).alias(criteria.mark_name))
+            if getattr(action, "strict", False):
+                matches = (df.join(table, on=action.filter_on, how="left").filter(pl.col("date_of_occurence").is_not_null())
+                           .filter((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
+                                   (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
+                           .group_by([action.filter_on, "BIRTHDAY"]).agg(pl.col("_matching").all())
+                           .filter(pl.col("_matching")).select([action.filter_on, "BIRTHDAY"]))
             else:
-                df = df.with_columns((pl.col('mark').fill_null(False)).alias(criteria.mark_name))
+                matches = (df.join(table, on=action.filter_on, how="left")
+                           .filter((pl.col("_matching") == True) &
+                                   (pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
+                                   (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
+                           .select([action.filter_on, "BIRTHDAY"]).unique())
 
-            df = df.drop('mark')
+            mark = pl.struct([action.filter_on, "BIRTHDAY"]).is_in(matches.to_struct())
+
+            df = df.with_columns((pl.col(criteria.mark_name) | mark).alias(criteria.mark_name))
 
         elif action.action == 'exclude_birth':
-            print("WARNING - Exclude_birth for mark_df is not properbly implemented and tested. Logic may be inconsistent")
-            mark = (df.join(table, on=action.filter_on, how="left")
-                    .filter(pl.col("invalid_date") |
-                            (pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
-                            (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
-                    .select([action.filter_on, "BIRTHDAY"])).unique().with_columns(pl.lit(False).alias('mark'))
-    
-            df = df.join(mark, on=[criteria.filter_on, 'BIRTHDAY'], how='left')
-    
-            if criteria.mark_name in df.columns:
-                df = df.with_columns(pl.when(pl.col("mark").is_not_null())
-                                     .then(False).otherwise(pl.col(criteria.mark_name)).alias(criteria.mark_name))
-            else:
-                df = df.with_columns((pl.col('mark').fill_null(True)).alias(criteria.mark_name))
-            
-            df = df.drop('mark')
+            matches = (df.join(table, on=action.filter_on, how="left")
+                       .filter((pl.col("_matching") == True) &
+                               (pl.col("date_of_occurence").is_null() |
+                                ((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
+                                 (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))))
+                       .select([action.filter_on, "BIRTHDAY"]).unique())
 
-    return df
+            mark = (pl.struct([action.filter_on, "BIRTHDAY"]).is_in(matches.to_struct()))
+
+            df = df.with_columns((pl.col(criteria.mark_name) | mark).alias(criteria.mark_name))
+
+    return df    
+
 
 def find_close_births(df, criteria):
     #Reduce to birth level
