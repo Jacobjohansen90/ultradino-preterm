@@ -160,14 +160,14 @@ def mark_df(df, criteria):
                 
         if action.action == 'include':
             mark = pl.col(action.filter_on).is_in(table[action.filter_on])
-            if criteria.mark_name in df.columns:
+            if action.mark_name in df.columns:
                 df = df.with_columns((pl.col(action.mark_name) | mark).alias(action.mark_name))
             else:
                 df = df.with_columns(mark.alias(action.mark_name))
     
         elif action.action == 'exclude':
             mark = ~pl.col(action.filter_on).is_in(table[action.filter_on])
-            if criteria.mark_name in df.columns:
+            if action.mark_name in df.columns:
                 df = df.with_columns((pl.col(action.mark_name) | mark).alias(action.mark_name))
             else:
                 df = df.with_columns(mark.alias(action.mark_name))
