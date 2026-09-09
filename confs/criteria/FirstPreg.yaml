@@ -160,16 +160,6 @@ population_criteria:
           column: Paritet
           operator: "!="
           value: "1"
-    - action: include_birth_strict
-      filter_on: CPR_MOTHER
-      conditions:
-        - condition: 
-          table: ${paths.input_dir_SP}/Mor - Obstetrisk Historik DEL 1.csv
-          match_on: MOR_CPR
-          date_column: Kontakt dato
-          column: Para
-          operator: "<"
-          value: 2
     - action: include_birth
       filter_on: CPR_MOTHER
       conditions:
