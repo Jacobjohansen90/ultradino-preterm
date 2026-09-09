@@ -23,10 +23,11 @@ pl.Config.set_tbl_cols(-1)
 #%%Operator functions
 
 def unique(column, value):
+    key = pl.struct(column)
     if value is True:
-        return pl.len().over(column) == 1
+        return pl.len().over(key) == 1
     elif value is False:
-        return pl.len().over(column) != 1
+        return pl.len().over(key) != 1
 
 
 def in_list(column, value):
