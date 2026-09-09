@@ -31,9 +31,9 @@ cfg.paths.data_dir += cfg.version + '/'
 
 #Setup dirs
 Path(cfg.paths.data_dir).mkdir(exist_ok=True)
-Path(cfg.paths.data_dir + 'data_dump/').mkdir()
-Path(cfg.paths.data_dir + 'logs/').mkdir()
-Path(cfg.paths.data_dir + 'tables/').mkdir()
+Path(cfg.paths.data_dir + 'data_dump/').mkdir(exist_ok=True)
+Path(cfg.paths.data_dir + 'logs/').mkdir(exist_ok=True)
+Path(cfg.paths.data_dir + 'tables/').mkdir(exist_ok=True)
 
 OmegaConf.save(cfg, cfg.paths.data_dir + 'logs/preprocessing.yaml')
 OmegaConf.save(incl_excl_cfgs['train'], cfg.paths.data_dir + 'logs/train_incl_excl.yaml')
