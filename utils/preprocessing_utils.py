@@ -392,6 +392,8 @@ def calculate_CL(row, cervix_label=3):
 
     img_path = row['no_ocr_preprocessed_file_path']    
     seg_path = row['segmentation_path']    
+    #TEMP UNTIL SQL DB IS UPDATED!
+    seg_path = seg_path.replace('segmentations', 'derived_data/PN_COMPLETE_CERVIX')
     x0 = row['region_location_min_x0'][0]
     x1 = row['region_location_max_x1'][0]
     y0 = row['region_location_min_y0'][0] 
