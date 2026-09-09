@@ -30,18 +30,18 @@ def unique(column, value):
 
 
 def in_list(column, value):
-    return pl.col(column).is_in(value)
+    return column.is_in(value)
 
 
 def starts_with(column, value):
     if isinstance(value, (list, ListConfig)):
-        return pl.any_horizontal([pl.col(column).str.starts_with(v) for v in value])
+        return pl.any_horizontal([column.str.starts_with(v) for v in value])
     else:
-        return pl.col(column).str.starts_with(value)
+        return column.str.starts_with(value)
 
 
 def is_null(column, value):
-    return pl.col(column).is_null()
+    return column.is_null()
 
 
 OPS = {">": operator.gt,
