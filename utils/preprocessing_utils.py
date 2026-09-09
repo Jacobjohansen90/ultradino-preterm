@@ -103,7 +103,6 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
 def filter_df(df, criteria):
     table = None
     for condition in criteria.conditions:
-        print(condition)
         if 'table' in condition:
             df_temp = load_table(condition.table)
             table = filter_conditions(df_temp, condition, criteria.filter_on, table, criteria.action)
@@ -137,6 +136,7 @@ def filter_df(df, criteria):
 def mark_df_external(df, criteria):
     table = None
     for condition in criteria.conditions:
+        print(condition)
         df_temp = load_table(condition.table)
         table = filter_conditions(df_temp, condition, criteria.filter_on, table, criteria.action)
            
