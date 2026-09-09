@@ -80,7 +80,7 @@ for incl_excl in['test', 'train']:
     cfg_incl_excl.paths = cfg.paths
 
     df_temp, discards, conditioned = apply_inclusion_exclusion(df_temp, cfg_incl_excl)
-
+    print(df_temp.height)
     with open(cfg.paths.data_dir + 'logs/{incl_excl}_discards.json', "w") as file:
         json.dump(discards, file)
     
