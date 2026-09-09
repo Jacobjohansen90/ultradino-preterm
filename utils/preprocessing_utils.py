@@ -160,6 +160,7 @@ def filter_df(df, criteria):
     return final_df
         
 def mark_df(df, criteria):
+    print(criteria.name)
     for action in criteria.actions:
         table = None
         for condition in action.conditions:
