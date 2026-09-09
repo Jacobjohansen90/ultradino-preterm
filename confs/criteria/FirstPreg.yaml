@@ -172,7 +172,7 @@ population_criteria:
       - condition: 
         table: ${paths.input_dir_SP}/Mor - Obstetrisk Historik DEL 1.csv
         match_on: MOR_CPR
-        date_column: Kontakt_dato
+        date_column: Kontakt dato
         column: Para
         operator: ">="
         value: 2
@@ -211,7 +211,7 @@ population_criteria:
       - condition: 
         table: ${paths.input_dir_SP}/Mor - Obstetrisk Historik DEL 1.csv
         match_on: MOR_CPR
-        date_column: Kontakt_dato
+        date_column: Kontakt dato
         column: Flerfold
         operator: ">="
         value: 1
