@@ -278,10 +278,10 @@ def discard(discards, df, criteria, mothers, children):
 
 
 def condition(conditioned, df, criteria):    
-    n_mothers = df.filter(pl.col(criteria.name)).get_column("CPR_MOTHER").n_unique()
-    n_children = df.filter(pl.col(criteria.name)).get_column("CPR_CHILD").n_unique()
-    cpr_mothers = df.filter(pl.col(criteria.name))["CPR_MOTHER"].unique().to_list()
-    cpr_children = df.filter(pl.col(criteria.name))["CPR_CHILD"].unique().to_list()
+    n_mothers = df.filter(pl.col(criteria.mark_name)).get_column("CPR_MOTHER").n_unique()
+    n_children = df.filter(pl.col(criteria.mark_name)).get_column("CPR_CHILD").n_unique()
+    cpr_mothers = df.filter(pl.col(criteria.mark_name))["CPR_MOTHER"].unique().to_list()
+    cpr_children = df.filter(pl.col(criteria.mark_name))["CPR_CHILD"].unique().to_list()
         
         
     conditioned[criteria.name] = {'mothers_conditioned': n_mothers,

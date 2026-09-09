@@ -222,10 +222,10 @@ conditional_criteria:
     #Cerclage
   - name: Cerclage
     function: mark_df
+    mark_name: cerclage
     actions:
     - action: include
       filter_on: BIRTH_ID
-      mark_name: cerclage
       conditions:
         - condition: 
           table: ${paths.input_dir_SDS}/mor_diagnoser.csv
@@ -241,7 +241,6 @@ conditional_criteria:
           value: [KLDD10A, KLDD10B, KMAB00, KMAB01, KLDD20, KMAB03]
     - action: include_birth
       filter_on: CPR_MOTHER
-      mark_name: cerclage
       conditions:
         - condition: 
           table: ${paths.data_dir}/tables/t_sksopr.csv
@@ -259,7 +258,6 @@ conditional_criteria:
           value: "DO343C"
     - action: include_birth
       filter_on: CPR_MOTHER
-      mark_name: cerclage
       conditions:
         - condition: 
           table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
@@ -279,10 +277,10 @@ conditional_criteria:
     #C-section (kejsersnit)
   - name: C-section
     function: mark_df
+    mark_name: c-section
     actions:
     - action: include
       filter_on: CPR_CHILD
-      mark_name: c-section
       conditions:
         - condition:
           table: ${paths.input_dir_SDS}/nyfoedte.csv
@@ -298,7 +296,6 @@ conditional_criteria:
           value: "1"
     - action: include_birth
       filter_on: CPR_MOTHER
-      mark_name: c-section
       conditions:
         - condition: 
           table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
@@ -318,10 +315,10 @@ conditional_criteria:
     #C-section during birth
   - name: C-section during birth
     function: mark_df
+    mark_name: c-section_during_birth
     actions:
     - action: include_birth
       filter_on: CPR_MOTHER
-      mark_name: c-section_during_birth
       conditions:
         - condition: 
           table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
@@ -339,7 +336,6 @@ conditional_criteria:
           value: [KMCA10D, KMCA10E]
     - action: include
       filter_on: BIRTH_ID
-      mark_name: c-section_during_birth
       conditions:
         - condition: 
           table: ${paths.input_dir_SDS}/mor_procedurer.csv
@@ -351,10 +347,10 @@ conditional_criteria:
     #Contraction with preterm birth
   - name: Contractions with preterm birth
     function: mark_df
+    mark_name: contractions_with_preterm_birth
     actions:
     - action: include_birth
       filter_on: CPR_MOTHER
-      mark_name: contractions_with_preterm_birth
       conditions:
         - condition:
           table: ${paths.data_dir}/tables/t_diag.csv
@@ -372,7 +368,6 @@ conditional_criteria:
           value: "DO601"
     - action: include
       filter_on: BIRTH_ID
-      mark_name: contractions_with_preterm_birth
       conditions:
         - condition: 
           table: ${paths.input_dir_SDS}/mor_diagnoser.csv
@@ -384,10 +379,10 @@ conditional_criteria:
     #Induced
   - name: Induced
     function: mark_df
+    mark_name: induced
     actions:
     - action: include
       filter_on: CPR_CHILD
-      mark_name: induced
       conditions:
         - condition:
           table: ${paths.input_dir_SDS}/mfr.csv
@@ -415,7 +410,6 @@ conditional_criteria:
           value: "Ja"
     - action: include_birth
       filter_on: CPR_MOTHER
-      mark_name: induced
       conditions:
         - condition:
           table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
@@ -433,7 +427,6 @@ conditional_criteria:
           value: [DO837, DO847]
     - action: include
       filter_on: BIRTH_ID
-      mark_name: induced
       conditions:
         - condition:
           table: ${paths.input_dir_SP}/Mor - Fødselsresume - DEL 1.csv
@@ -445,10 +438,10 @@ conditional_criteria:
     #PPROM
   - name: PPROM
     function: mark_df
+    mark_name: pprom
     actions:
     - action: include
       filter_on: CPR_CHILD
-      mark_name: pprom
       conditions:
         - condition:
           table: ${paths.input_dir_SDS}/mfr.csv
@@ -458,7 +451,6 @@ conditional_criteria:
           value: [DO422, DO420, DO424]
     - action: include
       filter_on: BIRTH_ID
-      mark_name: pprom
       conditions:
         - condition:
           table: ${paths.input_dir_SDS}/mor_diagnoser.csv
@@ -468,7 +460,6 @@ conditional_criteria:
           value: [DO422, DO420, DO424]
     - action: include_birth
       filter_on: CPR_MOTHER
-      mark_name: pprom
       conditions:
         - condition:
           table: ${paths.data_dir}/tables/t_diag.csv
@@ -488,10 +479,10 @@ conditional_criteria:
     #Progesterone
   - name: Progesterone
     function: mark_df
+    mark_name: progesterone
     actions:
     - action: include_birth
       filter_on: CPR_MOTHER
-      mark_name: progesterone
       conditions:
         - condition:
           table: ${paths.input_dir_SDS}/epikur_1.csv
@@ -544,7 +535,6 @@ conditional_criteria:
           value: "G03DA04"  
     - action: include
       filter_on: BIRTH_ID 
-      mark_name: progesterone
       conditions:
         - condition: 
           table: ${paths.input_dir_SDS}/mor_diagnoser.csv
