@@ -106,6 +106,8 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
     
 def filter_df(df, criteria):
     table = None
+    print(df.height)
+    print(criteria.name)
     for condition in criteria.conditions:
         if 'table' in condition:
             df_temp = load_table(condition.table)
