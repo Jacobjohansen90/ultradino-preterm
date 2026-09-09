@@ -102,6 +102,7 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
 def filter_df(df, criteria):
     df = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("remove"))
     print(criteria.name)
+    print(df.columns)
     for action in criteria.actions: 
         table = None
         for condition in action.conditions:
