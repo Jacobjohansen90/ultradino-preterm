@@ -15,6 +15,7 @@ from PIL import Image
 from concurrent.futures import ProcessPoolExecutor
 import json
 from scipy.spatial import ConvexHull
+from omegaconf import ListConfig
 
 pl.Config.set_tbl_rows(-1)
 pl.Config.set_tbl_cols(-1)
@@ -34,7 +35,10 @@ def in_list(df, column, value):
     return df
 
 def starts_with(df, column, value):
-    df = df.filter(pl.col(column).str.starts_with(value))
+    if isinstance(value, (list, ListConfig)):
+        df = df.filter(pl.any_horizontal([pl.col(column).str.starts_with(v) for v in value]))
+    else:
+        df = df.filter(pl.col(column).str.starts_with(value))
     return df
 
 def is_null(df, column, value):
