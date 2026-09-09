@@ -132,20 +132,7 @@ population_criteria:
         operator: "!="
         value: "Levende"
 
-    #Only first pregnancy
-  - name: First Pregnancy
-    action: include_birth
-    filter_on: CPR_MOTHER
-    function: filter_df
-    conditions:
-      - condition:
-        table: ${paths.input_dir_SP}/Mor - CPMI - Diagnoseliste.csv
-        match_on: MOR_CPR
-        date_column: Noteret_dato
-        column: Diagnosekode
-        operator: "=="
-        value: "DZ340"
- 
+    #Only first pregnancy 
   - name: First Pregnancy
     action: exclude
     filter_on: CPR_CHILD
