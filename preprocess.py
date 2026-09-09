@@ -77,9 +77,7 @@ df = merge_population_and_image_df(df_img, df_pop, cfg)
 for incl_excl in['test', 'train']:
     df_temp = df.clone()
     cfg_incl_excl = incl_excl_cfgs[incl_excl]
-        
     cfg_incl_excl.paths = cfg.paths
-    OmegaConf.save(cfg_incl_excl, cfg.paths.data_dir + 'logs/' + incl_excl + '.yaml')
 
     df_temp, discards, conditioned = apply_inclusion_exclusion(df_temp, cfg_incl_excl)
 

@@ -222,7 +222,7 @@ conditional_criteria:
     function: mark_df_external
     mark_name: c-section
     conditions:
-      - condition: or
+      - condition: 
         table: ${paths.input_dir_SP}/Mor - CPMI - Procedurer.csv
         match_on: MOR_CPR
         date_column: ServiceDatetime
