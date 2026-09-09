@@ -138,6 +138,7 @@ population_criteria:
     filter_on: CPR_MOTHER
     function: filter_df
     conditions:
+      - condition:
         table: ${paths.input_dir_SP}/Mor - CPMI - Diagnoseliste.csv
         match_on: MOR_CPR
         date_column: Noteret_dato
