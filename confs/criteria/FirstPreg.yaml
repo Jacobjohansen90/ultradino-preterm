@@ -170,7 +170,8 @@ population_criteria:
           column: Paritet
           operator: "!="
           value: "1"
-    - action: include_birth_strict
+    - action: include_birth
+      strict: True
       filter_on: CPR_MOTHER
       conditions:
         - condition: 
