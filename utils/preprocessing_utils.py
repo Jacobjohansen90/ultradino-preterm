@@ -108,13 +108,14 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
 def filter_df(df, criteria):
     print()
     print(criteria.name)
+
+    df = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("remove"))
     children_before = (
     df
     .filter(pl.col("remove") != True)
     .select("CPR_CHILD")
     .n_unique()
 )
-    df = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("remove"))
     for action in criteria.actions: 
         table = None
         filter_on = [action.filter_on] if isinstance(action.filter_on, str) else action.filter_on
