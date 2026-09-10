@@ -15,10 +15,11 @@ from PIL import Image
 from concurrent.futures import ProcessPoolExecutor
 import json
 from omegaconf import ListConfig
+import logging
 
 pl.Config.set_tbl_rows(-1)
 pl.Config.set_tbl_cols(-1)
-
+logger = logging.getLogger(__name__)
 
 #%%Operator functions
 
@@ -81,7 +82,6 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
                                                                condition.value).alias("_matching"))
     else:
         df_temp = df.with_columns(OPS[condition.operator](pl.col(condition.column), condition.value).alias("_matching"))
-    print(df_temp['_matching'].sum())
     if external:
         match_on = [condition.match_on] if isinstance(condition.match_on, str) else condition.match_on
         df_temp = df_temp.with_columns(pl.col(src).alias(dst) for src, dst in zip(match_on, filter_on))
@@ -101,7 +101,6 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
         table = (table.join(df_temp.select(filter_on + ['_matching']), on=filter_on, how="inner", suffix="_new")
                  .with_columns((pl.col("_matching") & pl.col("_matching_new")).alias("_matching"))
                  .drop("_matching_new"))
-    print(table['_matching'].sum())
     return table
 
     
@@ -186,8 +185,8 @@ def filter_df(df, criteria):
         raise Exception(f"Default behaviour {criteria.default} not implemented")
         
     final_df = df.filter(~pl.col("remove")).drop("remove")
-    print(f"Removed: {children - final_df['CPR_CHILD'].n_unique()}")
-    print(f"Children left: {final_df['CPR_CHILD'].n_unique()}")
+    logger.info(f"Removed: {children - final_df['CPR_CHILD'].n_unique()}")
+    logger.info(f"Children left: {final_df['CPR_CHILD'].n_unique()}")
     return final_df
 
 

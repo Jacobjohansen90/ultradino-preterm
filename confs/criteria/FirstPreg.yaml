@@ -181,6 +181,8 @@ population_criteria:
           column: Diagnosekode
           operator: "=="
           value: "DZ348A"       
+
+
     #Non-twins etc
   - name: No multi-births
     function: filter_df
