@@ -149,7 +149,9 @@ def filter_df(df, criteria):
             print("matching:", matches["_matching"].sum())
             print("non-null dates:", matches["date_of_occurence"].is_not_null().sum())
             if getattr(action, "strict", False):
-                matches = matches.group_by(filter_on + ['BIRTHDAY']).agg(pl.col("_matching").all())
+                matches = matches.group_by(filter_on + ['BIRTHDAY']).agg([pl.col("_matching").drop_nulls().all().alias("_matching"),
+                                                                          pl.col("_matching").drop_nulls().len().alias("_n_valid")
+                                                                          ]).filter((pl.col("_n_valid") > 0) & pl.col("_matching"))
             else:
                 matches = matches.group_by(filter_on + ['BIRTHDAY']).agg(pl.col("_matching").any())
 
