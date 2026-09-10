@@ -86,16 +86,6 @@ population_criteria:
           operator: "=="
           value: "INVALID"
     
-    #Births must not be close
-  - name: No close birth
-    function: find_close_births
-    default: keep
-    actions:
-    - action: exclude
-      filter_on: ['CPR_MOTHER', 'CPR_CHILD']
-      column: BIRTHDAY
-      threshold: 280
-
     #Must have GA
   - name: Has GA
     function: filter_df
@@ -229,6 +219,17 @@ population_criteria:
           column: Flerfold
           operator: ">="
           value: 1
+
+    #Births must not be close
+  - name: No close birth
+    function: find_close_births
+    default: keep
+    actions:
+    - action: exclude
+      filter_on: ['CPR_MOTHER', 'CPR_CHILD']
+      column: BIRTHDAY
+      threshold: 280
+
 
 conditional_criteria:
     #Cerclage
