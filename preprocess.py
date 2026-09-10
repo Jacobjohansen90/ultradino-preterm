@@ -72,6 +72,7 @@ logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + s
 #%%Merge image and population dfs
 df = merge_population_and_image_df(df_img, df_pop, cfg)
 
+df.write_parquet(cfg.paths.data_dir + "total.parquet")
 
 #%%Apply inclusion/exclusion criteria for train and test set
 for incl_excl in['test', 'train']:
