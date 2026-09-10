@@ -143,29 +143,8 @@ population_criteria:
     #Only first pregnancy 
   - name: First Pregnancy
     function: filter_df
-    default: remove
-    actions:
-    - action: include_birth
-      strict: True
-      filter_on: CPR_MOTHER
-      conditions:
-        - condition: 
-          table: ${paths.input_dir_SP}/Mor - Obstetrisk Historik DEL 1.csv
-          match_on: MOR_CPR
-          date_column: Kontakt dato
-          column: Para
-          operator: "<"
-          value: 2
-    - action: include_birth
-      filter_on: CPR_MOTHER
-      conditions:
-        - condition: 
-          table: ${paths.input_dir_SP}/Mor - CPMI - Diagnoseliste.csv
-          match_on: MOR_CPR
-          date_column: Noteret_dato
-          column: Diagnosekode
-          operator: "=="
-          value: "DZ348A"    
+    default: keep
+    actions: 
     - action: exclude
       filter_on: CPR_CHILD
       conditions:
@@ -181,7 +160,18 @@ population_criteria:
           column: Paritet
           operator: "!="
           value: "1"
-      
+    - action: exclude_birth
+      filter_on: CPR_MOTHER
+      conditions:
+        - condition: 
+          table: ${paths.input_dir_SP}/Mor - Obstetrisk Historik DEL 1.csv
+          match_on: MOR_CPR
+          date_column: Kontakt dato
+          column: Para
+          operator: ">="
+          value: 2
+
+
     #Non-twins etc
   - name: No multi-births
     function: filter_df
