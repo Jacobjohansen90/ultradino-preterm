@@ -191,12 +191,15 @@ def filter_df(df, criteria):
        )
 
         removed = children_before - children_after
-
-        print(
-    f"  {action.action}: "
-    f"removed {removed:,} / {children_before:,} "
-    f"({100 * removed / children_before:.2f}%)"
-)
+        
+        if children_before > 0:
+            print(
+                f"  {action.action}: "
+                f"{removed:,} removed "
+                f"({100 * removed / children_before:.2f}%)"
+            )
+        else:
+            print(f"  {action.action}: no children remaining")
     
     if criteria.default == 'keep':
         df = df.with_columns(pl.col("remove").fill_null(False).alias("remove"))
