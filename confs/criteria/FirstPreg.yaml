@@ -41,7 +41,7 @@ image_criteria:
 
   - name: GA at scan
     function: filter_df
-    default: keep
+    default: remove
     actions:
     - action: include
       filter_on: [file_path, CPR_CHILD]
