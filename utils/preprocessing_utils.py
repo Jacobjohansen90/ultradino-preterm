@@ -192,7 +192,7 @@ def filter_df(df, criteria):
         raise Exception(f"Default behaviour {criteria.default} not implemented")
         
     final_df = df.filter(~pl.col("remove")).drop("remove")
-    print(f"Removed: {children - final_df['CPR_CHILD'].n_unique()}")
+    print(f"Removed: {children_before - final_df['CPR_CHILD'].n_unique()}")
     print(f"Children left: {final_df['CPR_CHILD'].n_unique()}")
     return final_df
 
