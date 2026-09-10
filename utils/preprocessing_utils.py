@@ -105,6 +105,8 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
 
     
 def filter_df(df, criteria):
+    print(criteria.name)
+    children = df['CPR_CHiLD'].n_unique()
     df = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("remove"))
     for action in criteria.actions: 
         table = None
@@ -178,7 +180,7 @@ def filter_df(df, criteria):
         raise Exception(f"Default behaviour {criteria.default} not implemented")
         
     final_df = df.filter(~pl.col("remove")).drop("remove")
-    
+    print(f"Removed: {children - final_df['CPR_CHILD'].n_unique()}")
     return final_df
 
 
