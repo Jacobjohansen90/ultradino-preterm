@@ -77,7 +77,7 @@ def load_table(path, ignore_errors=False, has_header=True):
 
 def filter_conditions(df, condition, filter_on, table, action, external=True):
     if condition.operator in [">", "<", ">=", "<=", "-", "+"]:
-        df_temp = df.with_columns(OPS[condition.operator](pl.col(condition.column).cast(pl.Int64, strict=False), 
+        df_temp = df.with_columns(OPS[condition.operator](pl.col(condition.column).cast(pl.Float64, strict=False), 
                                                                condition.value).alias("_matching"))
     else:
         df_temp = df.with_columns(OPS[condition.operator](pl.col(condition.column), condition.value).alias("_matching"))
@@ -106,6 +106,7 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
 
     
 def filter_df(df, criteria):
+    print()
     print(criteria.name)
     children = df['CPR_CHILD'].n_unique()
     df = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("remove"))
