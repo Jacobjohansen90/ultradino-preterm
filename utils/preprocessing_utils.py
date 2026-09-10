@@ -146,9 +146,7 @@ def filter_df(df, criteria):
             matches = matches.filter(pl.col("date_of_occurence").is_not_null())
             matches = matches.filter((pl.col("date_of_occurence") <= pl.col("BIRTHDAY") + pl.duration(days=7)) &
                                          (pl.col("date_of_occurence") >= pl.col("BIRTHDAY") - pl.duration(days=280)))
-            print("joined:", matches.height)
-            print("matching:", matches["_matching"].sum())
-            print("non-null dates:", matches["date_of_occurence"].is_not_null().sum())
+
             if getattr(action, "strict", False):
                 matches = matches.group_by(filter_on + ['BIRTHDAY']).agg([pl.col("_matching").drop_nulls().all().alias("_matching"),
                                                                           pl.col("_matching").drop_nulls().len().alias("_n_valid")
@@ -188,6 +186,7 @@ def filter_df(df, criteria):
         
     final_df = df.filter(~pl.col("remove")).drop("remove")
     print(f"Removed: {children - final_df['CPR_CHILD'].n_unique()}")
+    print(f"Children left: {final_df['CPR_CHILD'].n_unique()}")
     return final_df
 
 
