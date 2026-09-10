@@ -108,7 +108,12 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
 def filter_df(df, criteria):
     print()
     print(criteria.name)
-    children_before = df['CPR_CHILD'].n_unique()
+    children_before = (
+    df
+    .filter(pl.col("remove") != True)
+    .select("CPR_CHILD")
+    .n_unique()
+)
     df = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("remove"))
     for action in criteria.actions: 
         table = None
@@ -177,12 +182,20 @@ def filter_df(df, criteria):
             df = df.with_columns(pl.when(pl.col("_matching") == True).then(True)
                                  .otherwise(pl.col("remove")).alias("remove")).drop("_matching")
             
-        children_after = df.filter(~pl.col("remove")).select("CPR_CHILD").n_unique()
+        children_after = (
+                df
+                .filter(pl.col("remove") != True)
+                .select("CPR_CHILD")
+       .n_unique()
+       )
+
         removed = children_before - children_after
 
-        print(f"  {action.action}: "
-              f"removed {removed:,} / {children_before:,} "
-              f"({100 * removed / children_before:.2f}%)")
+        print(
+    f"  {action.action}: "
+    f"removed {removed:,} / {children_before:,} "
+    f"({100 * removed / children_before:.2f}%)"
+)
     
     if criteria.default == 'keep':
         df = df.with_columns(pl.col("remove").fill_null(False).alias("remove"))
