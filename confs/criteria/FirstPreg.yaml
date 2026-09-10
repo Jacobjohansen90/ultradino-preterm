@@ -145,21 +145,6 @@ population_criteria:
     function: filter_df
     default: remove
     actions:
-    - action: exclude
-      filter_on: CPR_CHILD
-      conditions:
-        - condition: 
-          table: ${paths.input_dir_SDS}/mfr.csv
-          match_on: CPR_BARN
-          column: PARITET
-          operator: "!="
-          value: "1"
-        - condition: or   
-          table: ${paths.input_dir_SDS}/nyfoedte.csv
-          match_on: CPRnummer_Barn
-          column: Paritet
-          operator: "!="
-          value: "1"
     - action: include_birth
       strict: True
       filter_on: CPR_MOTHER
@@ -180,9 +165,23 @@ population_criteria:
           date_column: Noteret_dato
           column: Diagnosekode
           operator: "=="
-          value: "DZ348A"          
-
-
+          value: "DZ348A"    
+    - action: exclude
+      filter_on: CPR_CHILD
+      conditions:
+        - condition: 
+          table: ${paths.input_dir_SDS}/mfr.csv
+          match_on: CPR_BARN
+          column: PARITET
+          operator: "!="
+          value: "1"
+        - condition: or   
+          table: ${paths.input_dir_SDS}/nyfoedte.csv
+          match_on: CPRnummer_Barn
+          column: Paritet
+          operator: "!="
+          value: "1"
+      
     #Non-twins etc
   - name: No multi-births
     function: filter_df

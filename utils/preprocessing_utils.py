@@ -108,16 +108,9 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
 def filter_df(df, criteria):
     print()
     print(criteria.name)
-
+    children = df['CPR_CHILD'].n_unique()
     df = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("remove"))
-
     for action in criteria.actions: 
-        children_before = (
-        df
-        .filter(pl.col("remove") != True)
-        .select("CPR_CHILD")
-        .n_unique()
-    )
         table = None
         filter_on = [action.filter_on] if isinstance(action.filter_on, str) else action.filter_on
         for condition in action.conditions:
@@ -184,24 +177,7 @@ def filter_df(df, criteria):
             df = df.with_columns(pl.when(pl.col("_matching") == True).then(True)
                                  .otherwise(pl.col("remove")).alias("remove")).drop("_matching")
             
-        children_after = (
-                df
-                .filter(pl.col("remove") != True)
-                .select("CPR_CHILD")
-       .n_unique()
-       )
 
-        removed = children_before - children_after
-        
-        if children_before > 0:
-            print(
-                f"  {action.action}: "
-                f"{removed:,} removed "
-                f"({100 * removed / children_before:.2f}%)"
-            )
-        else:
-            print(f"  {action.action}: no children remaining")
-    
     if criteria.default == 'keep':
         df = df.with_columns(pl.col("remove").fill_null(False).alias("remove"))
     elif criteria.default == 'remove':
@@ -210,7 +186,7 @@ def filter_df(df, criteria):
         raise Exception(f"Default behaviour {criteria.default} not implemented")
         
     final_df = df.filter(~pl.col("remove")).drop("remove")
-    print(f"Removed: {children_before - final_df['CPR_CHILD'].n_unique()}")
+    print(f"Removed: {children - final_df['CPR_CHILD'].n_unique()}")
     print(f"Children left: {final_df['CPR_CHILD'].n_unique()}")
     return final_df
 
