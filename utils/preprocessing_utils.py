@@ -98,8 +98,9 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
         table = (table.group_by(filter_on).agg(pl.col("_matching").any().alias("_matching")))
         
     elif condition.condition == "and":
-        table = pl.concat([table, df_temp.select(filter_on + ['_matching'])])
-        table = (table.group_by(filter_on).agg(pl.col("_matching").fill_null(False).all().alias("_matching")))
+        table = (table.join(df_temp.select(filter_on + ['_matching']), on=filter_on, how="inner", suffix="_new")
+                 .with_columns((pl.col("_matching") & pl.col("_matching_new")).alias("_matching"))
+                 .drop("_matching_new"))
     return table
 
     
@@ -279,27 +280,6 @@ def find_close_births(df, criteria):
 
     return df
 
-def find_close_values(df, criteria):
-    #Important! The first value in the filter_on list is assumed to be the one we sort over. 
-    close_values = None
-    for condition in criteria.conditions:
-        df_temp = (df.select(criteria.filter_on + [condition.column])
-                  .unique().sort([criteria.filter_on[0], criteria.column]))
-
-
-        df_temp = df_temp.with_columns((pl.col(criteria.column).diff()
-                                        .over(criteria.filter_on[0]).dt.total_days()
-                                        .abs() < criteria.threshold).alias("close_values"))
-
-        close_values = (df_temp.filter(pl.col("close_values"))
-                        .select(criteria.filter_on).unique())
-
-    if criteria.action == 'include':
-        df = df.join(close_values, on=criteria.filter_on, how="semi")
-    if criteria.action == 'exclude':
-        df = df.join(close_values, on=criteria.filter_on, how="anti")
-
-    return df
 
 def discard(discards, df, criteria, mothers, children):
     if criteria.name in discards.keys():
