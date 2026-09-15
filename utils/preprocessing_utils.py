@@ -19,7 +19,7 @@ import logging
 
 pl.Config.set_tbl_rows(-1)
 pl.Config.set_tbl_cols(-1)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 #%%Operator functions
 
@@ -105,8 +105,7 @@ def filter_conditions(df, condition, filter_on, table, action, external=True):
 
     
 def filter_df(df, criteria):
-    print()
-    print(criteria.name)
+    logger.info(criteria.name)
     children = df['CPR_CHILD'].n_unique()
     df = df.with_columns(pl.lit(None, dtype=pl.Boolean).alias("remove"))
     for action in criteria.actions: 
@@ -186,7 +185,7 @@ def filter_df(df, criteria):
         
     final_df = df.filter(~pl.col("remove")).drop("remove")
     logger.info(f"Removed: {children - final_df['CPR_CHILD'].n_unique()}")
-    logger.info(f"Children left: {final_df['CPR_CHILD'].n_unique()}")
+    logger.info(f"Children left: {final_df['CPR_CHILD'].n_unique()}\n")
     return final_df
 
 
@@ -263,28 +262,41 @@ def mark_df(df, criteria):
         else:
             raise Exception(f"Default behaviour {criteria.default} not implemented")
         
+        logger.info(f"{criteria.name} marked df.unique('CPR_CHILD')[criteria.mark_name].sum() children\n")
+        
         return df    
 
 
 def find_close_births(df, criteria):
-    #Reduce to birth level
+    logger.info(criteria.name)
+    children = df['CPR_CHILD'].n_unique()
     for action in criteria.actions:
-        births = (df.select(["CPR_MOTHER", "CPR_CHILD", action.column])
-                  .unique().sort(["CPR_MOTHER", action.column]))
+        births = df.select(["CPR_MOTHER", "CPR_CHILD", action.column]).unique()
+        
+        pairs = (births.join(births, on="CPR_MOTHER", how="inner", suffix="_2")
+                .filter(pl.col("CPR_CHILD") != pl.col("CPR_CHILD_2")))
+                 
+        pairs = pairs.with_columns((pl.col(action.column) - pl.col(f"{action.column}_2"))
+                                   .dt.total_days().abs().alias("birth_gap"))
+        
+        
     
         #Compute inter-mother birth gaps
         births = births.with_columns((pl.col(action.column).diff()
                                       .over("CPR_MOTHER").dt.total_days()
                                       .abs() < action.threshold).alias("close_births"))
     
-        #Identify births that are close
-        close_births = (births.filter(pl.col("close_births"))
-                        .select(["CPR_MOTHER", "CPR_CHILD"]).unique())
+        close_births = (pairs.filter((pl.col('birth_gap') >= action.min_threshold)
+                                     & (pl.col('birth_gap') <= action.max_threshold))
+                        .select(['CPR_MOTHER', 'CPR_CHILD']).unique())
     
         if action.action == 'include':
             df = df.join(close_births, on=action.filter_on, how="semi")
         if action.action == 'exclude':
             df = df.join(close_births, on=action.filter_on, how="anti")
+
+    logger.info(f"Removed: {children - df['CPR_CHILD'].n_unique()}")
+    logger.info(f"Children left: {df['CPR_CHILD'].n_unique()}\n")
 
     return df
 

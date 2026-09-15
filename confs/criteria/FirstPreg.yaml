@@ -171,18 +171,8 @@ population_criteria:
           column: Para
           operator: "<"
           value: 2
-    - action: include_birth
-      filter_on: CPR_MOTHER
-      conditions:
-        - condition: 
-          table: ${paths.input_dir_SP}/Mor - CPMI - Diagnoseliste.csv
-          match_on: MOR_CPR
-          date_column: Noteret_dato
-          column: Diagnosekode
-          operator: "=="
-          value: "DZ348A"       
-
-
+   
+   
     #Non-twins etc
   - name: No multi-births
     function: filter_df
@@ -228,7 +218,8 @@ population_criteria:
     - action: exclude
       filter_on: ['CPR_MOTHER', 'CPR_CHILD']
       column: BIRTHDAY
-      threshold: 280
+      min_threshold: 2
+      max_threshold: 280
 
 
 conditional_criteria:
