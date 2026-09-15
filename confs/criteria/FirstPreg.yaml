@@ -172,7 +172,8 @@ population_criteria:
           operator: "<"
           value: 2
    
-   
+
+
     #Non-twins etc
   - name: No multi-births
     function: filter_df
