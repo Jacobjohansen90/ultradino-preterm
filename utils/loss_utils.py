@@ -70,23 +70,16 @@ def get_loss(cfg):
     
     return losses
 
-def get_mask(labels, mask_value):
+def mask_value(labels, mask_value):
     if mask_value is None:
         return torch.ones_like(labels, dtype=torch.bool)
     else:
         return labels != mask_value
 
-def fix_labels(data, cutoff, label_smoothing_param):
-    
-    positive = (data['GA_weeks'] < cutoff)
-    remove_on_GA = data['remove_on_GA']
-    
+def label_smoothing(data, cutoff, label_smoothing_param):    
     if label_smoothing_param > 0:
         labels = torch.sigmoid((cutoff-data['GA_weeks'])/label_smoothing_param)
     else:
-        labels = positive.float()
-        
-    mask = ~(positive & remove_on_GA)
-
-    return labels, mask
+        labels = (data['GA_weeks'] < cutoff).float()
+    return labels
     

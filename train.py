@@ -6,7 +6,7 @@ Created on Wed Mar  4 09:41:00 2026
 @author: jacob
 """
 #%%Imports
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, ListConfig
 from torch.utils.data import DataLoader
 import torch
 from tqdm import tqdm
@@ -14,7 +14,7 @@ from tqdm import tqdm
 from dataloader.dataloader import PreTermDataset, collate_fn, DataSplits
 from utils.model_utils import model_from_conf, update_freezing
 from utils.optim_loader import get_optimizer, get_cosine_schedule_with_warmup
-from utils.loss_utils import get_loss, fix_labels, get_mask
+from utils.loss_utils import get_loss, label_smoothing, mask_value
 from utils.metrics import Metrics
 from utils.utils import setup
 
@@ -71,30 +71,37 @@ for fold in range(cfg.data.folds):
     
         model.train()
         train_loss = 0.0
+
         for data in tqdm(TrainLoader):
             optimizer.zero_grad()
             outputs, _ = model(data['imgs'].to(cfg.device.type), 
                                data['img_data'].to(cfg.device.type), 
                                data['ehr_data'].to(cfg.device.type))
+
             loss = 0
+
             for task in cfg.tasks.keys():
                 if task == 'preterm':
                     cutoffs, loss_fn, weights = cfg.tasks[task].values()
                     for cutoff, weight in zip(cutoffs, weights):
-                        labels, mask = fix_labels(data, cutoff, cfg.data.label_smoothing_param)
-                        mask = mask.to(cfg.device.type)
+                        labels = label_smoothing(data, cutoff, cfg.data.label_smoothing_param)
+                        mask = data['masks'].to(cfg.device.type)
                         labels = labels.to(cfg.device.type)
-                        preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
-                        loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
+                        preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)
+                        loss += preterm_loss[mask].mean()*weight
 
                 elif task == 'segmentation':
-                    continue
-
+                    loss_fn, weights, foreground_label = cfg.tasks[task].values()
+                    labels = (data['segmentation'] == foreground_label)
+                    if isinstance(loss_fn, (list, ListConfig)):
+                        loss_fn = '_'.join(loss_fn)
+                    loss += loss_fns[loss_fn](outputs['segmentation'], labels)*weights
+                    
                 else:
                     for aux_task in cfg.tasks[task]:
-                        var, loss_fn, weight, mask_value = aux_task.values()
+                        var, loss_fn, weight, mask_val = aux_task.values()
                         labels = data['aux_vars'][var].to(cfg.device.type)
-                        mask = get_mask(labels, mask_value)
+                        mask = mask_value(labels, mask_val)
                         temp_loss = loss_fns[loss_fn](outputs[task][var]['logits'], labels)
                         loss += temp_loss[mask].mean()*weight
                         
@@ -122,20 +129,20 @@ for fold in range(cfg.data.folds):
                     if task == 'preterm':
                         cutoffs, loss_fn, weights = cfg.tasks[task].values()
                         for cutoff, weight in zip(cutoffs, weights):
-                            labels, mask = fix_labels(data, cutoff, cfg.data.label_smoothing_param)
-                            mask = mask.to(cfg.device.type)
+                            labels = label_smoothing(data, cutoff, cfg.data.label_smoothing_param)
+                            mask = data['masks'].to(cfg.device.type)
                             labels = labels.to(cfg.device.type)     
-                            preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)*weight
-                            loss += (preterm_loss*mask).sum() / mask.sum().clamp(min=1)
+                            preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)
+                            loss += preterm_loss[mask].mean()*weight
                  
                     elif task == 'segmentation':
                         continue   
                   
                     else:
                         for aux_task in cfg.tasks[task]:
-                            var, loss_fn, weight, mask_value = aux_task.values()
+                            var, loss_fn, weight, mask_val = aux_task.values()
                             labels = data['aux_vars'][var].to(cfg.device.type)
-                            mask = get_mask(labels, mask_value)
+                            mask = mask_value(labels, mask_val)
                             temp_loss = loss_fns[loss_fn](outputs[task][var]['logits'], labels)
                             loss += temp_loss[mask].mean()*weight
     

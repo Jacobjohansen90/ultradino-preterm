@@ -17,7 +17,8 @@ class BirthModel(nn.Module):
                  img_data_transform,
                  preterm_heads,
                  aux_task_heads,
-                 aux_method='append'):
+                 aux_method='append',
+                 with_segmentation=False):
         
         super().__init__()
         
@@ -28,6 +29,7 @@ class BirthModel(nn.Module):
         self.preterm_heads = preterm_heads
         self.aux_task_heads = aux_task_heads
         self.aux_method = aux_method
+        self.with_segmentation = with_segmentation
         
         if self.aux_method == 'append':
             """
@@ -55,8 +57,14 @@ class BirthModel(nn.Module):
         else:
             vision_features = self.vit_model(img)
         
+        if self.with_segmentation:
+            segmentation, vision_features = vision_features
+        else:
+            segmentation = None
+        
         outputs = {'preterm': {},
-                   'aux_tasks': {}}
+                   'aux_tasks': {},
+                   'segmentation': segmentation}
         
         for GA, preterm_head in self.preterm_heads.items():
             outputs['preterm'][GA] = preterm_head(vision_features)

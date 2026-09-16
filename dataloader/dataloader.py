@@ -30,6 +30,7 @@ class PreTermDataset(Dataset):
         self.ID_var = ID
         self.df = df
         self.get_segs = 'segmentation' in cfg.tasks.keys()
+        self.cutoffs = cfg.tasks.preterm.cutoffs
         
         self.aux_vars = []
         for task in cfg.tasks.aux_tasks:
@@ -43,7 +44,7 @@ class PreTermDataset(Dataset):
         if self.get_segs:
             self.seg_labels = cfg.tasks.segmentation.foreground
         
-    
+        
     def setup_transforms(self):
         if self.train:
             self.transforms = A.Compose([A.RandomBrightnessContrast(brightness_limit=(-0.3, 0.3), contrast_limit=(-0.3, 0.3), p=0.5),
@@ -150,6 +151,33 @@ class PreTermDataset(Dataset):
         #Get patient identifier
         ID = data.get(self.ID_var)
         
+        #Get loss masks
+        masks = {}
+
+        c_sec = data.get('c-section')
+        c_sec_preg = data.get('c-section_during_birth')
+        pprom = data.get('pprom')
+        contrac = data.get('contractions_with_preterm_birth')
+        induced = data.get('induced')
+
+        for cutoff in self.cutoffs:
+            mask = 0
+            
+            preterm = data.get('GA')//7 < cutoff
+            
+
+            if not preterm:
+                mask = 1
+            elif not induced and not c_sec:
+                mask = 1
+            elif pprom:
+                mask = 1
+            elif c_sec and (c_sec_preg or contrac) and not induced:
+                mask = 1
+            
+            mask = torch.tensor(mask, dtype=torch.bool)
+            masks[str(cutoff)] = mask
+                            
         #Get progesterone status
         progesterone = data.get('progesterone')
 
@@ -157,6 +185,7 @@ class PreTermDataset(Dataset):
                 'img_data': img_data, 
                 'ehr_data': ehr_data, 
                 'GA_weeks': GA_weeks, 
+                'masks': masks,
                 'ID': ID, 
                 'remove_on_GA': remove_on_GA,
                 'progesterone': progesterone,
@@ -169,18 +198,19 @@ def collate_fn(batch):
     img_data = torch.stack([sample['img_data'] for sample in batch])
     ehr_data = torch.stack([sample['ehr_data'] for sample in batch])
     GA_weeks = torch.stack([sample['GA_weeks'] for sample in batch])
-    segmentation = torch.stack([sample['segmentation'] for sample in batch])
+    masks = {cutoff: torch.stack([sample['masks'][cutoff] for sample in batch]) for cutoff in batch[0]['masks']}
     IDs = [sample['ID'] for sample in batch]
     remove_on_GA = torch.stack([sample['remove_on_GA'] for sample in batch])
-    progesterone = [sample['progesterone'] for sample in batch]
-    
+    progesterone = [sample['progesterone'] for sample in batch]    
     aux_vars = {key: torch.stack([sample['aux_vars'][key] for sample in batch]) for key in batch[0]['aux_vars']}
+    segmentation = torch.stack([sample['segmentation'] for sample in batch])
     
 
     sample =  {"imgs": imgs,
                "img_data": img_data,
                "ehr_data": ehr_data,
                "GA_weeks": GA_weeks,
+               "mask": masks,
                "IDs": IDs,
                "remove_on_GA": remove_on_GA,
                'progesterone': progesterone,

@@ -7,6 +7,7 @@ Created on Mon Feb 23 10:17:10 2026
 """
 
 import ultradino_finetune.models.dinov2.load as vit_load
+from ultradino_segmentation import UltraDINOSegmentationModel
 import logging
 from models.Transform import Transform
 from models.Predictor import FCPredictor
@@ -34,6 +35,14 @@ def vit_from_conf(cfg, **kwargs):
     
     set_dropout(model, cfg.dropout)
     
+    return model
+
+def seg_vit_from_conf(cfg, **kwargs):
+    if 'vitb16' in cfg.weights_path:
+        logger.info('Loading pretrained encoder from %s', cfg.weights_path)
+        model = UltraDINOSegmentationModel.from_pretrained('vitb16', cfg.weights_path, 1)
+    else:
+        raise Exception(f"Segmentation model does not support model type from weights path {cfg.weights_path}")
     return model
 
 def ehr_from_conf(cfg, **kwargs):
@@ -64,8 +73,11 @@ def model_from_conf(cfg, **kwargs):
     ehr_kwargs = {}
 
     device = cfg.device.type
+    if 'segmentation' in cfg.tasks:
+        vit_model = seg_vit_from_conf(cfg, **vit_kwargs)
+    else:
+        vit_model = vit_from_conf(cfg.model.vit, **vit_kwargs)
 
-    vit_model = vit_from_conf(cfg.model.vit, **vit_kwargs)
     ehr_model = ehr_from_conf(cfg, **ehr_kwargs)
     
     img_data_transform = Transform(len(cfg.data.img_data), 
@@ -85,10 +97,7 @@ def model_from_conf(cfg, **kwargs):
                 preterm_heads[str(cutoff)] = FCPredictor(vit_model.embed_dim,
                                                          cfg.model.head.dropout,
                                                          cfg.model.head.layer_dims)
-        
-        elif task == 'segmentation':
-            continue
-        
+                
         else:
             for aux_cfg in cfg.tasks[task]:
                 aux_task_heads[aux_cfg['var']] = FCPredictor(vit_model.embed_dim,
@@ -101,7 +110,8 @@ def model_from_conf(cfg, **kwargs):
                        img_data_transform,
                        preterm_heads,
                        aux_task_heads,
-                       aux_method=cfg.auxiliary.method)
+                       aux_method=cfg.auxiliary.method,
+                       with_segmentation=('segmentation' in cfg.tasks))
     
     return model.to(device)
 
