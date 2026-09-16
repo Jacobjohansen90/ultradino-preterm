@@ -278,14 +278,7 @@ def find_close_births(df, criteria):
                  
         pairs = pairs.with_columns((pl.col(action.column) - pl.col(f"{action.column}_2"))
                                    .dt.total_days().abs().alias("birth_gap"))
-        
-        
-    
-        #Compute inter-mother birth gaps
-        births = births.with_columns((pl.col(action.column).diff()
-                                      .over("CPR_MOTHER").dt.total_days()
-                                      .abs() < action.threshold).alias("close_births"))
-    
+             
         close_births = (pairs.filter((pl.col('birth_gap') >= action.min_threshold)
                                      & (pl.col('birth_gap') <= action.max_threshold))
                         .select(['CPR_MOTHER', 'CPR_CHILD']).unique())

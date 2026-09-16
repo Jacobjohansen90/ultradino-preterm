@@ -30,7 +30,7 @@ incl_excl_cfgs = {'train': OmegaConf.load(cfg.paths.train_cfg),
 cfg.paths.data_dir += cfg.version + '/'
 
 #Setup dirs
-Path(cfg.paths.data_dir).mkdir(exist_ok=True)
+Path(cfg.paths.data_dir).mkdir(exist_ok=False)
 Path(cfg.paths.data_dir + 'data_dump/').mkdir(exist_ok=True)
 Path(cfg.paths.data_dir + 'logs/').mkdir(exist_ok=True)
 Path(cfg.paths.data_dir + 'tables/').mkdir(exist_ok=True)
@@ -70,7 +70,7 @@ logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + s
 #%%Merge image and population dfs
 df = merge_population_and_image_df(df_img, df_pop, cfg)
 
-df.write_parquet(cfg.paths.data_dir + "total.parquet")
+df.write_parquet(cfg.paths.data_dir + "data_dump/total_data.parquet")
 
 #%%Apply inclusion/exclusion criteria for train and test set
 for incl_excl in['test', 'train']:
