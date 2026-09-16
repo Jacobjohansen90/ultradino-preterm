@@ -118,7 +118,7 @@ class PreTermDataset(Dataset):
             segmentation = np.isin(segmentation, self.seg_labels)
             segmentation = torch.from_numpy(segmentation)
         else:
-            segmentation = torch.tensor([0])
+            segmentation = torch.tensor([0], dtype=torch.bool)
 
         #Prepare remove_on_GA 
         remove_on_GA = torch.tensor([0], dtype=torch.bool)
