@@ -23,7 +23,7 @@ from utils.preprocessing_utils import (merge_population_tables,
                                        get_CL)
 
 #%%Load variable YAML and setup logger and dirs
-cfg = OmegaConf.load('projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/Population.yaml')
+cfg = OmegaConf.load('/projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/Population.yaml')
 incl_excl_cfgs = {'train': OmegaConf.load(cfg.paths.train_cfg),
                   'test': OmegaConf.load(cfg.paths.test_cfg)}
 
