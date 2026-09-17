@@ -51,17 +51,20 @@ class BirthModel(nn.Module):
             img_data_embedding = self.img_data_transform(img_data)
             embeddings.append(img_data_embedding)
         
+        segmentation = None
+
         if len(embeddings) > 0:
             embeddings = [torch.cat(embeddings, dim=1)] 
-            vision_features = self.vit_model(img, append_tokens=embeddings)
+            if self.with_segmentation:
+                segmentation, vision_features = self.vit_model(img, append_tokens=embeddings, return_cls=True)
+            else:
+                vision_features = self.vit_model(img, append_tokens=embeddings) 
         else:
-            vision_features = self.vit_model(img)
-        
-        if self.with_segmentation:
-            segmentation, vision_features = vision_features
-        else:
-            segmentation = None
-        
+            if self.with_segmentation:
+                segmentation, vision_features = self.vit_model(img, return_cls=True)
+            else:
+                vision_features = self.vit_model(img) 
+                
         outputs = {'preterm': {},
                    'aux_tasks': {},
                    'segmentation': segmentation}

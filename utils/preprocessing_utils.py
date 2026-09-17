@@ -494,7 +494,7 @@ def calculate_CL(row, cervix_label=3):
 
 #%%SQL functions
   
-def sqlite_extractor(cfg, cpr_mothers):
+def sqlite_extractor(cfg, cpr_mothers, chunk_size=100000):
     conn = sqlite3.connect(cfg.paths.SQL_DB)
     cur = conn.cursor()
     
@@ -513,6 +513,23 @@ def sqlite_extractor(cfg, cpr_mothers):
               *[(column, type_map[dtype]) for column, dtype in metadata_dicom_variables],
               ("is_flow", pl.Boolean)]
     
+    list_columns = {column for column, dtype in metadata_dicom_variables if dtype == "list"}
+    date_cols = [col for col, dtype in metadata_dicom_variables if dtype == "date"]
+    
+    cur.execute("""
+                SELECT COUNT(*)
+                FROM tmp_hashes t
+                LEFT JOIN cpr_hashes c
+                    ON c.phair_hash = t.phair_hash
+                LEFT JOIN path_table pt
+                    ON pt.file_hash = c.xxhash
+                LEFT JOIN dicom_metadata_table d
+                    ON d.sop_instance_uid = pt.sop_instance_uid
+                """)
+    
+    total_rows = cur.fetchone()[0]
+
+    
     cur.execute(f"""
                 SELECT
                     t.phair_hash,
@@ -528,35 +545,42 @@ def sqlite_extractor(cfg, cpr_mothers):
                 LEFT JOIN dicom_metadata_table d
                     ON d.sop_instance_uid = pt.sop_instance_uid
                 """)
-
-    rows = []
     
-    list_columns = {column for column, dtype in metadata_dicom_variables if dtype == "list"}
+    chunks = []
     
-    for row in tqdm(cur.fetchall(), desc='Processing Rows'):
-        row = list(row)
-
-        is_flow = any(isinstance(s, str) and "[" in s for s in row)
-
-        for i, (column, dtypes) in enumerate(metadata_dicom_variables, start=4):
-            if column in list_columns:
-                row[i] = to_list(row[i])
+    with tqdm(total=total_rows, desc="Extracting Images", unit="rows") as pbar:
+        while True:
+            rows = cur.fetchmany(chunk_size)
+            
+            if not rows:
+                break
+            
+            processed = []
+            
+            for row in rows:
+                row = list(row)
                 
-        rows.append((*row, is_flow))
-
-    df = pl.DataFrame(rows,
-                      schema=schema,
-                      orient="row",
-                      strict=False)
-
-
+                is_flow = any(isinstance(s, str) and "[" in s for s in row[4:])
+                
+                for i, (column, dtypes) in enumerate(metadata_dicom_variables, start=4):
+                    if column in list_columns:
+                        row[i] = to_list(row[i])
+                        
+                processed.append((*row, is_flow))
+                
+            chunk = pl.DataFrame(processed, schema=schema,
+                                 orient="row", strict=False)
+            
+            chunks.append(chunk)
+            pbar.update(len(rows))
+            
+        conn.close()
+        
+    df = pl.concat(chunks, rechunk=False)
     df = df.drop_nulls(subset="file_path")
 
-    date_cols = [col for col, dtype in metadata_dicom_variables if dtype == "date"]
     df = df.with_columns([pl.col(col).str.strptime(pl.Date, format="%Y%m%d", strict=False) for col in date_cols])
-
-    conn.close()
-
+                
     return df
 
 def to_list(x):
