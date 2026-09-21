@@ -40,7 +40,9 @@ def vit_from_conf(cfg, **kwargs):
 def seg_vit_from_conf(cfg, **kwargs):
     if 'vitb16' in cfg.weights_path:
         logger.info('Loading pretrained encoder from %s', cfg.weights_path)
-        model = UltraDINOSegmentationModel.from_pretrained('vitb16', cfg.weights_path, 1)
+        model = UltraDINOSegmentationModel.from_pretrained(model_type='vitb16',
+                                                           weights_path=cfg.weights_path,
+                                                           num_classes=1)
     else:
         raise Exception(f"Segmentation model does not support model type from weights path {cfg.weights_path}")
     return model
