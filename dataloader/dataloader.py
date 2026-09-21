@@ -257,7 +257,7 @@ class DataSplits:
         
         distributions = []
         
-        for cutoff in self.cutoffs:
+        for cutoff in [32,34,37]:
             inclusion = ((pl.col("GA") // 7 >= cutoff)
                          | (~pl.col("induced") & ~pl.col("c-section"))
                          | pl.col("pprom")
