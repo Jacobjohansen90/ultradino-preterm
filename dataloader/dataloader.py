@@ -36,11 +36,6 @@ class PreTermDataset(Dataset):
         for task in cfg.tasks.aux_tasks:
             self.aux_vars.append(task.var)
 
-        self.remove_on_GA_vars = []
-        for var, cond in cfg.dataset.items():
-            if cond == 'remove_on_GA':
-                self.remove_on_GA_vars.append(var)
-        
         if self.get_segs:
             self.seg_labels = cfg.tasks.segmentation.foreground
         
@@ -68,21 +63,31 @@ class PreTermDataset(Dataset):
         
     def population_count(self, ga_cutoffs):
         population_all = {}
-        population_no_prog = {}
-        no_prog_df = self.df.filter(~pl.col('progesterone'))
+        population_no_treatment = {}
+        no_treatment_df = self.df.filter(~pl.col('progesterone') & ~pl.col("cerclage"))
 
         for cutoff in ga_cutoffs:
             population_all[str(cutoff)] = {'Total Population': self.df["CPR_CHILD"].n_unique(),
                                            'Non-preterm_births': self.df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
-                                           'Preterm births': self.df.filter((pl.col("GA")//7 < cutoff) 
-                                                                     & (pl.all_horizontal(~pl.col(self.remove_on_GA_vars))))["CPR_CHILD"].n_unique()}
+                                           'Preterm births': self.df.filter((pl.col("GA") // 7 < cutoff)
+                                                                            & ((~pl.col("induced") & ~pl.col("c-section"))
+                                                                            | pl.col("pprom")
+                                                                            | (pl.col("c-section") 
+                                                                               & (pl.col("c-section_during_birth")
+                                                                                  | pl.col("contractions_with_preterm_birth"))
+                                                                               & ~pl.col("induced"))))["CPR_CHILD"].n_unique()}
 
-            population_no_prog[str(cutoff)] = {'Total Population': no_prog_df["CPR_CHILD"].n_unique(),
-                                               'Non-preterm_births': no_prog_df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
-                                               'Preterm births': no_prog_df.filter((pl.col("GA")//7 < cutoff) 
-                                                                            & (pl.all_horizontal(~pl.col(self.remove_on_GA_vars))))["CPR_CHILD"].n_unique()}
+            population_no_treatment[str(cutoff)] = {'Total Population': no_treatment_df["CPR_CHILD"].n_unique(),
+                                               'Non-preterm_births': no_treatment_df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
+                                               'Preterm births': self.no_treatment_df.filter((pl.col("GA") // 7 < cutoff)
+                                                                                             & ((~pl.col("induced") & ~pl.col("c-section"))
+                                                                                             | pl.col("pprom")
+                                                                                             | (pl.col("c-section") 
+                                                                                                & (pl.col("c-section_during_birth")
+                                                                                                   | pl.col("contractions_with_preterm_birth"))
+                                                                                                & ~pl.col("induced"))))["CPR_CHILD"].n_unique()}
 
-        return population_all, population_no_prog
+        return population_all, population_no_treatment
     
     def __len__(self):
         return len(self.df)

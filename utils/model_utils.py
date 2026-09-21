@@ -78,7 +78,7 @@ def model_from_conf(cfg, **kwargs):
     else:
         vit_model = vit_from_conf(cfg.model.vit, **vit_kwargs)
 
-    ehr_model = ehr_from_conf(cfg, **ehr_kwargs)
+    ehr_model = ehr_from_conf(cfg.model.vit, **ehr_kwargs)
     
     img_data_transform = Transform(len(cfg.data.img_data), 
                                    vit_model.embed_dim,

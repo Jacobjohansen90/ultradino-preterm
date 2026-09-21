@@ -2,8 +2,8 @@ info:
   name: baseline
 
 data:
-  train_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/AnyPreg_v5/train.parquet
-  test_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/OnlyFirstPreg_v5/test.parquet
+  train_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/train.parquet
+  test_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/test.parquet
   batch_size: 128
   folds: 6
   workers: 32
@@ -12,13 +12,6 @@ data:
   img_size: [224, 224]
   oversample_ratio: 1 #0 = No oversampling
   label_smoothing_param: 2 #0 = No label smoothing
-
-#remove / ignore / remove_on_GA 
-#(Remove from DF if cond is true / ignore / remove if GA < GA_cutoff)
-dataset: 
-    progesterone: ignore 
-    c-section: remove_on_GA
-    induced: remove_on_GA
 
 tasks:
   preterm:

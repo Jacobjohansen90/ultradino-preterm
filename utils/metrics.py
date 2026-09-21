@@ -224,7 +224,7 @@ class Metrics():
             
             results = {}
 
-            for pop, pop_df in [("All Births", df), ("No Progesterone", df.filter(~pl.col("prog")))]:
+            for pop, pop_df in [("All Births", df), ("Non-treated", df.filter(~pl.col("prog") & pl.col('cerclage')))]:
                     
                 labels = pop_df["label"].to_numpy()
                 preds = pop_df["preds"].to_numpy()
