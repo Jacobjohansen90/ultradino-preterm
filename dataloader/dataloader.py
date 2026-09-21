@@ -235,18 +235,13 @@ class DataSplits:
         train_df = pl.read_parquet(cfg.data.train_path)
         test_df = pl.read_parquet(cfg.data.test_path)
         
-        for col, cond in cfg.dataset.items():
-            if cond == 'remove':
-                train_df = train_df.filter(~pl.col(col))
-                test_df = test_df.filter(~pl.col(col))
-                
         self.train_df = train_df.with_columns(pl.lit(-1, dtype=pl.Int64).alias("fold"))
 
         # Group GA cutoffs
         groups = (test_df.group_by(self.unique_column).agg(pl.col("GA").min().alias("GA"))
-                  .with_columns(pl.when(pl.col("GA") < 32 * 7).then(0)
-                                .when(pl.col("GA") < 34 * 7).then(1)
-                                .when(pl.col("GA") < 37 * 7).then(2)
+                  .with_columns(pl.when(pl.col("GA")//7 < 32).then(0)
+                                .when(pl.col("GA")//7 < 34).then(1)
+                                .when(pl.col("GA")//7 < 37).then(2)
                                 .otherwise(3)
                                 .alias("GA_group")))
         

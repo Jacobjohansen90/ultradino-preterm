@@ -1,5 +1,5 @@
 info:
-  name: baseline
+  name: test
 
 data:
   train_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/train.parquet
