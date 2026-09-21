@@ -207,7 +207,7 @@ def collate_fn(batch):
                "img_data": img_data,
                "ehr_data": ehr_data,
                "GA_weeks": GA_weeks,
-               "mask": masks,
+               "masks": masks,
                "IDs": IDs,
                'progesterone': progesterone,
                'aux_vars': aux_vars,
