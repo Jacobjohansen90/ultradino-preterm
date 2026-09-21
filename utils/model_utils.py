@@ -85,11 +85,11 @@ def model_from_conf(cfg, **kwargs):
     ehr_model = ehr_from_conf(cfg, **ehr_kwargs)
     
     img_data_transform = Transform(len(cfg.data.img_data), 
-                                   vit_model.encoder.embed_dim,
+                                   vit_model.embed_dim,
                                    layer_dims=cfg.model.transform.layer_dims)
     
     ehr_transform = Transform(ehr_model.embed_dim, 
-                              vit_model.encoder.embed_dim,
+                              vit_model.embed_dim,
                               layer_dims=cfg.model.transform.layer_dims)
     
     preterm_heads = nn.ModuleDict({})
@@ -98,13 +98,13 @@ def model_from_conf(cfg, **kwargs):
     for task in cfg.tasks.keys():
         if task == 'preterm':
             for cutoff in cfg.tasks[task].cutoffs:
-                preterm_heads[str(cutoff)] = FCPredictor(vit_model.encoder.embed_dim,
+                preterm_heads[str(cutoff)] = FCPredictor(vit_model.embed_dim,
                                                          cfg.model.head.dropout,
                                                          cfg.model.head.layer_dims)
                 
         elif task != 'segmentation':
             for aux_cfg in cfg.tasks[task]:
-                aux_task_heads[aux_cfg['var']] = FCPredictor(vit_model.encoder.embed_dim,
+                aux_task_heads[aux_cfg['var']] = FCPredictor(vit_model.embed_dim,
                                                              cfg.model.head.dropout,
                                                              cfg.model.head.layer_dims)
         
