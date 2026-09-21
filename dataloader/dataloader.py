@@ -124,12 +124,6 @@ class PreTermDataset(Dataset):
             segmentation = torch.from_numpy(segmentation)
         else:
             segmentation = torch.tensor([0], dtype=torch.bool)
-
-        #Prepare remove_on_GA 
-        remove_on_GA = torch.tensor([0], dtype=torch.bool)
-        for var in self.remove_on_GA_vars:
-            if data.get(var):
-                remove_on_GA = torch.tensor([1], dtype=torch.bool)
  
         #Prepare Image       
         img = Image.open(data.get('no_ocr_preprocessed_file_path'))
@@ -192,7 +186,6 @@ class PreTermDataset(Dataset):
                 'GA_weeks': GA_weeks, 
                 'masks': masks,
                 'ID': ID, 
-                'remove_on_GA': remove_on_GA,
                 'progesterone': progesterone,
                 'aux_vars': aux_vars,
                 'segmentation': segmentation}
@@ -205,7 +198,6 @@ def collate_fn(batch):
     GA_weeks = torch.stack([sample['GA_weeks'] for sample in batch])
     masks = {cutoff: torch.stack([sample['masks'][cutoff] for sample in batch]) for cutoff in batch[0]['masks']}
     IDs = [sample['ID'] for sample in batch]
-    remove_on_GA = torch.stack([sample['remove_on_GA'] for sample in batch])
     progesterone = [sample['progesterone'] for sample in batch]    
     aux_vars = {key: torch.stack([sample['aux_vars'][key] for sample in batch]) for key in batch[0]['aux_vars']}
     segmentation = torch.stack([sample['segmentation'] for sample in batch])
@@ -217,7 +209,6 @@ def collate_fn(batch):
                "GA_weeks": GA_weeks,
                "mask": masks,
                "IDs": IDs,
-               "remove_on_GA": remove_on_GA,
                'progesterone': progesterone,
                'aux_vars': aux_vars,
                'segmentation': segmentation}
