@@ -253,11 +253,29 @@ class DataSplits:
         
         
     def save_distributions(self, save_path):
-        fold_counts = (self.test_df.select(["CPR_CHILD", "GA", "fold"])
-                       .unique("CPR_CHILD").group_by("fold").agg(pl.len().alias("n"),
-                                                                 (pl.col("GA") // 7 < 32).sum().alias("GA < 32"),
-                                                                 (pl.col("GA") // 7 < 34).sum().alias("GA < 34"),
-                                                                 (pl.col("GA") // 7 < 37).sum().alias("GA < 37")).sort("fold"))
+        df = self.test_df.unique("CPR_CHILD")
+        
+        distributions = []
+        
+        for cutoff in self.cutoffs:
+            inclusion = ((pl.col("GA") // 7 >= cutoff)
+                         | (~pl.col("induced") & ~pl.col("c-section"))
+                         | pl.col("pprom")
+                         | (pl.col("c-section")
+                            & (pl.col("c-section_during_birth") | pl.col("contractions_with_preterm_birth"))
+                            & ~pl.col("induced")))
+            
+            counts = (df.filter(inclusion).group_by("fold").agg([pl.len().alias(f"n_{cutoff}"),
+                                                                 (pl.col("GA") // 7 < cutoff).sum().alias("GA < f{cutoff}")]))
+            
+            distributions.append(counts)
+            
+        fold_counts = distributions[0]
+        
+        for counts in distributions[1:]:
+            fold_counts = fold_counts.join(counts, on="fold")
+
+        fold_counts = fold_counts.sort("fold")
         
         fold_counts.write_csv(save_path + 'GA_distribution.csv')
             
