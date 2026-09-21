@@ -13,12 +13,12 @@ class BirthModel(nn.Module):
     def __init__(self, 
                  vit_model, 
                  ehr_model, 
+                 seg_model,
                  ehr_transform,
                  img_data_transform,
                  preterm_heads,
                  aux_task_heads,
-                 aux_method='append',
-                 with_segmentation=False):
+                 aux_method='append'):
         
         super().__init__()
         
@@ -29,7 +29,7 @@ class BirthModel(nn.Module):
         self.preterm_heads = preterm_heads
         self.aux_task_heads = aux_task_heads
         self.aux_method = aux_method
-        self.with_segmentation = with_segmentation
+        self.seg_model = seg_model
         
         if self.aux_method == 'append':
             """
@@ -55,12 +55,12 @@ class BirthModel(nn.Module):
 
         if len(embeddings) > 0:
             embeddings = [torch.cat(embeddings, dim=1)] 
-            if self.with_segmentation:
+            if self.seg_model is not None:
                 segmentation, vision_features = self.vit_model(img, append_tokens=embeddings, return_cls=True)
             else:
                 vision_features = self.vit_model(img, append_tokens=embeddings) 
         else:
-            if self.with_segmentation:
+            if self.seg_model is not None:
                 segmentation, vision_features = self.vit_model(img, return_cls=True)
             else:
                 vision_features = self.vit_model(img) 

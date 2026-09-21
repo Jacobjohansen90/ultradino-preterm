@@ -76,20 +76,20 @@ def model_from_conf(cfg, **kwargs):
 
     device = cfg.device.type
     if 'segmentation' in cfg.tasks:
-        vit_model = seg_vit_from_conf(cfg.model.vit, **vit_kwargs)
-        vit_dim = vit_model.encoder.embed_dim
+        seg_model = seg_vit_from_conf(cfg.model.vit, **vit_kwargs)
+        vit_model = seg_model.encoder
     else:
+        seg_model = None
         vit_model = vit_from_conf(cfg.model.vit, **vit_kwargs)
-        vit_dim = vit_model.embed_dim
 
     ehr_model = ehr_from_conf(cfg, **ehr_kwargs)
     
     img_data_transform = Transform(len(cfg.data.img_data), 
-                                   vit_dim,
+                                   vit_model.encoder.embed_dim,
                                    layer_dims=cfg.model.transform.layer_dims)
     
     ehr_transform = Transform(ehr_model.embed_dim, 
-                              vit_dim,
+                              vit_model.encoder.embed_dim,
                               layer_dims=cfg.model.transform.layer_dims)
     
     preterm_heads = nn.ModuleDict({})
@@ -98,39 +98,33 @@ def model_from_conf(cfg, **kwargs):
     for task in cfg.tasks.keys():
         if task == 'preterm':
             for cutoff in cfg.tasks[task].cutoffs:
-                preterm_heads[str(cutoff)] = FCPredictor(vit_dim,
+                preterm_heads[str(cutoff)] = FCPredictor(vit_model.encoder.embed_dim,
                                                          cfg.model.head.dropout,
                                                          cfg.model.head.layer_dims)
                 
         elif task != 'segmentation':
             for aux_cfg in cfg.tasks[task]:
-                aux_task_heads[aux_cfg['var']] = FCPredictor(vit_dim,
+                aux_task_heads[aux_cfg['var']] = FCPredictor(vit_model.encoder.embed_dim,
                                                              cfg.model.head.dropout,
                                                              cfg.model.head.layer_dims)
         
     model = BirthModel(vit_model,
                        ehr_model,
+                       seg_model,
                        ehr_transform,
                        img_data_transform,
                        preterm_heads,
                        aux_task_heads,
-                       aux_method=cfg.auxiliary.method,
-                       with_segmentation=('segmentation' in cfg.tasks))
+                       aux_method=cfg.auxiliary.method,)
     
     return model.to(device)
 
 def update_freezing(model, epoch, cfg):
     if epoch == 0:
-        if 'segmentation' in cfg.tasks:
-            model.encoder.freeze_model(model.vit_model.encoder)
-        else:
-            model.freeze_model(model.vit_model)
+        model.freeze_model(model.vit_model)
         model.freeze_model(model.ehr_model)
     if epoch >= cfg.training.vit_frozen_until:
         n = epoch - cfg.training.vit_frozen_until
-        if 'segmentation' in cfg.tasks:
-            model.encoder.unfreeze_vit(model.vit_model, n, cfg)
-        else:
-            model.unfreeze_vit(model.vit_model, n, cfg)
+        model.encoder.unfreeze_vit(model.vit_model, n, cfg)
 
             
