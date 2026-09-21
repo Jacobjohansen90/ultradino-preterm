@@ -56,12 +56,12 @@ class BirthModel(nn.Module):
         if len(embeddings) > 0:
             embeddings = [torch.cat(embeddings, dim=1)] 
             if self.seg_model is not None:
-                segmentation, vision_features = self.vit_model(img, append_tokens=embeddings, return_cls=True)
+                segmentation, vision_features = self.seg_model(img, append_tokens=embeddings, return_cls=True)
             else:
                 vision_features = self.vit_model(img, append_tokens=embeddings) 
         else:
             if self.seg_model is not None:
-                segmentation, vision_features = self.vit_model(img, return_cls=True)
+                segmentation, vision_features = self.seg_model(img, return_cls=True)
             else:
                 vision_features = self.vit_model(img) 
                 
