@@ -102,7 +102,7 @@ def model_from_conf(cfg, **kwargs):
                                                          cfg.model.head.dropout,
                                                          cfg.model.head.layer_dims)
                 
-        else:
+        elif task != 'segmentation':
             for aux_cfg in cfg.tasks[task]:
                 aux_task_heads[aux_cfg['var']] = FCPredictor(vit_dim,
                                                              cfg.model.head.dropout,
