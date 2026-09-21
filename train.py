@@ -85,8 +85,7 @@ for fold in range(cfg.data.folds):
                     cutoffs, loss_fn, weights = cfg.tasks[task].values()
                     for cutoff, weight in zip(cutoffs, weights):
                         labels = label_smoothing(data, cutoff, cfg.data.label_smoothing_param).to(cfg.device.type)
-                        print(data['masks'])
-                        mask = data['masks'].to(cfg.device.type)
+                        mask = data['masks'][cutoff].to(cfg.device.type)
                         if mask.sum() > 0:
                             preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)
                             loss += preterm_loss[mask].mean()*weight
@@ -135,7 +134,7 @@ for fold in range(cfg.data.folds):
                         cutoffs, loss_fn, weights = cfg.tasks[task].values()
                         for cutoff, weight in zip(cutoffs, weights):
                             labels = label_smoothing(data, cutoff, cfg.data.label_smoothing_param).to(cfg.device.type)
-                            mask = data['masks'].to(cfg.device.type)
+                            mask = data['masks'][cutoff].to(cfg.device.type)
                             if mask.sum() > 0:
                                 preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)
                                 loss += preterm_loss[mask].mean()*weight
