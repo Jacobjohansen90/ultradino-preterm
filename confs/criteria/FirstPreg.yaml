@@ -182,6 +182,13 @@ population_criteria:
           operator: "=="
           value: "DZ348A"       
 
+    #Remove missed para > 1
+  - name: Missed Para
+    function: remove_missed_para
+    default: keep
+    actions:
+    - action: include
+      filter_on: ['CPR_MOTHER', 'CPR_CHILD', 'BIRTHDAY']
 
     #Non-twins etc
   - name: No multi-births

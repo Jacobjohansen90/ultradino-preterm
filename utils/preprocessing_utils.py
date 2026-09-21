@@ -293,6 +293,22 @@ def find_close_births(df, criteria):
 
     return df
 
+def remove_missed_para(df, criteria):
+    logger.info(criteria.name)
+    children = df['CPR_CHILD'].n_unique()
+    for action in criteria.actions:
+        earliest_birth = (df.select(action.filter_on).unique().sort("BIRTHDAY")
+                          .group_by("CPR_MOTHER", maintain_order=True).first())
+
+        if action.action == 'include':
+            df = df.join(earliest_birth, on=action.filter_on, how="semi")
+        if action.action == 'exclude':
+            df = df.join(earliest_birth, on=action.filter_on, how="anti")
+    
+    logger.info(f"Removed: {children - df['CPR_CHILD'].n_unique()}")
+    logger.info(f"Children left: {df['CPR_CHILD'].n_unique()}\n")
+    
+    return df
 
 def discard(discards, df, criteria, mothers, children):
     if criteria.name in discards.keys():
@@ -338,8 +354,8 @@ def condition(conditioned, df, criteria):
 
 custom_funcs = {'filter_df': filter_df,
                 'mark_df': mark_df,
-                'find_close_births': find_close_births}
-
+                'find_close_births': find_close_births,
+                'remove_missed_para': remove_missed_para}
 
 def link_tables(cfg):
     for merge in cfg.merge_tables.merges:
@@ -388,11 +404,12 @@ def merge_population_and_image_df(df_img, df_pop, cfg):
 
 
 def make_train_test_split(df, cfg, split):
-    df_holdout = pl.read_csv(cfg.paths.holdout_csv)
-    if split == 'test':        
+    if split == 'test':
+        df_holdout = pl.read_csv(cfg.paths.holdout_csv)
         df = df.join(df_holdout, left_on="CPR_MOTHER", right_on="CPR_MOR", how="semi")
     elif split == 'train':
-        df = df.join(df_holdout, left_on="CPR_MOTHER", right_on="CPR_MOR", how="anti")
+        df_holdout = pl.read_parquet(cfg.paths.data_dir + 'test.parquet')
+        df = df.join(df_holdout, on="CPR_MOTHER", how="anti")
     else:
         raise Exception(f"Split {split} not understood.")
     return df
