@@ -228,7 +228,7 @@ population_criteria:
     - action: exclude
       filter_on: ['CPR_MOTHER', 'CPR_CHILD']
       column: BIRTHDAY
-      min_threshold: 2
+      min_threshold: 0
       max_threshold: 280
 
 

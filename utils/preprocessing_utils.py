@@ -262,7 +262,7 @@ def mark_df(df, criteria):
         else:
             raise Exception(f"Default behaviour {criteria.default} not implemented")
         
-        logger.info(f"{criteria.name} marked df.unique('CPR_CHILD')[criteria.mark_name].sum() children\n")
+        logger.info(f"{criteria.name} marked {df.unique('CPR_CHILD')[criteria.mark_name].sum()} children")
         
         return df    
 
@@ -420,6 +420,7 @@ def apply_inclusion_exclusion(df, cfg):
         conditioned = condition(conditioned, df, criteria)
     
     return df, discards, conditioned
+    
 
 #%%Cervical length functions
 

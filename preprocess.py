@@ -95,6 +95,7 @@ for incl_excl in['test', 'train']:
     df_temp = make_train_test_split(df_temp, cfg, split=incl_excl)
     df_temp.write_parquet(cfg.paths.data_dir + f"{incl_excl}.parquet")
 
+    logger.info("\n")
     logger.info(f"{incl_excl} data contains {len(df_temp)} images - " + str(datetime.now().strftime('%H:%M:%S')))
     logger.info(f"{incl_excl} data contains {df_temp['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
     logger.info(f"{incl_excl} data contains {df_temp['CPR_CHILD'].n_unique()} children - " + str(datetime.now().strftime('%H:%M:%S')))

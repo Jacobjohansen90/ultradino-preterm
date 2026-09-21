@@ -94,7 +94,8 @@ population_criteria:
     - action: exclude
       filter_on: ['CPR_MOTHER', 'CPR_CHILD']
       column: BIRTHDAY
-      threshold: 280
+      min_threshold: 2
+      max_threshold: 280
 
     #Must have GA
   - name: Has GA
