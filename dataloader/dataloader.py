@@ -266,7 +266,7 @@ class DataSplits:
                             & ~pl.col("induced")))
             
             counts = (df.filter(inclusion).group_by("fold").agg([pl.len().alias(f"n_{cutoff}"),
-                                                                 (pl.col("GA") // 7 < cutoff).sum().alias("GA < f{cutoff}")]))
+                                                                 (pl.col("GA") // 7 < cutoff).sum().alias(f"GA < {cutoff}")]))
             
             distributions.append(counts)
             
