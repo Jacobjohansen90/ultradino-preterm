@@ -74,11 +74,11 @@ def model_from_conf(cfg, **kwargs):
 
     device = cfg.device.type
     if 'segmentation' in cfg.tasks:
-        vit_model = seg_vit_from_conf(cfg, **vit_kwargs)
+        vit_model = seg_vit_from_conf(cfg.model.vit, **vit_kwargs)
     else:
         vit_model = vit_from_conf(cfg.model.vit, **vit_kwargs)
 
-    ehr_model = ehr_from_conf(cfg.model.vit, **ehr_kwargs)
+    ehr_model = ehr_from_conf(cfg.model.ehr, **ehr_kwargs)
     
     img_data_transform = Transform(len(cfg.data.img_data), 
                                    vit_model.embed_dim,
