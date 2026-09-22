@@ -250,7 +250,7 @@ class DataSplits:
         # Assign the group's fold to every row
         self.test_df = test_df.join(groups, on=self.unique_column, how="left")
         
-        #Check that self.unqiue_column is in exactly one fold
+        #Check that self.unique_column is in exactly one fold
         assert (self.test_df.group_by(self.unique_column).agg(pl.col("fold").n_unique().alias("n_folds"))
                 .filter(pl.col("n_folds") != 1).height == 0)
         
@@ -296,7 +296,8 @@ class DataSplits:
 
         train_df = self.test_df.filter(pl.col('fold') != fold)
         train_df = pl.concat([self.train_df, train_df])
-
+        print(train_df.filter(pl.col("GA").is_null()))
+        print(train_df.filter(pl.col("GA").is_null()).height)
         for col in ["CPR_MOTHER", "CPR_CHILD", "file_path"]:
             overlap = (set(train_df[col].drop_nulls().unique()) & set(test_df[col].drop_nulls().unique()))
             
