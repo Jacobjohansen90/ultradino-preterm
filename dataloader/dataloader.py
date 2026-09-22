@@ -297,6 +297,9 @@ class DataSplits:
         train_df = self.test_df.filter(pl.col('fold') != fold)
         train_df = pl.concat([self.train_df, train_df])
         
+        #Temp fix
+        train_df = train_df.filter(pl.col("GA").is_not_null())
+        
         for col in ["CPR_MOTHER", "CPR_CHILD", "file_path"]:
             overlap = (set(train_df[col].drop_nulls().unique()) & set(test_df[col].drop_nulls().unique()))
             
