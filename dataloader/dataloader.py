@@ -177,8 +177,11 @@ class PreTermDataset(Dataset):
             mask = torch.tensor(mask, dtype=torch.bool)
             masks[str(cutoff)] = mask
                             
-        #Get progesterone status
+        #Get treatment status
         progesterone = data.get('progesterone')
+        cerclage = data.get('cerclage')
+        
+        treatment = progesterone or cerclage
 
         return {'img': img, 
                 'img_data': img_data, 
@@ -186,7 +189,7 @@ class PreTermDataset(Dataset):
                 'GA_weeks': GA_weeks, 
                 'masks': masks,
                 'ID': ID, 
-                'progesterone': progesterone,
+                'treatment': treatment,
                 'aux_vars': aux_vars,
                 'segmentation': segmentation}
 
@@ -198,7 +201,7 @@ def collate_fn(batch):
     GA_weeks = torch.stack([sample['GA_weeks'] for sample in batch])
     masks = {cutoff: torch.stack([sample['masks'][cutoff] for sample in batch]) for cutoff in batch[0]['masks']}
     IDs = [sample['ID'] for sample in batch]
-    progesterone = [sample['progesterone'] for sample in batch]    
+    treatment = [sample['treatment'] for sample in batch]    
     aux_vars = {key: torch.stack([sample['aux_vars'][key] for sample in batch]) for key in batch[0]['aux_vars']}
     segmentation = torch.stack([sample['segmentation'] for sample in batch])
     
@@ -209,7 +212,7 @@ def collate_fn(batch):
                "GA_weeks": GA_weeks,
                "masks": masks,
                "IDs": IDs,
-               'progesterone': progesterone,
+               'treatment': treatment,
                'aux_vars': aux_vars,
                'segmentation': segmentation}
 
