@@ -125,6 +125,6 @@ def update_freezing(model, epoch, cfg):
         model.freeze_model(model.ehr_model)
     if epoch >= cfg.training.vit_frozen_until:
         n = epoch - cfg.training.vit_frozen_until
-        model.encoder.unfreeze_vit(model.vit_model, n, cfg)
+        model.unfreeze_vit(model.vit_model, n, cfg)
 
             
