@@ -29,7 +29,7 @@ image_criteria:
 
   - name: Image must be no_ocr processed
     function: filter_df
-    default: keep
+    default: remove
     actions:
     - action: exclude
       filter_on: file_path
@@ -89,7 +89,7 @@ population_criteria:
     #Must have GA
   - name: Has GA
     function: filter_df
-    default: keep
+    default: remove
     actions:
     - action: include
       filter_on: CPR_CHILD

@@ -1,4 +1,4 @@
-version: "dataset_v6"
+version: "dataset_v7"
 
 paths:
   input_dir_SDS: /storage/archive/UCPH/DeepFetal/SDS/registers_pseudonymized/
