@@ -38,8 +38,7 @@ class Metrics():
             self.dfs[str(cutoff)].append(pl.DataFrame({'cpr': data['IDs'],
                                                        'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
                                                        'label': (data['GA_weeks'] < float(cutoff)).flatten().cpu().numpy(),
-                                                       'prog': data['progesterone'],
-                                                       'remove_on_GA': data['remove_on_GA'].flatten().cpu().numpy()}))
+                                                       'treatment': data['treatment']}))
     
     def log_metrics(self, train_loss, test_loss):
         self.epoch += 1
@@ -49,12 +48,10 @@ class Metrics():
 
             df = pl.concat(self.dfs[str(cutoff)])
             
-            df = df.filter(~(pl.col("remove_on_GA")))
-
             patient_df = (df.group_by("cpr").agg([pl.col('preds').mean().alias('avg'),
                                                   pl.col('preds').max().alias('max'),
                                                   pl.col('label').first().alias('label'),
-                                                  pl.col('prog').first().alias('prog')]))
+                                                  pl.col('treatment').first().alias('treatment')]))
 
             labels = torch.tensor(patient_df['label'].to_numpy(), dtype=torch.int32)
             
@@ -84,7 +81,7 @@ class Metrics():
                 self.best_predictions[str(cutoff)] = (patient_df.select(["cpr",
                                                                          best_agg,
                                                                          "label",
-                                                                         "prog"])
+                                                                         "treatment"])
                                                       .rename({best_agg: "preds"}))
                 
             row = {'epoch': self.epoch,
@@ -224,7 +221,7 @@ class Metrics():
             
             results = {}
 
-            for pop, pop_df in [("All Births", df), ("Non-treated", df.filter(~pl.col("prog") & pl.col('cerclage')))]:
+            for pop, pop_df in [("All Births", df), ("Non-treated", df.filter(~pl.col("treatment")))]:
                     
                 labels = pop_df["label"].to_numpy()
                 preds = pop_df["preds"].to_numpy()

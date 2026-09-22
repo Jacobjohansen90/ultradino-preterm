@@ -18,6 +18,10 @@ tasks:
     cutoffs: [34] #Sharp cutoff (GA < GA_cutoff)
     loss: 'bce'
     weights: [1]
+  segmentation:
+    loss: ['bce', 'dice']
+    weights: 0.25
+    foreground: [3]
   aux_tasks:
     - var: GA_weeks
       loss: 'l2'
