@@ -16,6 +16,7 @@ from concurrent.futures import ProcessPoolExecutor
 import json
 from omegaconf import ListConfig
 import logging
+from pathlib import Path
 
 pl.Config.set_tbl_rows(-1)
 pl.Config.set_tbl_cols(-1)
@@ -513,6 +514,12 @@ def calculate_CL(row, cervix_label=3):
 #%%SQL functions
   
 def sqlite_extractor(cfg, cpr_mothers, chunk_size=100000):
+    
+    db_path = Path(cfg.paths.SQL_DB)
+
+    if not db_path.is_file():
+        raise FileNotFoundError(f"SQL database not found: {db_path}")
+    
     conn = sqlite3.connect(cfg.paths.SQL_DB)
     cur = conn.cursor()
     

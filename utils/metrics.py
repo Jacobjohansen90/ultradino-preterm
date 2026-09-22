@@ -222,7 +222,7 @@ class Metrics():
             results = {}
 
             for pop, pop_df in [("All Births", df), ("Non-treated", df.filter(~pl.col("treatment")))]:
-                    
+                results[pop] = {}
                 labels = pop_df["label"].to_numpy()
                 preds = pop_df["preds"].to_numpy()
                 
@@ -280,9 +280,9 @@ class Metrics():
                               f"\n"
                               f"\tMetrics:\n")
             
-                for name, result in results.items():
-                    report.append(f"\t\t{name}: {result[pop]['mean']:.4f} (95% CI: {result[pop]['lower']:.4f}–{result[pop]['upper']:.4f})\n")
-                report.append('\n\n\n')
+                for name, result in results[pop].items():
+                    report.append(f"\t\t{name}: {result['mean']:.4f} (95% CI: {result['lower']:.4f}–{result['upper']:.4f})\n")
+                report.append('\n\n')
 
             report = "".join(report)
             
