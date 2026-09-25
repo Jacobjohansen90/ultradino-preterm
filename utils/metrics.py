@@ -153,7 +153,7 @@ class Metrics():
             summary = (df.group_by("epoch").agg([pl.col(col).mean().alias(col)
                                                  for col in metric_cols]).sort("epoch"))
     
-            path = (Path(self.save_path) / "results" / f"metrics_{cutoff}_summary.csv")
+            path = (Path(self.save_path) / "results" / "metrics" / f"metrics_{cutoff}_summary.csv")
     
             summary.write_csv(path)
             
@@ -181,7 +181,7 @@ class Metrics():
 
         fig, ax = plt.subplots(figsize=(9, 5))
         
-        for pop in ['All Births', 'No Progesterone']:
+        for pop in results.keys():
             means = [results[pop][name]["mean"] for name in metric_names]
         
             lower = [results[pop][name]["mean"] - results[pop][name]["lower"] for name in metric_names]
@@ -281,12 +281,12 @@ class Metrics():
                               f"\tMetrics:\n")
             
                 for name, result in results[pop].items():
-                    report.append(f"\t\t{name}: {result['mean']:.4f} (95% CI: {result['lower']:.4f}–{result['upper']:.4f})\n")
+                    report.append(f"\t{name}: {result['mean']:.4f} (95% CI: {result['lower']:.4f}–{result['upper']:.4f})\n")
                 report.append('\n\n')
 
             report = "".join(report)
             
-            with open(self.metrics_path / f"GA_{cutoff}.txt", "w") as f:
+            with open(self.save_path / "results" / f"GA_{cutoff}.txt", "w") as f:
                 f.write(report)
             
             self.plot_final_metrics(results, cutoff)
