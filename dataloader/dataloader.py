@@ -31,6 +31,7 @@ class PreTermDataset(Dataset):
         self.df = df
         self.get_segs = 'segmentation' in cfg.tasks.keys()
         self.cutoffs = cfg.tasks.preterm.cutoffs
+        self.pprom = cfg.data.pprom
         
         self.aux_vars = []
         for task in cfg.tasks.aux_tasks:
@@ -169,8 +170,9 @@ class PreTermDataset(Dataset):
                 mask = 1
             elif not induced and not c_sec:
                 mask = 1
-            elif pprom:
-                mask = 1
+            elif self.pprom:
+                if pprom:
+                    mask = 1
             elif c_sec and (c_sec_preg or contrac) and not induced:
                 mask = 1
             
