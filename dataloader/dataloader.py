@@ -220,9 +220,9 @@ def collate_fn(batch):
    
     
 class DataSplits:
-    def __init__(self, cfg, unique_column='CPR_MOTHER', folds=6):
+    def __init__(self, cfg, unique_column='CPR_MOTHER'):
         self.unique_column=unique_column
-        self.folds=folds
+        self.folds=cfg.data.folds
         self.oversample_ratio = cfg.data.oversample_ratio
         self.highest_GA = max(cfg.tasks.preterm.cutoffs)
         

@@ -35,12 +35,12 @@ class Metrics():
 
     def update(self, outputs, data):
         for cutoff in self.cutoffs:
-            self.dfs[str(cutoff)].append(pl.DataFrame({'cpr': data['IDs'],
+            self.dfs[str(cutoff)].append(pl.DataFrame({'CPR_CHILD': data['IDs'],
                                                        'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
                                                        'label': (data['GA_weeks'] < float(cutoff)).flatten().cpu().numpy(),
                                                        'treatment': data['treatment']}))
     
-    def log_metrics(self, train_loss, test_loss):
+    def log_metrics(self, train_loss, test_loss, train_preterm_loss, test_preterm_loss):
         self.epoch += 1
         
         for cutoff in self.cutoffs:
@@ -48,10 +48,10 @@ class Metrics():
 
             df = pl.concat(self.dfs[str(cutoff)])
             
-            patient_df = (df.group_by("cpr").agg([pl.col('preds').mean().alias('avg'),
-                                                  pl.col('preds').max().alias('max'),
-                                                  pl.col('label').first().alias('label'),
-                                                  pl.col('treatment').first().alias('treatment')]))
+            patient_df = (df.group_by("CPR_CHILD").agg([pl.col('preds').mean().alias('avg'),
+                                                        pl.col('preds').max().alias('max'),
+                                                        pl.col('label').first().alias('label'),
+                                                        pl.col('treatment').first().alias('treatment')]))
 
             labels = torch.tensor(patient_df['label'].to_numpy(), dtype=torch.int32)
             
@@ -78,7 +78,7 @@ class Metrics():
             if best_score > self.best_score[str(cutoff)]:
                 self.best_score[str(cutoff)] = best_score
 
-                self.best_predictions[str(cutoff)] = (patient_df.select(["cpr",
+                self.best_predictions[str(cutoff)] = (patient_df.select(["CPR_CHILD",
                                                                          best_agg,
                                                                          "label",
                                                                          "treatment"])
@@ -86,7 +86,9 @@ class Metrics():
                 
             row = {'epoch': self.epoch,
                    'train_loss': round(train_loss, 5), 
+                   'train_preterm_loss': round(train_preterm_loss, 5),
                    'test_loss': round(test_loss, 5),
+                   'test_preterm_loss': round(test_preterm_loss, 5),
                    **dict(sorted(metrics.items()))}
 
             metrics_df = pl.DataFrame([row])
@@ -112,8 +114,12 @@ class Metrics():
             
             fig, ax = plt.subplots(figsize=(8, 4))
             
-            ax.plot(metrics_df["epoch"], metrics_df['train_loss'], label='Train Loss')
-            ax.plot(metrics_df["epoch"], metrics_df['test_loss'], label='Test Loss')
+            ax.plot(metrics_df["epoch"], metrics_df['train_loss'], label='Train Loss', color="tab:blue")
+            ax.plot(metrics_df["epoch"], metrics_df['test_loss'], label='Test Loss', color="tab:orange")
+            ax.plot(metrics_df["epoch"], metrics_df['train_preterm_loss'], label='Train Preterm Loss', 
+                    color="tab:blue", linestyle="--")
+            ax.plot(metrics_df["epoch"], metrics_df['test_preterm_loss'], label='Test Preterm Loss',
+                    color="tab:orange", linestyle="--")
             
             for col in metric_cols:
                 ax.plot(metrics_df["epoch"], metrics_df[col], label=col)
@@ -286,7 +292,7 @@ class Metrics():
 
             report = "".join(report)
             
-            with open(self.save_path / "results" / f"GA_{cutoff}.txt", "w") as f:
+            with open(Path(self.save_path / "results" / f"GA_{cutoff}.txt"), "w") as f:
                 f.write(report)
             
             self.plot_final_metrics(results, cutoff)

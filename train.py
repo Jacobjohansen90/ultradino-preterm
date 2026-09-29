@@ -71,7 +71,8 @@ for fold in range(cfg.data.folds):
     
         model.train()
         train_loss = 0.0
-
+        train_preterm_loss = 0.0
+        
         for data in tqdm(TrainLoader):
             optimizer.zero_grad()
             outputs, _ = model(data['imgs'].to(cfg.device.type), 
@@ -88,8 +89,8 @@ for fold in range(cfg.data.folds):
                         mask = data['masks'][str(cutoff)].to(cfg.device.type)
                         if mask.sum() > 0:
                             preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)
-                            loss += preterm_loss[mask].mean()*weight
-
+                            preterm_loss = preterm_loss[mask].mean()*weight
+                            loss += preterm_loss
                 elif task == 'segmentation':
                     loss_fn, weight, _ = cfg.tasks[task].values()
                     labels = data['segmentation'].to(cfg.device.type)
@@ -112,12 +113,14 @@ for fold in range(cfg.data.folds):
             loss.backward()
     
             train_loss += loss.item() / len(TrainLoader)
+            train_preterm_loss += preterm_loss.item() / len(TrainLoader)
             optimizer.step()
             
         scheduler.step()
         
         model.eval()
-        test_loss = 0
+        test_loss = 0.0
+        test_preterm_loss = 0.0
     
         with torch.no_grad():
             for data in TestLoader:
@@ -137,7 +140,8 @@ for fold in range(cfg.data.folds):
                             mask = data['masks'][str(cutoff)].to(cfg.device.type)
                             if mask.sum() > 0:
                                 preterm_loss = loss_fns[loss_fn](outputs[task][str(cutoff)]['logits'], labels)
-                                loss += preterm_loss[mask].mean()*weight
+                                preterm_loss = preterm_loss[mask].mean()*weight
+                                loss += preterm_loss
     
                     elif task == 'segmentation':
                         loss_fn, weight, _ = cfg.tasks[task].values()
@@ -159,8 +163,9 @@ for fold in range(cfg.data.folds):
                                 loss += aux_loss[mask].mean()*weight
     
                 test_loss += loss.item() / len(TestLoader)
+                test_preterm_loss += preterm_loss.item() / len(TestLoader)
             
-            metrics.log_metrics(train_loss, test_loss)
+            metrics.log_metrics(train_loss, test_loss, train_preterm_loss, test_preterm_loss)
             torch.save(model.state_dict(), f"{save_path}/weights/fold_{fold}/{str(epoch).zfill(3)}.pth")        
 
     metrics.reset()
