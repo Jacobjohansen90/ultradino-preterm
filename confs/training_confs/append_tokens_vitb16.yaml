@@ -1,18 +1,18 @@
 info:
-  name: test
+  name: baseline
 
 data:
-  train_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/train.parquet
-  test_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/test.parquet
+  train_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/train2.parquet
+  test_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/test2.parquet
   batch_size: 128
-  folds: 6
-  workers: 32
+  folds: 3
+  workers: 34
   ehr_data: []
   img_data: [physical_delta_x, physical_delta_y]
   img_size: [224, 224]
   oversample_ratio: 1 #0 = No oversampling
   label_smoothing_param: 2 #0 = No label smoothing
-  pprom: False
+  pprom: True
 
 tasks:
   preterm:
@@ -20,19 +20,15 @@ tasks:
     loss: 'bce_preterm'
     weights: [1]
     pos_weight: 1
-  segmentation:
-    loss: ['bce', 'dice']
-    weights: 0.25
-    foreground: [3]
   aux_tasks:
-    - var: GA_weeks
+    - var: CL_read
       loss: 'l2'
-      weights: 0.01
+      weights: 0.001
       mask_value: 0
 
 
 training:
-  epochs: 60
+  epochs: 40
   vit_frozen_until: 10  #VIT is frozen until this epoch
   ehr_frozen_until: 10 #EHR is frozen until this epoch
   #Unfreezeing strategy. Unfreeze blocks_per_step every_n_epochs until top_n_blocks are unfrozen.
