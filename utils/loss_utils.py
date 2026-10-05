@@ -29,7 +29,9 @@ class DiceLoss(torch.nn.Module):
 
 def get_loss(cfg):
     loss_map = {'bce': torch.nn.BCEWithLogitsLoss(reduction='none'),
-                'bce_preterm': torch.nn.BCEWithLogitsLoss(reduction='none', pos_weight=cfg.tasks.preterm.pos_weight),
+                'bce_preterm': torch.nn.BCEWithLogitsLoss(reduction='none', 
+                                                          pos_weight=torch.tensor(cfg.tasks.preterm.pos_weight,
+                                                                                  dtype=torch.int32)),
                 'l2': torch.nn.MSELoss(reduction='none'),
                 'l1': torch.nn.L1Loss(reduction='none'),
                 'dice': DiceLoss()}    

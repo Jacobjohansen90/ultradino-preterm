@@ -20,6 +20,10 @@ tasks:
     loss: 'bce_preterm'
     weights: [1]
     pos_weight: 1
+  segmentation:
+    loss: ['bce', 'dice']
+    weights: 0.25
+    foreground: [3]
   aux_tasks:
     - var: CL_read
       loss: 'l2'
