@@ -121,8 +121,10 @@ class Metrics():
             ax.plot(metrics_df["epoch"], metrics_df['test_preterm_loss'], label='Test Preterm Loss',
                     color="tab:orange", linestyle="--")
             
-            for col in metric_cols:
-                ax.plot(metrics_df["epoch"], metrics_df[col], label=col)
+            colors = plt.rcParams["axes.prop_cycle"].by_key()["color"][2:]
+            
+            for i, col in enumerate(metric_cols):
+                ax.plot(metrics_df["epoch"], metrics_df[col], label=col, color=colors[i])
             
             ax.set_title(f"Fold {self.fold} - GA {cutoff} - {agg.capitalize()}")
             ax.set_xlabel("Epoch")
@@ -292,7 +294,7 @@ class Metrics():
 
             report = "".join(report)
             
-            with open(Path(self.save_path / "results" / f"GA_{cutoff}.txt"), "w") as f:
+            with open(self.save_path + f"results/GA_{cutoff}.txt", "w") as f:
                 f.write(report)
             
             self.plot_final_metrics(results, cutoff)

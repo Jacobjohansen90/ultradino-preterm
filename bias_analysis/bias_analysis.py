@@ -7,12 +7,11 @@ Created on Fri Sep 25 11:54:23 2026
 """
 
 import polars as pl
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, ListConfig
 import logging
 import numpy as np
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
-from openpyxl.formatting.rule import CellIsRule
 
 cfg_path = '/home/jacob/Desktop/NAS/Work/bias_analysis.yaml'
 
@@ -35,6 +34,9 @@ def bias_analysis(cfg_path, model_path):
     results = {}
     
     for var in cfg.variables:
+        if isinstance(var.variable, (list, ListConfig)):
+            df = df.with_columns(pl.coalesce([pl.col(var.variable[0]), pl.col(var.variable[1])]).alias(var.variable[0]))
+            var.variable = var.variable[0]
 
         results[var.name] = {}
 
@@ -56,7 +58,7 @@ def bias_analysis(cfg_path, model_path):
                 var_df_category = var_df.filter(pl.col(var.variable) == category)
                 summary = permutation_test(var_df, var_df_category, threshold)
                 summary["category"] = category
-                results[var.variable][population]["categories"].append(summary)
+                results[var.name][population]["categories"].append(summary)
 
 def categorize_variable(df, var):
     if var.type == "interval":
@@ -91,7 +93,27 @@ def categorize_variable(df, var):
                 .otherwise(None))
     
         return df.with_columns(expr.alias(var.variable)), order
+    
+    elif var.type == 'centiles':
+        categories = list(var.categories)
 
+        order = ([f"<{categories[0]}%"] + [f"{lower}-{upper}%" for lower, upper in zip(categories[:-1], categories[1:])]
+                 + [f"{categories[-1]}%<"])
+       
+        percentile_values = df.select([pl.col(var.variable).quantile(p / 100).alias(f"p{p}") for p in categories]).row(0) 
+        expr = pl.when(pl.col(var.variable) < percentile_values[0]).then(pl.lit(order[0]))
+        
+        for value, label in zip(percentile_values[1:], order[1:]):
+            expr = expr.when(pl.col(var.variable) < value).then(pl.lit(label))
+
+            expr = expr.otherwise(pl.lit(order[-1]))
+
+        return df.with_columns(expr.alias(var.variable)), order
+    
+    else:
+        raise Exception(f"Type {var.type} not implemented")
+        
+        
 def handle_nulls(df, var):
     if var.nulls == "remove":
         return df.filter(pl.col(var.variable).is_not_null())
@@ -163,46 +185,22 @@ def permutation_test(df, category_df, threshold, n_permutations=2000, seed=None)
     overall_sens, overall_spec = sensitivity_specificity_at_threshold(overall_preds,
                                                                       overall_labels,
                                                                       threshold)
-    # Missed opportunities per 100k pregnancies
-    category_prevalence = np.mean(category_labels == 1)
+
+    # Missed opportunities / extra FP per 100k pregnancies
+    category_prevalence = np.mean(category_labels==1)
     category_fraction = len(category_df) / len(df)
 
-    expected_missed_opportunities = (
-        100000
-        * category_fraction
-        * category_prevalence
-        * (1 - overall_sens)
-    )
+    expected_missed_opportunities = (100000*category_fraction*category_prevalence*(1 - overall_sens))
     
-    category_missed_opportunities = (
-        100000
-        * category_fraction
-        * category_prevalence
-        * (1 - category_sens)
-    )
+    category_missed_opportunities = (100000*category_fraction*category_prevalence*(1 - category_sens))
     
-    missed_opportunities = (
-        category_missed_opportunities - expected_missed_opportunities
-    )
+    missed_opportunities = (category_missed_opportunities - expected_missed_opportunities)
     
-    # Negative pregnancies incorrectly flagged
-    expected_false_positives = (
-        100000
-        * category_fraction
-        * (1 - category_prevalence)
-        * (1 - overall_spec)
-    )
+    expected_false_positives = (100000*category_fraction*(1 - category_prevalence)*(1 - overall_spec))
     
-    category_false_positives = (
-        100000
-        * category_fraction
-        * (1 - category_prevalence)
-        * (1 - category_spec)
-    )
+    category_false_positives = (100000*category_fraction*(1 - category_prevalence)*(1 - category_spec))
     
-    extra_false_positives = (
-        category_false_positives - expected_false_positives
-    )
+    extra_false_positives = (category_false_positives - expected_false_positives)
 
 
     positive_preds = overall_preds[overall_labels == 1]
@@ -282,38 +280,32 @@ def save_bias_analysis_excel(results, save_path):
     results_fill_blue = PatternFill("solid", fgColor="EAF2F8")
 
     red_font = Font(color="9C0006", bold=True)
+    green_font = Font(color="006100", bold=True)
 
-    thin_border = Border(
-        left=Side(style="thin", color="A6A6A6"),
-        right=Side(style="thin", color="A6A6A6"),
-        top=Side(style="thin", color="A6A6A6"),
-        bottom=Side(style="thin", color="A6A6A6"),
-    )
+    thin_border = Border(left=Side(style="thin", color="A6A6A6"),
+                         right=Side(style="thin", color="A6A6A6"),
+                         top=Side(style="thin", color="A6A6A6"),
+                         bottom=Side(style="thin", color="A6A6A6"))
 
-    headers = [
-        "Category",
-        "N",
-        "Sensitivity",
-        "Missed / 100k",
-        "Sens. p",
-        "Specificity",
-        "Extra FP / 100k",
-        "Spec. p",
-    ]
+    headers = ["Category",
+               "N",
+               "Sensitivity",
+               "Missed / 100k",
+               "Sens. p",
+               "Specificity",
+               "Extra FP / 100k",
+               "Spec. p"]
 
-    populations = [
-        ("All population", 1),
-        ("Non-treated", 9),
-    ]
+    populations = [("All population", 1),("Non-treated", 9)]
 
     row = 1
 
-    # Store the row range and border color for each variable
     variable_tables = []
 
     for variable_index, (variable, population_data) in enumerate(results.items()):
-
-        # Remember where this variable starts
+        n_categories = len(population_data["All population"]["categories"])
+        corrected_alpha = 0.05 / n_categories
+        print(corrected_alpha)
         variable_start_row = row
 
         if variable_index % 2 == 0:
@@ -327,22 +319,10 @@ def save_bias_analysis_excel(results, save_path):
             results_fill = results_fill_blue
             border_color = "2F5597"
 
-        # ============================================================
-        # Variable name
-        # ============================================================
 
-        ws.merge_cells(
-            start_row=row,
-            start_column=1,
-            end_row=row,
-            end_column=16
-        )
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=16)
 
-        cell = ws.cell(
-            row=row,
-            column=1,
-            value=variable
-        )
+        cell = ws.cell(row=row, column=1, value=variable)
 
         cell.font = section_font
         cell.fill = section_fill 
@@ -351,24 +331,12 @@ def save_bias_analysis_excel(results, save_path):
 
         row += 1
 
-        # ============================================================
         # Population headings
-        # ============================================================
-
         for population, start_col in populations:
 
-            ws.merge_cells(
-                start_row=row,
-                start_column=start_col,
-                end_row=row,
-                end_column=start_col + 7
-            )
+            ws.merge_cells(start_row=row, start_column=start_col, end_row=row, end_column=start_col + 7)
 
-            cell = ws.cell(
-                row=row,
-                column=start_col,
-                value=population
-            )
+            cell = ws.cell(row=row, column=start_col, value=population)
 
             cell.font = header_font
             cell.fill = header_fill
@@ -377,19 +345,12 @@ def save_bias_analysis_excel(results, save_path):
 
         row += 1
 
-        # ============================================================
         # Column headers
-        # ============================================================
-
         for population, start_col in populations:
 
             for col, header in enumerate(headers, start=start_col):
 
-                cell = ws.cell(
-                    row=row,
-                    column=col,
-                    value=header
-                )
+                cell = ws.cell(row=row, column=col, value=header)
 
                 cell.font = header_font
                 cell.fill = header_fill
@@ -398,32 +359,23 @@ def save_bias_analysis_excel(results, save_path):
 
         row += 1
 
-        # ============================================================
         # Overall rows
-        # ============================================================
-
         for population, start_col in populations:
 
             data = population_data[population]
 
-            overall_values = [
-                "Overall",
-                data["n"],
-                f'{data["sensitivity"]:.1%}',
-                "—",
-                "—",
-                f'{data["specificity"]:.1%}',
-                "—",
-                "—",
-            ]
+            overall_values = ["Overall",
+                              data["n"],
+                              f'{data["sensitivity"]:.1%}',
+                              "—",
+                              "—",
+                              f'{data["specificity"]:.1%}',
+                              "—",
+                              "—"]
 
             for col, value in enumerate(overall_values, start=start_col):
 
-                cell = ws.cell(
-                    row=row,
-                    column=col,
-                    value=value
-                )
+                cell = ws.cell(row=row, column=col, value=value)
 
                 cell.font = Font()
                 cell.fill = results_fill
@@ -432,64 +384,56 @@ def save_bias_analysis_excel(results, save_path):
 
         row += 1
 
-        # ============================================================
         # Category rows
-        # ============================================================
-
         categories = population_data["All population"]["categories"]
 
         for category_index in range(len(categories)):
-
             for population, start_col in populations:
 
                 summary = population_data[population]["categories"][category_index]
 
-                values = [
-                    summary["category"],
-                    summary["n"],
-                    (
-                        f'{format_percent(summary["sensitivity"])} '
-                        f'{format_percent_diff(summary["sensitivity_difference"])}'
-                    ),
-                    nan_to_dash(
-                        summary["missed_opportunities"],
-                        round_value=True
-                    ),
-                    nan_to_dash(summary["sensitivity_p"]),
-                    (
-                        f'{format_percent(summary["specificity"])} '
-                        f'{format_percent_diff(summary["specificity_difference"])}'
-                    ),
-                    nan_to_dash(
-                        summary["extra_false_positives"],
-                        round_value=True
-                    ),
-                    nan_to_dash(summary["specificity_p"]),
-                ]
+                values = [summary["category"], 
+                          summary["n"],
+                          (f'{format_percent(summary["sensitivity"])} '
+                           f'{format_percent_diff(summary["sensitivity_difference"])}'),
+                          nan_to_dash(summary["missed_opportunities"], round_value=True),
+                          nan_to_dash(summary["sensitivity_p"]),
+                          (f'{format_percent(summary["specificity"])} '
+                           f'{format_percent_diff(summary["specificity_difference"])}'),
+                          nan_to_dash(summary["extra_false_positives"], round_value=True),
+                          nan_to_dash(summary["specificity_p"])]
 
                 for col, value in enumerate(values, start=start_col):
 
-                    cell = ws.cell(
-                        row=row,
-                        column=col,
-                        value=value
-                    )
+                    cell = ws.cell(row=row, column=col, value=value)
 
                     cell.fill = results_fill
                     cell.border = thin_border
 
                     # P-values
                     if col in [start_col + 4, start_col + 7]:
+
                         cell.number_format = "0.000"
 
+                        if col == start_col + 4:
+                            p_value = summary["sensitivity_p"]
+                            difference = summary["sensitivity_difference"]
+                        else:
+                            p_value = summary["specificity_p"]
+                            difference = summary["specificity_difference"]
+                    
+                        if (not np.isnan(p_value) and p_value < corrected_alpha):
+                            if difference < 0:
+                                cell.font = red_font
+                            elif difference > 0:
+                                cell.font = green_font
+
                     # Numeric alignment
-                    if col in [
-                        start_col + 1,
-                        start_col + 3,
-                        start_col + 4,
-                        start_col + 6,
-                        start_col + 7,
-                    ]:
+                    if col in [start_col + 1,
+                               start_col + 3,
+                               start_col + 4,
+                               start_col + 6,
+                               start_col + 7]:
                         cell.alignment = Alignment(horizontal="left")
 
             row += 1
@@ -497,150 +441,70 @@ def save_bias_analysis_excel(results, save_path):
         # Last row belonging to this variable
         variable_end_row = row - 1
 
-        variable_tables.append(
-            (
-                variable_start_row,
-                variable_end_row,
-                border_color
-            )
-        )
+        variable_tables.append((variable_start_row, variable_end_row, border_color))
 
-    # ================================================================
-    # Red p-values when p < 0.05
-    # ================================================================
-
-    n_categories = len(next(iter(results.values()))["All population"]["categories"])
-    corrected_alpha = 0.05 / n_categories
-
-    red_rule = CellIsRule(
-        operator="lessThan",
-        formula=[str(corrected_alpha)],
-        font=red_font,
-    )
-
-    ws.conditional_formatting.add(
-        f"E1:E{ws.max_row}",
-        red_rule,
-    )
-
-    ws.conditional_formatting.add(
-        f"H1:H{ws.max_row}",
-        red_rule,
-    )
-
-    ws.conditional_formatting.add(
-        f"M1:M{ws.max_row}",
-        red_rule,
-    )
-
-    ws.conditional_formatting.add(
-        f"P1:P{ws.max_row}",
-        red_rule,
-    )
-
-    # ================================================================
     # Column widths
-    # ================================================================
-
-    widths = {
-        "A": 14,
-        "B": 10,
-        "C": 20,
-        "D": 20,
-        "E": 12,
-        "F": 20,
-        "G": 20,
-        "H": 12,
-
-        "I": 14,
-        "J": 10,
-        "K": 20,
-        "L": 20,
-        "M": 12,
-        "N": 20,
-        "O": 20,
-        "P": 12,
-    }
+    widths = {"A": 14,
+              "B": 10,
+              "C": 20,
+              "D": 20,
+              "E": 12,
+              "F": 20,
+              "G": 20,
+              "H": 12,
+              "I": 14,
+              "J": 10,
+              "K": 20,
+              "L": 20,
+              "M": 12,
+              "N": 20,
+              "O": 20,
+              "P": 12}
 
     for column, width in widths.items():
         ws.column_dimensions[column].width = width
 
-    # ================================================================
     # Borders for all cells in used area
-    # ================================================================
-
-    for row_cells in ws.iter_rows(
-        min_row=1,
-        max_row=ws.max_row,
-        min_col=1,
-        max_col=16
-    ):
+    for row_cells in ws.iter_rows(min_row=1, max_row=ws.max_row,
+                                  min_col=1, max_col=16):
         for cell in row_cells:
             cell.border = thin_border
 
-    # ================================================================
     # Outer borders around each population table
-    # ================================================================
-
     for start_row, end_row, border_color in variable_tables:
 
-        population_border = Side(
-            style="medium",
-            color=border_color
-        )
+        population_border = Side(style="medium", color=border_color)
 
-        population_divider = Side(
-            style="thick",
-            color=border_color
-        )
+        population_divider = Side(style="thick", color=border_color)
 
-        # Start at the population heading row.
-        # The variable title itself is not part of the population table.
         for row_num in range(start_row + 1, end_row + 1):
 
             # All population: A:H
-            ws.cell(row=row_num, column=1).border = Border(
-                left=population_border,
-                right=ws.cell(row=row_num, column=1).border.right,
-                top=ws.cell(row=row_num, column=1).border.top,
-                bottom=ws.cell(row=row_num, column=1).border.bottom,
-            )
+            ws.cell(row=row_num, column=1).border = Border(left=population_border,
+                                                           right=ws.cell(row=row_num, column=1).border.right,
+                                                           top=ws.cell(row=row_num, column=1).border.top,
+                                                           bottom=ws.cell(row=row_num, column=1).border.bottom)
 
-            ws.cell(row=row_num, column=8).border = Border(
-                left=ws.cell(row=row_num, column=8).border.left,
-                right=population_divider,
-                top=ws.cell(row=row_num, column=8).border.top,
-                bottom=ws.cell(row=row_num, column=8).border.bottom,
-            )
+            ws.cell(row=row_num, column=8).border = Border(left=ws.cell(row=row_num, column=8).border.left,
+                                                           right=population_divider,
+                                                           top=ws.cell(row=row_num, column=8).border.top,
+                                                           bottom=ws.cell(row=row_num, column=8).border.bottom)
 
             # Non-treated: I:P
-            ws.cell(row=row_num, column=9).border = Border(
-                left=population_divider,
-                right=ws.cell(row=row_num, column=9).border.right,
-                top=ws.cell(row=row_num, column=9).border.top,
-                bottom=ws.cell(row=row_num, column=9).border.bottom,
-            )
+            ws.cell(row=row_num, column=9).border = Border(left=population_divider,
+                                                           right=ws.cell(row=row_num, column=9).border.right,
+                                                           top=ws.cell(row=row_num, column=9).border.top,
+                                                           bottom=ws.cell(row=row_num, column=9).border.bottom)
 
-            ws.cell(row=row_num, column=16).border = Border(
-                left=ws.cell(row=row_num, column=16).border.left,
-                right=population_border,
-                top=ws.cell(row=row_num, column=16).border.top,
-                bottom=ws.cell(row=row_num, column=16).border.bottom,
-            )
+            ws.cell(row=row_num, column=16).border = Border(left=ws.cell(row=row_num, column=16).border.left,
+                                                            right=population_border,
+                                                            top=ws.cell(row=row_num, column=16).border.top,
+                                                            bottom=ws.cell(row=row_num, column=16).border.bottom)
 
         # Medium bottom border on the last row of this variable
         for col in range(1, 17):
+            cell = ws.cell(row=end_row, column=col)
 
-            cell = ws.cell(
-                row=end_row,
-                column=col
-            )
-
-            cell.border = Border(
-                left=cell.border.left,
-                right=cell.border.right,
-                top=cell.border.top,
-                bottom=population_border,
-            )
+            cell.border = Border(left=cell.border.left, right=cell.border.right, top=cell.border.top, bottom=population_border)
 
     wb.save(save_path)
