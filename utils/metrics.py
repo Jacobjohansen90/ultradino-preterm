@@ -35,10 +35,11 @@ class Metrics():
 
     def update(self, outputs, data):
         for cutoff in self.cutoffs:
+            mask = data["masks"][str(cutoff)].flatten().cpu().numpy()
             self.dfs[str(cutoff)].append(pl.DataFrame({'CPR_CHILD': data['IDs'],
                                                        'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
                                                        'label': (data['GA_weeks'] < float(cutoff)).flatten().cpu().numpy(),
-                                                       'treatment': data['treatment']}))
+                                                       'treatment': data['treatment']}).filter(mask))
     
     def log_metrics(self, train_loss, test_loss, train_preterm_loss, test_preterm_loss):
         self.epoch += 1

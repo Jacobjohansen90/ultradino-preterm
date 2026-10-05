@@ -34,7 +34,7 @@ def get_loss(cfg):
                                                                                   dtype=torch.int32)),
                 'l2': torch.nn.MSELoss(reduction='none'),
                 'l1': torch.nn.L1Loss(reduction='none'),
-                'dice': DiceLoss()}    
+                'dice': DiceLoss()}
     
     losses = {}
     
