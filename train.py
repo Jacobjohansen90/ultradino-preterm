@@ -83,7 +83,7 @@ for fold in range(cfg.data.folds):
 
             for task in cfg.tasks.keys():
                 if task == 'preterm':
-                    cutoffs, loss_fn, weights = cfg.tasks[task].values()
+                    cutoffs, loss_fn, weights, _ = cfg.tasks[task].values()
                     for cutoff, weight in zip(cutoffs, weights):
                         labels = label_smoothing(data, cutoff, cfg.data.label_smoothing_param).to(cfg.device.type)
                         mask = data['masks'][str(cutoff)].to(cfg.device.type)
@@ -134,7 +134,7 @@ for fold in range(cfg.data.folds):
                 
                 for task in cfg.tasks.keys():
                     if task == 'preterm':
-                        cutoffs, loss_fn, weights = cfg.tasks[task].values()
+                        cutoffs, loss_fn, weights, _ = cfg.tasks[task].values()
                         for cutoff, weight in zip(cutoffs, weights):
                             labels = label_smoothing(data, cutoff, cfg.data.label_smoothing_param).to(cfg.device.type)
                             mask = data['masks'][str(cutoff)].to(cfg.device.type)
