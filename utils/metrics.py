@@ -40,7 +40,8 @@ class Metrics():
                                                        'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
                                                        'label': (data['GA_weeks'] < float(cutoff)).flatten().cpu().numpy(),
                                                        'treatment': data['treatment']}).filter(mask))
-    
+            print(self.dfs)
+            
     def log_metrics(self, train_loss, test_loss, train_preterm_loss, test_preterm_loss):
         self.epoch += 1
         
