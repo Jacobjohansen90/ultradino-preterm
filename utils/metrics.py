@@ -40,12 +40,9 @@ class Metrics():
                                                        'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
                                                        'label': (data['GA_weeks'] < float(cutoff)).flatten().cpu().numpy(),
                                                        'treatment': data['treatment']}).filter(mask))
-            print(mask)
 
     def log_metrics(self, train_loss, test_loss, train_preterm_loss, test_preterm_loss):
         self.epoch += 1
-        print(self.epoch)
-        print(self.dfs)
         for cutoff in self.cutoffs:
             metrics = {}            
 
@@ -85,7 +82,7 @@ class Metrics():
                                                                          best_agg,
                                                                          "label",
                                                                          "treatment"])
-                                                      .rename({best_agg: "preds"}))
+                                                      .rename({best_agg: "preds"}).with_columns(pl.lit(best_agg).alias("agg")))
                 
             row = {'epoch': self.epoch,
                    'train_loss': round(train_loss, 5), 
@@ -110,7 +107,6 @@ class Metrics():
 
     
     def plot_metrics(self, metrics_df, cutoff):
-        print(metrics_df)
         for agg in ["avg", "max"]:
             
             metric_cols = [col for col in metrics_df.columns if col not in ["epoch", "train_loss", "test_loss"]
@@ -224,7 +220,7 @@ class Metrics():
     def log_final_metrics(self, n_bootstrap=2000):
 
         self.combine_predictions()
-        self.summarize_metrics()
+        #self.summarize_metrics()
 
         for cutoff in self.cutoffs:
             report = []
@@ -280,13 +276,19 @@ class Metrics():
                 sens_at_spec.reset()
                 
                 sens, sens_cutoff = sens_at_spec(preds_tensor, labels_tensor)
-            
+                
+                agg_summary = (df.select(["fold", "agg"]).unique().group_by("agg").agg(pl.len().alias("n_folds")).sort("agg"))
+
+                agg_summary = ", ".join(f"{row['agg']} ({row['n_folds']} fold{'s' if row['n_folds'] != 1 else ''})"
+                                        for row in agg_summary.iter_rows(named=True))
+                
                 report.append(f"--{pop}--\n"
                               f"\n"
                               f"\tPreterm births: {n_preterm}\n"
                               f"\tNon-preterm births: {n_non_preterm}\n"
                               f"\tTotal births: {len(pop_df)}\n"
                               f"\n"
+                              f"\tAggregation method: {agg_summary}\n"
                               f"\tSens@85% specificity: {sens.item():.4f}\n"
                               f"\tSens@85% specificity cutoff: {sens_cutoff.item():.4f}\n"
                               f"\n"
