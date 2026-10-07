@@ -110,6 +110,7 @@ class Metrics():
 
     
     def plot_metrics(self, metrics_df, cutoff):
+        print(metrics_df)
         for agg in ["avg", "max"]:
             
             metric_cols = [col for col in metrics_df.columns if col not in ["epoch", "train_loss", "test_loss"]
