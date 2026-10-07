@@ -31,7 +31,7 @@ class PreTermDataset(Dataset):
         self.df = df
         self.get_segs = 'segmentation' in cfg.tasks.keys()
         self.cutoffs = cfg.tasks.preterm.cutoffs
-        self.pprom = cfg.data.pprom
+        self.remove = cfg.data.remove
         
         self.aux_vars = []
         for task in cfg.tasks.aux_tasks:
@@ -62,41 +62,12 @@ class PreTermDataset(Dataset):
     def __getitem__(self, idx):
         return self.getitem(idx)
         
-    def population_count(self, ga_cutoffs):
-        population_all = {}
-        population_no_treatment = {}
-        no_treatment_df = self.df.filter(~pl.col('progesterone') & ~pl.col("cerclage"))
-
-        for cutoff in ga_cutoffs:
-            population_all[str(cutoff)] = {'Total Population': self.df["CPR_CHILD"].n_unique(),
-                                           'Non-preterm_births': self.df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
-                                           'Preterm births': self.df.filter((pl.col("GA") // 7 < cutoff)
-                                                                            & ((~pl.col("induced") & ~pl.col("c-section"))
-                                                                            | pl.col("pprom")
-                                                                            | (pl.col("c-section") 
-                                                                               & (pl.col("c-section_during_birth")
-                                                                                  | pl.col("contractions_with_preterm_birth"))
-                                                                               & ~pl.col("induced"))))["CPR_CHILD"].n_unique()}
-
-            population_no_treatment[str(cutoff)] = {'Total Population': no_treatment_df["CPR_CHILD"].n_unique(),
-                                                    'Non-preterm_births': no_treatment_df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
-                                                    'Preterm births': self.no_treatment_df.filter((pl.col("GA") // 7 < cutoff)
-                                                                                                  & ((~pl.col("induced") & ~pl.col("c-section"))
-                                                                                                     | pl.col("pprom")
-                                                                                                     | (pl.col("c-section") 
-                                                                                                        & (pl.col("c-section_during_birth")
-                                                                                                           | pl.col("contractions_with_preterm_birth"))
-                                                                                                        & ~pl.col("induced"))))["CPR_CHILD"].n_unique()}
-
-        return population_all, population_no_treatment
     
     def __len__(self):
-        #return len(self.df)
-        return 200
+        return len(self.df)
 
 
     def getitem(self, idx):
-                
         #Get data as named dict
         data = self.df.row(idx, named=True)
 
@@ -157,7 +128,6 @@ class PreTermDataset(Dataset):
 
         c_sec = data.get('c-section')
         c_sec_preg = data.get('c-section_during_birth')
-        pprom = data.get('pprom')
         contrac = data.get('contractions_with_preterm_birth')
         induced = data.get('induced')
 
@@ -171,11 +141,12 @@ class PreTermDataset(Dataset):
                 mask = 1
             elif not induced and not c_sec:
                 mask = 1
-            elif self.pprom:
-                if pprom:
-                    mask = 1
             elif c_sec and (c_sec_preg or contrac) and not induced:
                 mask = 1
+            
+            for var in self.remove:
+                if data.get(var):
+                    mask = 0
             
             mask = torch.tensor(mask, dtype=torch.bool)
             masks[str(cutoff)] = mask

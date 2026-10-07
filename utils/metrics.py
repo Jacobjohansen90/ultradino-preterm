@@ -282,8 +282,7 @@ class Metrics():
                 agg_summary = ", ".join(f"{row['agg']} ({row['n_folds']} fold{'s' if row['n_folds'] != 1 else ''})"
                                         for row in agg_summary.iter_rows(named=True))
                 
-                report.append(f"--{pop}--\n"
-                              f"\n"
+                report.append(f"-- {pop} --\n"
                               f"\tPreterm births: {n_preterm}\n"
                               f"\tNon-preterm births: {n_non_preterm}\n"
                               f"\tTotal births: {len(pop_df)}\n"

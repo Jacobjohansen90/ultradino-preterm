@@ -8,13 +8,18 @@ Created on Sun Apr 19 11:30:20 2026
 
 from omegaconf import OmegaConf
 import os
+import shutil
 
 def setup(cfg):
     if cfg.info.name is None:
         raise Exception("Model experiment must be named")
     
     path = f"/projects/users/data/UCPH/DeepFetal/projects/preterm/training_runs/Running/{cfg.info.name}/"
-    if cfg.info.name != 'test':
+    if cfg.info.name == "test":
+        if os.path.exists(path):
+            shutil.rmtree(path)
+    
+    else:
         if os.path.exists(path):
             raise Exception("Model experiment exists in Running folder.")
         if os.path.exists(path.replace('Running', 'Evaluated')):

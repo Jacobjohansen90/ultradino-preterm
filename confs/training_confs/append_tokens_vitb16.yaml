@@ -6,24 +6,21 @@ data:
   test_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/test2.parquet
   batch_size: 128
   folds: 3
-  workers: 34
+  workers: 32
   ehr_data: []
   img_data: [physical_delta_x, physical_delta_y]
   img_size: [224, 224]
   oversample_ratio: 1 #0 = No oversampling
   label_smoothing_param: 2 #0 = No label smoothing
-  pprom: True
-
+  remove: ['pprom']
+  
+  
 tasks:
   preterm:
     cutoffs: [34] #Sharp cutoff (GA < GA_cutoff)
     loss: 'bce_preterm'
     weights: [1]
     pos_weight: 1
-  segmentation:
-    loss: ['bce', 'dice']
-    weights: 0.25
-    foreground: [3]
   aux_tasks:
     - var: CL_read
       loss: 'l2'
@@ -80,3 +77,9 @@ scheduler:
   
 device:
   type: cuda
+  
+unused:
+  segmentation:
+    loss: ['bce', 'dice']
+    weights: 0.25
+    foreground: [3]
