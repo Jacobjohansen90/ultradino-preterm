@@ -79,19 +79,20 @@ class PreTermDataset(Dataset):
                                                                                & ~pl.col("induced"))))["CPR_CHILD"].n_unique()}
 
             population_no_treatment[str(cutoff)] = {'Total Population': no_treatment_df["CPR_CHILD"].n_unique(),
-                                               'Non-preterm_births': no_treatment_df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
-                                               'Preterm births': self.no_treatment_df.filter((pl.col("GA") // 7 < cutoff)
-                                                                                             & ((~pl.col("induced") & ~pl.col("c-section"))
-                                                                                             | pl.col("pprom")
-                                                                                             | (pl.col("c-section") 
-                                                                                                & (pl.col("c-section_during_birth")
-                                                                                                   | pl.col("contractions_with_preterm_birth"))
-                                                                                                & ~pl.col("induced"))))["CPR_CHILD"].n_unique()}
+                                                    'Non-preterm_births': no_treatment_df.filter(pl.col("GA")//7 >= cutoff)["CPR_CHILD"].n_unique(),
+                                                    'Preterm births': self.no_treatment_df.filter((pl.col("GA") // 7 < cutoff)
+                                                                                                  & ((~pl.col("induced") & ~pl.col("c-section"))
+                                                                                                     | pl.col("pprom")
+                                                                                                     | (pl.col("c-section") 
+                                                                                                        & (pl.col("c-section_during_birth")
+                                                                                                           | pl.col("contractions_with_preterm_birth"))
+                                                                                                        & ~pl.col("induced"))))["CPR_CHILD"].n_unique()}
 
         return population_all, population_no_treatment
     
     def __len__(self):
-        return len(self.df)
+        #return len(self.df)
+        return 200
 
 
     def getitem(self, idx):
