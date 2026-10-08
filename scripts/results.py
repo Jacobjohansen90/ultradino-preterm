@@ -99,7 +99,7 @@ def bootstrap_metrics(
 # 1. Collapse df to one row per child and join with predictions
 # ---------------------------------------------------------------------
 
-cutoff = model.split('_')[-1]
+cutoff = int(model.split('_')[-1])
 path = '/users/data/UCPH/DeepFetal/projects/preterm/training_runs/Running/'
 preds = pl.read_parquet(path + model + f"/results/predictions/predictions_{cutoff}.parquet")
 df = pl.read_parquet('/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/test2.parquet')
