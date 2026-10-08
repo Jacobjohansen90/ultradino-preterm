@@ -1,8 +1,14 @@
+import argparse
+
 import numpy as np
 import polars as pl
-from sklearn.metrics import roc_auc_score, roc_curve
-import argparse
+
 from tqdm import tqdm
+from sklearn.metrics import roc_auc_score, roc_curve
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+from openpyxl.utils import get_column_letter
 
 parser = argparse.ArgumentParser()
 
@@ -214,52 +220,100 @@ with tqdm(total=total, desc="Calculating metrics") as pbar:
 
             pbar.update(1)
 
-# ---------------------------------------------------------------------
-# 5. Print results
-# ---------------------------------------------------------------------
+wb = Workbook()
 
-from openpyxl import load_workbook
-from copy import copy
+ws = wb.active
+ws.title = "Metrics"
 
 
-# ---------------------------------------------------------------------
-# 5. Create Excel output
-# ---------------------------------------------------------------------
+# =====================================================================
+# 9. Excel formatting
+# =====================================================================
 
-template_path = "/path/to/Results.xlsx"
-output_path = f"/path/to/Results_GA{cutoff}.xlsx"
+thin_gray = Side(
+    style="thin",
+    color="D9D9D9",
+)
 
-wb_template = load_workbook(template_path)
-ws_template = wb_template["Metrics"]
+medium_gray = Side(
+    style="medium",
+    color="A6A6A6",
+)
 
-# Create a new workbook using the existing Metrics sheet as template
-wb = load_workbook(template_path)
-ws = wb["Metrics"]
+header_fill = PatternFill(
+    fill_type="solid",
+    fgColor="D9EAF7",
+)
 
-# Clear existing Metrics sheet
-for row in ws.iter_rows():
-    for cell in row:
-        cell.value = None
+section_fill = PatternFill(
+    fill_type="solid",
+    fgColor="E7E6E6",
+)
+
+subsection_fill = PatternFill(
+    fill_type="solid",
+    fgColor="F2F2F2",
+)
+
+title_font = Font(
+    bold=True,
+    size=14,
+)
+
+section_font = Font(
+    bold=True,
+    size=11,
+)
+
+header_font = Font(
+    bold=True,
+)
+
+normal_alignment = Alignment(
+    horizontal="center",
+    vertical="center",
+)
+
+left_alignment = Alignment(
+    horizontal="left",
+    vertical="center",
+)
 
 
-# ---------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------
+# =====================================================================
+# 10. Excel helper functions
+# =====================================================================
 
-def format_metric(r, metric, ci_lower, ci_upper):
+def metric_string(
+    result,
+    value_key,
+    lower_key,
+    upper_key,
+):
     return (
-        f"{r[metric]:.3f} "
-        f"({r[ci_lower]:.3f}-{r[ci_upper]:.3f})"
+        f"{result[value_key]:.3f} "
+        f"({result[lower_key]:.3f}-{result[upper_key]:.3f})"
     )
 
 
-def write_result_row(ws, row, start_col, subgroup_name, result):
-    ws.cell(row=row, column=start_col, value=subgroup_name)
+def write_metric_row(
+    ws,
+    row,
+    start_col,
+    subgroup_name,
+    result,
+):
+
+    ws.cell(
+        row=row,
+        column=start_col,
+        value=subgroup_name,
+    )
 
     ws.cell(
         row=row,
         column=start_col + 1,
-        value=format_metric(
+        value=metric_string(
             result,
             "auc",
             "auc_ci_lower",
@@ -270,7 +324,7 @@ def write_result_row(ws, row, start_col, subgroup_name, result):
     ws.cell(
         row=row,
         column=start_col + 2,
-        value=format_metric(
+        value=metric_string(
             result,
             "sens_at_85_spec",
             "sens_ci_lower",
@@ -291,190 +345,368 @@ def write_result_row(ws, row, start_col, subgroup_name, result):
     )
 
 
-# ---------------------------------------------------------------------
-# Copy formatting from the first GA block in the template
-# ---------------------------------------------------------------------
+def format_metric_block(
+    ws,
+    title_row,
+    population_row,
+    header_row,
+    data_start_row,
+    population_left,
+    population_right,
+):
 
-# The template has the desired formatting already.
-# We use the first GA block (rows 1-17) as the formatting template.
+    # Section title
+    ws.merge_cells(
+        start_row=title_row,
+        start_column=1,
+        end_row=title_row,
+        end_column=10,
+    )
 
-for row in range(1, 18):
-    for col in range(1, 11):
-        source = ws_template.cell(row=row, column=col)
-        target = ws.cell(row=row, column=col)
+    ws.cell(
+        title_row,
+        1,
+    ).font = section_font
 
-        if source.has_style:
-            target._style = copy(source._style)
+    ws.cell(
+        title_row,
+        1,
+    ).fill = section_fill
 
-        if source.number_format:
-            target.number_format = source.number_format
+    ws.cell(
+        title_row,
+        1,
+    ).alignment = left_alignment
 
-        if source.alignment:
-            target.alignment = copy(source.alignment)
+    # Population headers
+    ws.merge_cells(
+        start_row=population_row,
+        start_column=1,
+        end_row=population_row,
+        end_column=5,
+    )
 
-        if source.border:
-            target.border = copy(source.border)
+    ws.merge_cells(
+        start_row=population_row,
+        start_column=6,
+        end_row=population_row,
+        end_column=10,
+    )
 
-        if source.fill:
-            target.fill = copy(source.fill)
+    ws.cell(
+        population_row,
+        1,
+        population_left,
+    )
 
-        if source.font:
-            target.font = copy(source.font)
+    ws.cell(
+        population_row,
+        6,
+        population_right,
+    )
+
+    for col in [1, 6]:
+
+        cell = ws.cell(
+            population_row,
+            col,
+        )
+
+        cell.font = header_font
+        cell.fill = subsection_fill
+        cell.alignment = normal_alignment
+
+    # Column headers
+    headers = [
+        "Subgroup",
+        "AUC",
+        "Sens@Spec",
+        "N-preterm",
+        "N-total",
+    ]
+
+    for i, header in enumerate(headers, start=1):
+
+        ws.cell(
+            header_row,
+            i,
+            header,
+        )
+
+        ws.cell(
+            header_row,
+            i,
+        ).font = header_font
+
+        ws.cell(
+            header_row,
+            i,
+        ).fill = header_fill
+
+        ws.cell(
+            header_row,
+            i,
+        ).alignment = normal_alignment
+
+        ws.cell(
+            header_row,
+            i + 5,
+            header,
+        )
+
+        ws.cell(
+            header_row,
+            i + 5,
+        ).font = header_font
+
+        ws.cell(
+            header_row,
+            i + 5,
+        ).fill = header_fill
+
+        ws.cell(
+            header_row,
+            i + 5,
+        ).alignment = normal_alignment
+
+    # Data rows
+    subgroup_names = [
+        "All",
+        "PPROM",
+        "C-Section",
+    ]
+
+    for i, subgroup_name in enumerate(
+        subgroup_names,
+        start=data_start_row,
+    ):
+
+        for col in range(1, 11):
+
+            cell = ws.cell(
+                i,
+                col,
+            )
+
+            cell.alignment = normal_alignment
+
+            cell.border = Border(
+                bottom=thin_gray,
+            )
 
 
-# ---------------------------------------------------------------------
-# Header
-# ---------------------------------------------------------------------
+# =====================================================================
+# 11. Title
+# =====================================================================
 
 ws["A1"] = f"GA {cutoff}"
+ws["A1"].font = title_font
+ws["A1"].alignment = left_alignment
 
-ws["A2"] = "Model"
-
-ws["A3"] = "All patients"
-ws["F3"] = "Non-treatment"
-
-ws["B4"] = "AUC"
-ws["C4"] = "Sens@Spec"
-ws["D4"] = "N-preterm"
-ws["E4"] = "N-total"
-
-ws["G4"] = "AUC"
-ws["H4"] = "Sens@Spec"
-ws["I4"] = "N-preterm"
-ws["J4"] = "N-total"
+ws.merge_cells(
+    "A1:J1"
+)
 
 
-# ---------------------------------------------------------------------
-# Model
-# ---------------------------------------------------------------------
+# =====================================================================
+# 12. Model section
+# =====================================================================
 
-subgroup_rows = {
-    "All": 5,
-    "PPROM": 6,
-    "C-Section": 7,
-}
+format_metric_block(
+    ws,
+    title_row=3,
+    population_row=4,
+    header_row=5,
+    data_start_row=6,
+    population_left="All patients",
+    population_right="Non-treatment",
+)
 
-for subgroup_name, row in subgroup_rows.items():
+for i, subgroup_name in enumerate(
+    ["All", "PPROM", "C-Section"],
+    start=6,
+):
 
-    write_result_row(
+    write_metric_row(
         ws,
-        row,
+        i,
         1,
         subgroup_name,
         results["All"][subgroup_name]["Model"],
     )
 
-    write_result_row(
+    write_metric_row(
         ws,
-        row,
+        i,
         6,
         subgroup_name,
         results["Non-treated"][subgroup_name]["Model"],
     )
 
 
-# ---------------------------------------------------------------------
-# Cervical Length
-# ---------------------------------------------------------------------
+# =====================================================================
+# 13. Cervical Length section
+# =====================================================================
 
-ws["A8"] = "Cervical Length"
+format_metric_block(
+    ws,
+    title_row=10,
+    population_row=11,
+    header_row=12,
+    data_start_row=13,
+    population_left="All patients (CL Available)",
+    population_right="Non-treatment (CL Available)",
+)
 
-ws["A9"] = "All patients (CL Available)"
-ws["F9"] = "Non-treatment (CL Available)"
+for i, subgroup_name in enumerate(
+    ["All", "PPROM", "C-Section"],
+    start=13,
+):
 
-ws["B10"] = "AUC"
-ws["C10"] = "Sens@Spec"
-ws["D10"] = "N-preterm"
-ws["E10"] = "N-total"
-
-ws["G10"] = "AUC"
-ws["H10"] = "Sens@Spec"
-ws["I10"] = "N-preterm"
-ws["J10"] = "N-total"
-
-cl_rows = {
-    "All": 11,
-    "PPROM": 12,
-    "C-Section": 13,
-}
-
-for subgroup_name, row in cl_rows.items():
-
-    write_result_row(
+    write_metric_row(
         ws,
-        row,
+        i,
         1,
         subgroup_name,
         results["All"][subgroup_name]["CL"],
     )
 
-    write_result_row(
+    write_metric_row(
         ws,
-        row,
+        i,
         6,
         subgroup_name,
         results["Non-treated"][subgroup_name]["CL"],
     )
 
 
-# ---------------------------------------------------------------------
-# Model — CL patients
-# ---------------------------------------------------------------------
+# =====================================================================
+# 14. Model — CL patients section
+# =====================================================================
 
-ws["A14"] = "Model (CL patients)"
+format_metric_block(
+    ws,
+    title_row=17,
+    population_row=18,
+    header_row=19,
+    data_start_row=20,
+    population_left="All patients (CL Available)",
+    population_right="Non-treatment (CL Available)",
+)
 
-ws["A15"] = "All patients (CL Available)"
-ws["F15"] = "Non-treatment (CL Available)"
+for i, subgroup_name in enumerate(
+    ["All", "PPROM", "C-Section"],
+    start=20,
+):
 
-ws["B16"] = "AUC"
-ws["C16"] = "Sens@Spec"
-ws["D16"] = "N-preterm"
-ws["E16"] = "N-total"
-
-ws["G16"] = "AUC"
-ws["H16"] = "Sens@Spec"
-ws["I16"] = "N-preterm"
-ws["J16"] = "N-total"
-
-model_cl_rows = {
-    "All": 17,
-    "PPROM": 18,
-    "C-Section": 19,
-}
-
-# Need formatting for rows 18-19 as well
-for row in [18, 19]:
-    for col in range(1, 11):
-        source = ws_template.cell(row=6 + (row - 18), column=col)
-        target = ws.cell(row=row, column=col)
-
-        if source.has_style:
-            target._style = copy(source._style)
-
-
-for subgroup_name, row in model_cl_rows.items():
-
-    write_result_row(
+    write_metric_row(
         ws,
-        row,
+        i,
         1,
         subgroup_name,
         results["All"][subgroup_name]["Model (CL available)"],
     )
 
-    write_result_row(
+    write_metric_row(
         ws,
-        row,
+        i,
         6,
         subgroup_name,
-        results["Non-treated"][subgroup_name]["Model (CL available)"],
+        results["Non-treated"][subgroup_name][
+            "Model (CL available)"
+        ],
     )
 
 
-# ---------------------------------------------------------------------
-# Save
-# ---------------------------------------------------------------------
+# =====================================================================
+# 15. General formatting
+# =====================================================================
+
+# Column widths
+widths = {
+    "A": 18,
+    "B": 22,
+    "C": 22,
+    "D": 14,
+    "E": 14,
+    "F": 18,
+    "G": 22,
+    "H": 22,
+    "I": 14,
+    "J": 14,
+}
+
+for column, width in widths.items():
+    ws.column_dimensions[column].width = width
+
+
+# Apply alignment
+for row in ws.iter_rows(
+    min_row=1,
+    max_row=ws.max_row,
+    min_col=1,
+    max_col=10,
+):
+
+    for cell in row:
+
+        if cell.value is not None:
+
+            if cell.column in [1, 6]:
+                cell.alignment = left_alignment
+
+            else:
+                cell.alignment = normal_alignment
+
+
+# Add stronger borders around the two population blocks
+for row in range(4, 9):
+    for col in [1, 5, 6, 10]:
+
+        ws.cell(
+            row,
+            col,
+        ).border = Border(
+            left=medium_gray if col in [1, 6] else thin_gray,
+            right=medium_gray if col in [5, 10] else thin_gray,
+            bottom=thin_gray,
+        )
+
+
+for row in range(11, 16):
+    for col in [1, 5, 6, 10]:
+
+        ws.cell(
+            row,
+            col,
+        ).border = Border(
+            left=medium_gray if col in [1, 6] else thin_gray,
+            right=medium_gray if col in [5, 10] else thin_gray,
+            bottom=thin_gray,
+        )
+
+
+for row in range(18, 23):
+    for col in [1, 5, 6, 10]:
+
+        ws.cell(
+            row,
+            col,
+        ).border = Border(
+            left=medium_gray if col in [1, 6] else thin_gray,
+            right=medium_gray if col in [5, 10] else thin_gray,
+            bottom=thin_gray,
+        )
+
+
+# Freeze title
+ws.freeze_panes = "A3"
+
+
+# =====================================================================
+# 16. Save
+# =====================================================================
 
 wb.save(output_path)
 
-print(f"Saved: {output_path}")
+print(f"\nSaved Excel file to: {output_path}")
