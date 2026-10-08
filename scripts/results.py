@@ -26,7 +26,7 @@ bias_df = pl.read_csv('/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/bia
 
 cutoff = model.split('_')[-1]
 
-output_path = f"/users/data/UCPH/DeepFetal/projects/preterm/misc/{model}.xlsx"
+output_path = f"/users/data/UCPH/DeepFetal/projects/preterm/misc/{cutoff}.xlsx"
 
 def sens_at_85_spec(y_true, y_score, target_spec=0.85):
     fpr, tpr, thresholds = roc_curve(y_true, y_score)
@@ -168,14 +168,16 @@ sub_groups = {"All": None,
 # ---------------------------------------------------------------------
 
 results = {}
-
+bias_results = {}
 total = len(populations) * len(sub_groups)
 
 with tqdm(total=total, desc="Calculating metrics") as pbar:
-    bias_results = {}
     
     for population_name, population_filter in populations.items():
-    
+        
+        results[population_name] = {}
+        bias_results[population_name] = {}
+        
         population_df = df_combined.filter(population_filter)
         bias_results[population_name] = {}
     
