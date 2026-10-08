@@ -2,7 +2,7 @@ import numpy as np
 import polars as pl
 from sklearn.metrics import roc_auc_score, roc_curve
 import argparse
-
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
 
@@ -149,65 +149,70 @@ sub_groups = {"All": None,
 
 results = {}
 
-for population_name, population_filter in populations.items():
+total = len(populations) * len(sub_groups)
 
-    population_df = df_combined.filter(population_filter)
+with tqdm(total=total, desc="Calculating metrics") as pbar:
 
-    results[population_name] = {}
+    for population_name, population_filter in populations.items():
+    
+        population_df = df_combined.filter(population_filter)
+    
+        results[population_name] = {}
+    
+        for sub_group_name, sub_group_value in sub_groups.items():
+    
+            if sub_group_value is None:
+                subgroup_df = population_df
+            else:
+                subgroup_df = population_df.filter((pl.col("GA") // 7 >= cutoff)
+                                                   | ((pl.col("GA") // 7 < cutoff)
+                                                      & pl.col(sub_group_value)))
+    
+            # -------------------------------------------------------------
+            # Model — all patients
+            # -------------------------------------------------------------
+    
+            model_results = bootstrap_metrics(
+                subgroup_df,
+                score_col="preds",
+                lower_is_positive=False,
+            )
+    
+            # -------------------------------------------------------------
+            # Patients with a valid CL measurement
+            # -------------------------------------------------------------
+    
+            cl_df = subgroup_df.filter(
+                pl.col("CL") != 0
+            )
+    
+            # -------------------------------------------------------------
+            # Model — CL available
+            # -------------------------------------------------------------
+    
+            model_cl_results = bootstrap_metrics(
+                cl_df,
+                score_col="preds",
+                lower_is_positive=False,
+            )
+    
+            # -------------------------------------------------------------
+            # CL — CL available
+            # -------------------------------------------------------------
+    
+            cl_results = bootstrap_metrics(
+                cl_df,
+                score_col="CL",
+                lower_is_positive=True,
+            )
+    
+            results[population_name][sub_group_name] = {
+                "Model": model_results,
+                "Model (CL available)": model_cl_results,
+                "CL": cl_results,
+            }
 
-    for sub_group_name, sub_group_value in sub_groups.items():
-
-        if sub_group_value is None:
-            subgroup_df = population_df
-        else:
-            subgroup_df = population_df.filter((pl.col("GA") // 7 >= cutoff)
-                                               | ((pl.col("GA") // 7 < cutoff)
-                                                  & pl.col(sub_group_value)))
-
-        # -------------------------------------------------------------
-        # Model — all patients
-        # -------------------------------------------------------------
-
-        model_results = bootstrap_metrics(
-            subgroup_df,
-            score_col="preds",
-            lower_is_positive=False,
-        )
-
-        # -------------------------------------------------------------
-        # Patients with a valid CL measurement
-        # -------------------------------------------------------------
-
-        cl_df = subgroup_df.filter(
-            pl.col("CL") != 0
-        )
-
-        # -------------------------------------------------------------
-        # Model — CL available
-        # -------------------------------------------------------------
-
-        model_cl_results = bootstrap_metrics(
-            cl_df,
-            score_col="preds",
-            lower_is_positive=False,
-        )
-
-        # -------------------------------------------------------------
-        # CL — CL available
-        # -------------------------------------------------------------
-
-        cl_results = bootstrap_metrics(
-            cl_df,
-            score_col="CL",
-            lower_is_positive=True,
-        )
-
-        results[population_name][sub_group_name] = {
-            "Model": model_results,
-            "Model (CL available)": model_cl_results,
-            "CL": cl_results,
-        }
-
+            pbar.update(1)
 
 # ---------------------------------------------------------------------
 # 5. Print results
