@@ -1,10 +1,21 @@
 import numpy as np
 import polars as pl
 from sklearn.metrics import roc_auc_score, roc_curve
+import argparse
 
 
-model = 'baseline_34'
+parser = argparse.ArgumentParser()
 
+parser.add_argument(
+    "--model_name",
+    type=str,
+    required=True,
+    help="Name of the model/experiment",
+)
+
+args = parser.parse_args()
+
+model = args.model_name
 
 
 cutoff = model.split('_')[-1]
