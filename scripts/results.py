@@ -8,7 +8,6 @@ from sklearn.metrics import roc_auc_score, roc_curve
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
-from openpyxl.utils import get_column_letter
 
 parser = argparse.ArgumentParser()
 
@@ -26,7 +25,7 @@ model = args.model_name
 
 cutoff = model.split('_')[-1]
 
-output_path = f"/users/data/UCPH/DeepFetal/projects/preterm/misc/{cutoff}.xlsx"
+output_path = f"/users/data/UCPH/DeepFetal/projects/preterm/misc/{model}.xlsx"
 
 def sens_at_85_spec(y_true, y_score, target_spec=0.85):
     fpr, tpr, thresholds = roc_curve(y_true, y_score)
@@ -146,7 +145,7 @@ populations = {"All": pl.lit(True),
 
 sub_groups = {"All": None,
               "PPROM": "pprom",
-              "C-section": "c-section_during_birth"}
+              "C-Section": "c-section_during_birth"}
 
 
 # ---------------------------------------------------------------------
