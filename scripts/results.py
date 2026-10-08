@@ -848,16 +848,16 @@ subgroups = [
 ]
 
 variables = [
-    ("BMI", "BMI", "value"),
-    ("Age", "Age", "value"),
-    ("Fertility", "Fertility treatment", "value"),
-    ("Smoking", "Smoking", "value"),
+    ("BMI", "BMI"),
+    ("Age", "Age"),
+    ("Fertility", "Fertility treatment"),
+    ("Smoking", "Smoking"),
 ]
 
 row = 5
 
 for variable_idx, (variable_name, result_name) in enumerate(variables):
-
+    
     fill = (
         demographic_gray
         if variable_idx % 2 == 0
