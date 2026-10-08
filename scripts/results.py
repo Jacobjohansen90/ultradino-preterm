@@ -22,7 +22,7 @@ args = parser.parse_args()
 
 model = args.model_name
 
-bias_df = pl.read_csv('/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/bais_variables')
+bias_df = pl.read_csv('/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/bias_variables')
 
 cutoff = model.split('_')[-1]
 
