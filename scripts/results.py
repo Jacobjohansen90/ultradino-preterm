@@ -773,6 +773,15 @@ ws.freeze_panes = "A2"
 
 ws_bias = wb.create_sheet("Demographics")
 
+demographic_gray = PatternFill(
+    fill_type="solid",
+    fgColor="F2F2F2",
+)
+
+demographic_blue = PatternFill(
+    fill_type="solid",
+    fgColor="EAF2F8",
+)
 
 # =====================================================================
 # Title
@@ -810,7 +819,7 @@ for col in ["B3", "D3"]:
 headers = [
     "Variable",
     "Value (SD) / Count (%)",
-    "N patients (% of total)",
+    "N patients (% of total population)",
     "Value (SD) / Count (%)",
     "N patients (% of total)",
 ]
@@ -847,47 +856,41 @@ variables = [
 
 row = 5
 
-for variable_name, result_name, _ in variables:
+for variable_idx, (variable_name, result_name) in enumerate(variables):
+
+    fill = (
+        demographic_gray
+        if variable_idx % 2 == 0
+        else demographic_blue
+    )
 
     for subgroup_name in subgroups:
-
-        # -------------------------------------------------------------
-        # All patients
-        # -------------------------------------------------------------
 
         result_all = bias_results["All"][subgroup_name]
         total_all = result_all["Total patients"]
 
-        variable_label = f"{variable_name} ({subgroup_name})"
+        result_non_treated = bias_results["Non-treated"][subgroup_name]
+        total_non_treated = result_non_treated["Total patients"]
 
         all_value = result_all[result_name]["value"]
         all_non_null = result_all[result_name]["non_null"]
-
-        # -------------------------------------------------------------
-        # Non-treatment
-        # -------------------------------------------------------------
-
-        result_non_treated = bias_results["Non-treated"][subgroup_name]
-        total_non_treated = result_non_treated["Total patients"]
 
         non_treated_value = result_non_treated[result_name]["value"]
         non_treated_non_null = result_non_treated[result_name]["non_null"]
 
         values = [
-            variable_label,
-
-            # All patients
+            f"{variable_name} ({subgroup_name})",
             all_value,
-            f"{all_non_null} ({100 * all_non_null / total_all:.1f}%)"
-            if total_all > 0 else "-",
-
-            # Non-treatment
+            (
+                f"{all_non_null} "
+                f"({100 * all_non_null / total_all:.1f}%)"
+                if total_all > 0 else "-"
+            ),
             non_treated_value,
             (
                 f"{non_treated_non_null} "
                 f"({100 * non_treated_non_null / total_non_treated:.1f}%)"
-                if total_non_treated > 0
-                else "-"
+                if total_non_treated > 0 else "-"
             ),
         ]
 
@@ -899,6 +902,7 @@ for variable_name, result_name, _ in variables:
                 value=value,
             )
 
+            cell.fill = fill
             cell.alignment = center_alignment
             cell.border = Border(bottom=thin_gray)
 
