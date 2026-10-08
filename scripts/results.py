@@ -22,6 +22,7 @@ args = parser.parse_args()
 
 model = args.model_name
 
+bias_df = pl.read_csv('/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/bais_variables')
 
 cutoff = model.split('_')[-1]
 
@@ -139,6 +140,20 @@ df_combined = (
     )
 )
 
+df_combined = (
+    df_combined
+    .join(
+        bias_df.select([
+            pl.col("b_cpr").alias("CPR_CHILD"),
+            "maternal_BMI",
+            "maternal_age",
+            "fertility_treatment_2_years_prior",
+            "smoking_status"
+        ]),
+        on="CPR_CHILD",
+        how="left",
+    )
+)
 
 populations = {"All": pl.lit(True),
                "Non-treated": ~pl.col("treatment")}
@@ -157,22 +172,101 @@ results = {}
 total = len(populations) * len(sub_groups)
 
 with tqdm(total=total, desc="Calculating metrics") as pbar:
-
+    bias_results = {}
+    
     for population_name, population_filter in populations.items():
     
         population_df = df_combined.filter(population_filter)
-    
-        results[population_name] = {}
+        bias_results[population_name] = {}
     
         for sub_group_name, sub_group_value in sub_groups.items():
     
             if sub_group_value is None:
                 subgroup_df = population_df
             else:
-                subgroup_df = population_df.filter((pl.col("GA") // 7 >= cutoff)
-                                                   | ((pl.col("GA") // 7 < cutoff)
-                                                      & pl.col(sub_group_value)))
+                subgroup_df = population_df.filter(
+                    (pl.col("GA") // 7 >= cutoff)
+                    | (
+                        (pl.col("GA") // 7 < cutoff)
+                        & pl.col(sub_group_value)
+                    )
+                )
     
+            total = len(subgroup_df)
+    
+            # -------------------------------------------------------------
+            # BMI
+            # -------------------------------------------------------------
+    
+            bmi = subgroup_df["maternal_BMI"].drop_nulls()
+    
+            # -------------------------------------------------------------
+            # Age
+            # -------------------------------------------------------------
+    
+            age = subgroup_df["maternal_age"].drop_nulls()
+    
+            # -------------------------------------------------------------
+            # Fertility treatment
+            # -------------------------------------------------------------
+    
+            fertility = subgroup_df[
+                "fertility_treatment_2_years_prior"
+            ].drop_nulls()
+    
+            fertility_n = int(fertility.sum())
+            
+            # -------------------------------------------------------------
+            # Smoking
+            # -------------------------------------------------------------
+            smoking = (subgroup_df["smoking"].cast(pl.String).filter((pl.col("smoking") != "-1")
+                                                                     & (~pl.col("smoking").str.ends_with("99")))
+                       .with_columns(pl.when(pl.col("smoking").str.ends_with("00")).then(False)
+                                     .otherwise(True).alias("smoking_binary")))
+
+            smoking_n = len(smoking)
+            smoking_true = smoking["smoking_binary"].sum()
+            
+            bias_results[population_name][sub_group_name] = {
+                "Total patients": total,
+    
+                "BMI": {
+                    "non_null": len(bmi),
+                    "value": (
+                        f"{bmi.mean():.1f} ({bmi.std():.1f})"
+                        if len(bmi) > 0
+                        else "-"
+                    ),
+                },
+    
+                "Age": {
+                    "non_null": len(age),
+                    "value": (
+                        f"{age.mean():.1f} ({age.std():.1f})"
+                        if len(age) > 0
+                        else "-"
+                    ),
+                },
+    
+                "Fertility treatment": {
+                    "non_null": len(fertility),
+                    "value": (
+                        f"{fertility_n} "
+                        f"({100 * fertility_n / total:.1f}%)"
+                        if total > 0
+                        else "-"
+                    ),
+                },
+                
+                "Smoking": {
+                    "non_null": smoking_n,
+                    "value": (
+                        f"{smoking_true} ({100 * smoking_true / total:.1f}%)"
+                        if total > 0
+                        else "-"
+                    ),
+                },
+            }
             # -------------------------------------------------------------
             # Model — all patients
             # -------------------------------------------------------------
@@ -578,9 +672,8 @@ format_metric_block(
     population_row=15,
     header_row=16,
     data_start_row=17,
-    population_left="Model CL — All patients",
-    population_right="Model CL — Non-treatment",
-)
+    population_left="Model (CL available) — All patients",
+    population_right="Model (CL available) — Non-treatment")
 
 for i, subgroup_name in enumerate(
     ["All", "PPROM", "C-Section"],
@@ -654,9 +747,188 @@ for start_row, end_row in [
 # Freeze title
 ws.freeze_panes = "A2"
 
+# =====================================================================
+# 16. Demographics / Bias Analysis
+# =====================================================================
+
+ws_bias = wb.create_sheet("Demographics")
+
 
 # =====================================================================
-# 16. Save
+# Title
+# =====================================================================
+
+ws_bias["A1"] = f"GA {cutoff}"
+ws_bias["A1"].font = Font(bold=True, size=14, color="FFFFFF")
+ws_bias["A1"].fill = PatternFill(fill_type="solid", fgColor="595959")
+ws_bias["A1"].alignment = center_alignment
+
+ws_bias.merge_cells("A1:L1")
+
+
+# =====================================================================
+# Population headers
+# =====================================================================
+
+ws_bias.merge_cells("A3:F3")
+ws_bias.merge_cells("G3:L3")
+
+ws_bias["A3"] = "All patients"
+ws_bias["G3"] = "Non-treatment"
+
+for col in ["A3", "G3"]:
+    ws_bias[col].font = header_font
+    ws_bias[col].fill = subsection_fill
+    ws_bias[col].alignment = center_alignment
+
+
+# =====================================================================
+# Column headers
+# =====================================================================
+
+headers = [
+    "Subgroup",
+    "Patients (% of total)",
+    "BMI",
+    "Age",
+    "Fertility",
+    "Smoking",
+]
+
+for i, header in enumerate(headers, start=1):
+
+    cell = ws_bias.cell(4, i, header)
+    cell.font = header_font
+    cell.fill = header_fill
+    cell.alignment = center_alignment
+
+    cell = ws_bias.cell(4, i + 6, header)
+    cell.font = header_font
+    cell.fill = header_fill
+    cell.alignment = center_alignment
+
+
+# =====================================================================
+# Data
+# =====================================================================
+
+for row, subgroup_name in enumerate(
+    ["All", "PPROM", "C-Section"],
+    start=5,
+):
+
+    for start_col, population_name in [
+        (1, "All"),
+        (7, "Non-treated"),
+    ]:
+
+        result = bias_results[population_name][subgroup_name]
+        total = result["Total patients"]
+
+        values = [
+            subgroup_name,
+
+            # Patients
+            f"{total} (100.0%)",
+
+            # BMI
+            (
+                f"{result['BMI']['non_null']} | "
+                f"{result['BMI']['value']}"
+            ),
+
+            # Age
+            (
+                f"{result['Age']['non_null']} | "
+                f"{result['Age']['value']}"
+            ),
+
+            # Fertility
+            (
+                f"{result['Fertility treatment']['non_null']} | "
+                f"{result['Fertility treatment']['value']}"
+            ),
+
+            # Smoking
+            (
+                f"{result['Smoking']['non_null']} | "
+                f"{result['Smoking']['value']}"
+            ),
+        ]
+
+        for offset, value in enumerate(values):
+
+            cell = ws_bias.cell(
+                row=row,
+                column=start_col + offset,
+                value=value,
+            )
+
+            cell.alignment = center_alignment
+            cell.border = Border(bottom=thin_gray)
+
+
+# =====================================================================
+# Column widths
+# =====================================================================
+
+widths = {
+    "A": 18,
+    "B": 22,
+    "C": 24,
+    "D": 24,
+    "E": 24,
+    "F": 24,
+    "G": 18,
+    "H": 22,
+    "I": 24,
+    "J": 24,
+    "K": 24,
+    "L": 24,
+}
+
+for column, width in widths.items():
+    ws_bias.column_dimensions[column].width = width
+
+
+# =====================================================================
+# Borders
+# =====================================================================
+
+for row in range(3, 8):
+
+    for col in [1, 6, 7, 12]:
+
+        ws_bias.cell(row, col).border = Border(
+            left=medium_gray if col in [1, 7] else thin_gray,
+            right=medium_gray if col in [6, 12] else thin_gray,
+            bottom=thin_gray,
+        )
+
+
+# =====================================================================
+# General formatting
+# =====================================================================
+
+for row in ws_bias.iter_rows(
+    min_row=1,
+    max_row=ws_bias.max_row,
+    min_col=1,
+    max_col=12,
+):
+    for cell in row:
+        if cell.value is not None:
+            cell.alignment = center_alignment
+
+
+# =====================================================================
+# Freeze panes
+# =====================================================================
+
+ws_bias.freeze_panes = "A4"
+
+# =====================================================================
+# 17. Save
 # =====================================================================
 
 wb.save(output_path)
