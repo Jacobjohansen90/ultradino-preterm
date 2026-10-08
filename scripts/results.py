@@ -162,6 +162,8 @@ populations = {
 
 sub_groups = {
     "All": None,
+    "Preterm": None,
+    "Non-preterm": None,
     "PPROM": "pprom",
     "C-Section": "c-section_during_birth",
 }
@@ -173,6 +175,7 @@ sub_groups = {
 
 results = {}
 bias_results = {}
+
 total = len(populations) * len(sub_groups)
 
 with tqdm(total=total, desc="Calculating metrics") as pbar:
@@ -186,9 +189,28 @@ with tqdm(total=total, desc="Calculating metrics") as pbar:
 
         for sub_group_name, sub_group_value in sub_groups.items():
 
-            if sub_group_value is None:
+            # =============================================================
+            # Define subgroup
+            # =============================================================
+
+            if sub_group_name == "All":
+
                 subgroup_df = population_df
+
+            elif sub_group_name == "Preterm":
+
+                subgroup_df = population_df.filter(
+                    pl.col("GA") // 7 < cutoff
+                )
+
+            elif sub_group_name == "Non-preterm":
+
+                subgroup_df = population_df.filter(
+                    pl.col("GA") // 7 >= cutoff
+                )
+
             else:
+
                 subgroup_df = population_df.filter(
                     (pl.col("GA") // 7 >= cutoff)
                     | (
@@ -201,166 +223,160 @@ with tqdm(total=total, desc="Calculating metrics") as pbar:
             # Demographics
             # =============================================================
 
-            bias_results[population_name][sub_group_name] = {}
+            total_patients = len(subgroup_df)
 
-            ga_groups = {
-                "Preterm": subgroup_df.filter(
-                    pl.col("GA") // 7 < cutoff
-                ),
-                "Non-preterm": subgroup_df.filter(
-                    pl.col("GA") // 7 >= cutoff
-                ),
+            # -------------------------------------------------------------
+            # BMI
+            # -------------------------------------------------------------
+
+            bmi = subgroup_df["maternal_BMI"].drop_nulls()
+
+            # -------------------------------------------------------------
+            # Age
+            # -------------------------------------------------------------
+
+            age = subgroup_df["maternal_age"].drop_nulls()
+
+            # -------------------------------------------------------------
+            # Fertility treatment
+            # -------------------------------------------------------------
+
+            fertility = subgroup_df[
+                "fertility_treatment_2_years_prior"
+            ].drop_nulls()
+
+            fertility_n = int(fertility.sum())
+
+            # -------------------------------------------------------------
+            # Smoking
+            # -------------------------------------------------------------
+
+            smoking = (
+                subgroup_df
+                .select(
+                    pl.col("smoking_status")
+                    .cast(pl.String)
+                    .alias("smoking_status")
+                )
+                .with_columns(
+                    pl.when(
+                        (pl.col("smoking_status") == "-1")
+                        | pl.col("smoking_status").str.ends_with("99")
+                    )
+                    .then(None)
+                    .when(
+                        pl.col("smoking_status").str.ends_with("00")
+                    )
+                    .then(False)
+                    .otherwise(True)
+                    .alias("smoking_binary")
+                )
+                .filter(
+                    pl.col("smoking_binary").is_not_null()
+                )
+            )
+
+            smoking_n = len(smoking)
+            smoking_true = smoking["smoking_binary"].sum()
+
+            # -------------------------------------------------------------
+            # Store demographics
+            # -------------------------------------------------------------
+
+            bias_results[population_name][sub_group_name] = {
+                "Total patients": total_patients,
+
+                "BMI": {
+                    "non_null": len(bmi),
+                    "value": (
+                        f"{bmi.mean():.1f} ({bmi.std():.1f})"
+                        if len(bmi) > 0
+                        else "-"
+                    ),
+                },
+
+                "Age": {
+                    "non_null": len(age),
+                    "value": (
+                        f"{age.mean():.1f} ({age.std():.1f})"
+                        if len(age) > 0
+                        else "-"
+                    ),
+                },
+
+                "Fertility treatment": {
+                    "non_null": len(fertility),
+                    "value": (
+                        f"{fertility_n} "
+                        f"({100 * fertility_n / total_patients:.1f}%)"
+                        if total_patients > 0
+                        else "-"
+                    ),
+                },
+
+                "Smoking": {
+                    "non_null": smoking_n,
+                    "value": (
+                        f"{smoking_true} "
+                        f"({100 * smoking_true / total_patients:.1f}%)"
+                        if total_patients > 0
+                        else "-"
+                    ),
+                },
             }
 
-            for ga_group_name, ga_group_df in ga_groups.items():
+            # =============================================================
+            # Model metrics
+            #
+            # Only calculate these for the original model subgroups:
+            # All, PPROM and C-Section
+            # =============================================================
 
-                total_ga_group = len(ga_group_df)
-
-                # ---------------------------------------------------------
-                # BMI
-                # ---------------------------------------------------------
-
-                bmi = ga_group_df["maternal_BMI"].drop_nulls()
-
-                # ---------------------------------------------------------
-                # Age
-                # ---------------------------------------------------------
-
-                age = ga_group_df["maternal_age"].drop_nulls()
+            if sub_group_name in ["All", "PPROM", "C-Section"]:
 
                 # ---------------------------------------------------------
-                # Fertility treatment
+                # Model — all patients
                 # ---------------------------------------------------------
 
-                fertility = ga_group_df[
-                    "fertility_treatment_2_years_prior"
-                ].drop_nulls()
-
-                fertility_n = int(fertility.sum())
-
-                # ---------------------------------------------------------
-                # Smoking
-                # ---------------------------------------------------------
-
-                smoking = (
-                    ga_group_df
-                    .select(
-                        pl.col("smoking_status")
-                        .cast(pl.String)
-                        .alias("smoking_status")
-                    )
-                    .with_columns(
-                        pl.when(
-                            (pl.col("smoking_status") == "-1")
-                            | pl.col("smoking_status").str.ends_with("99")
-                        )
-                        .then(None)
-                        .when(
-                            pl.col("smoking_status").str.ends_with("00")
-                        )
-                        .then(False)
-                        .otherwise(True)
-                        .alias("smoking_binary")
-                    )
-                    .filter(
-                        pl.col("smoking_binary").is_not_null()
-                    )
+                model_results = bootstrap_metrics(
+                    subgroup_df,
+                    score_col="preds",
+                    lower_is_positive=False,
                 )
 
-                smoking_n = len(smoking)
-                smoking_true = smoking["smoking_binary"].sum()
-
                 # ---------------------------------------------------------
-                # Store demographics
+                # Patients with a valid CL measurement
                 # ---------------------------------------------------------
 
-                bias_results[population_name][sub_group_name][
-                    ga_group_name
-                ] = {
-                    "Total patients": total_ga_group,
+                cl_df = subgroup_df.filter(
+                    pl.col("CL") != 0
+                )
 
-                    "BMI": {
-                        "non_null": len(bmi),
-                        "value": (
-                            f"{bmi.mean():.1f} ({bmi.std():.1f})"
-                            if len(bmi) > 0
-                            else "-"
-                        ),
-                    },
+                # ---------------------------------------------------------
+                # Model — CL available
+                # ---------------------------------------------------------
 
-                    "Age": {
-                        "non_null": len(age),
-                        "value": (
-                            f"{age.mean():.1f} ({age.std():.1f})"
-                            if len(age) > 0
-                            else "-"
-                        ),
-                    },
+                model_cl_results = bootstrap_metrics(
+                    cl_df,
+                    score_col="preds",
+                    lower_is_positive=False,
+                )
 
-                    "Fertility treatment": {
-                        "non_null": len(fertility),
-                        "value": (
-                            f"{fertility_n} "
-                            f"({100 * fertility_n / total_ga_group:.1f}%)"
-                            if total_ga_group > 0
-                            else "-"
-                        ),
-                    },
+                # ---------------------------------------------------------
+                # CL — CL available
+                # ---------------------------------------------------------
 
-                    "Smoking": {
-                        "non_null": smoking_n,
-                        "value": (
-                            f"{smoking_true} "
-                            f"({100 * smoking_true / total_ga_group:.1f}%)"
-                            if total_ga_group > 0
-                            else "-"
-                        ),
-                    },
+                cl_results = bootstrap_metrics(
+                    cl_df,
+                    score_col="CL",
+                    lower_is_positive=True,
+                )
+
+                results[population_name][sub_group_name] = {
+                    "Model": model_results,
+                    "Model (CL available)": model_cl_results,
+                    "CL": cl_results,
                 }
-
-            # =============================================================
-            # Model — all patients
-            # =============================================================
-
-            model_results = bootstrap_metrics(
-                subgroup_df,
-                score_col="preds",
-                lower_is_positive=False,
-            )
-
-            # =============================================================
-            # Patients with a valid CL measurement
-            # =============================================================
-
-            cl_df = subgroup_df.filter(
-                pl.col("CL") != 0
-            )
-
-            # =============================================================
-            # Model — CL available
-            # =============================================================
-
-            model_cl_results = bootstrap_metrics(
-                cl_df,
-                score_col="preds",
-                lower_is_positive=False,
-            )
-
-            # =============================================================
-            # CL — CL available
-            # =============================================================
-
-            cl_results = bootstrap_metrics(
-                cl_df,
-                score_col="CL",
-                lower_is_positive=True,
-            )
-
-            results[population_name][sub_group_name] = {
-                "Model": model_results,
-                "Model (CL available)": model_cl_results,
-                "CL": cl_results,
-            }
 
             pbar.update(1)
 
@@ -814,7 +830,6 @@ demographic_blue = PatternFill(
     fgColor="EAF2F8",
 )
 
-
 # =====================================================================
 # Title
 # =====================================================================
@@ -853,19 +868,17 @@ for col in ["B3", "D3"]:
 headers = [
     "Variable",
     "Value (SD) / Count (%)",
-    "N patients (% of GA group)",
+    "N patients (% of total population)",
     "Value (SD) / Count (%)",
-    "N patients (% of GA group)",
+    "N patients (% of total population)",
 ]
 
 for i, header in enumerate(headers, start=1):
-
     cell = ws_bias.cell(
         row=4,
         column=i,
         value=header,
     )
-
     cell.font = header_font
     cell.fill = header_fill
     cell.alignment = center_alignment
@@ -877,13 +890,10 @@ for i, header in enumerate(headers, start=1):
 
 subgroups = [
     "All",
-    "PPROM",
-    "C-Section",
-]
-
-ga_groups = [
     "Preterm",
     "Non-preterm",
+    "PPROM",
+    "C-Section",
 ]
 
 variables = [
@@ -895,80 +905,78 @@ variables = [
 
 row = 5
 
-for subgroup_name in subgroups:
+for variable_idx, variable_name in enumerate(variables):
 
-    for ga_group_name in ga_groups:
+    # Alternate colour for each variable block
+    fill = (
+        demographic_gray
+        if variable_idx % 2 == 0
+        else demographic_blue
+    )
 
-        # -------------------------------------------------------------
-        # Subgroup results
-        # -------------------------------------------------------------
+    for subgroup_name in subgroups:
 
-        result_all = bias_results["All"][subgroup_name][ga_group_name]
-        result_non_treated = bias_results["Non-treated"][
-            subgroup_name
-        ][ga_group_name]
-
+        result_all = bias_results["All"][subgroup_name]
         total_all = result_all["Total patients"]
+
+        result_non_treated = bias_results["Non-treated"][subgroup_name]
         total_non_treated = result_non_treated["Total patients"]
 
         # -------------------------------------------------------------
-        # Variables
+        # All patients
         # -------------------------------------------------------------
 
-        for variable_idx, variable_name in enumerate(variables):
+        all_value = result_all[variable_name]["value"]
+        all_non_null = result_all[variable_name]["non_null"]
 
-            fill = (
-                demographic_gray
-                if variable_idx % 2 == 0
-                else demographic_blue
+        all_n = (
+            f"{all_non_null} "
+            f"({100 * all_non_null / total_all:.1f}%)"
+            if total_all > 0
+            else "-"
+        )
+
+        # -------------------------------------------------------------
+        # Non-treatment
+        # -------------------------------------------------------------
+
+        non_treated_value = result_non_treated[variable_name]["value"]
+        non_treated_non_null = result_non_treated[variable_name]["non_null"]
+
+        non_treated_n = (
+            f"{non_treated_non_null} "
+            f"({100 * non_treated_non_null / total_non_treated:.1f}%)"
+            if total_non_treated > 0
+            else "-"
+        )
+
+        # -------------------------------------------------------------
+        # Row
+        # -------------------------------------------------------------
+
+        values = [
+            f"{variable_name} ({subgroup_name})",
+            all_value,
+            all_n,
+            non_treated_value,
+            non_treated_n,
+        ]
+
+        for col, value in enumerate(values, start=1):
+
+            cell = ws_bias.cell(
+                row=row,
+                column=col,
+                value=value,
             )
 
-            all_value = result_all[variable_name]["value"]
-            all_non_null = result_all[variable_name]["non_null"]
+            cell.fill = fill
+            cell.alignment = center_alignment
+            cell.border = Border(
+                bottom=thin_gray
+            )
 
-            non_treated_value = result_non_treated[
-                variable_name
-            ]["value"]
-
-            non_treated_non_null = result_non_treated[
-                variable_name
-            ]["non_null"]
-
-            values = [
-                f"{variable_name} ({subgroup_name}, {ga_group_name})",
-
-                all_value,
-
-                (
-                    f"{all_non_null} "
-                    f"({100 * all_non_null / total_all:.1f}%)"
-                    if total_all > 0
-                    else "-"
-                ),
-
-                non_treated_value,
-
-                (
-                    f"{non_treated_non_null} "
-                    f"({100 * non_treated_non_null / total_non_treated:.1f}%)"
-                    if total_non_treated > 0
-                    else "-"
-                ),
-            ]
-
-            for col, value in enumerate(values, start=1):
-
-                cell = ws_bias.cell(
-                    row=row,
-                    column=col,
-                    value=value,
-                )
-
-                cell.fill = fill
-                cell.alignment = center_alignment
-                cell.border = Border(bottom=thin_gray)
-
-            row += 1
+        row += 1
 
 
 # =====================================================================
@@ -976,11 +984,11 @@ for subgroup_name in subgroups:
 # =====================================================================
 
 widths = {
-    "A": 38,
+    "A": 30,
     "B": 24,
-    "C": 30,
+    "C": 35,
     "D": 24,
-    "E": 30,
+    "E": 35,
 }
 
 for column, width in widths.items():
