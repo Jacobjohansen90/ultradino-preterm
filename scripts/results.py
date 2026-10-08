@@ -821,7 +821,7 @@ headers = [
     "Value (SD) / Count (%)",
     "N patients (% of total population)",
     "Value (SD) / Count (%)",
-    "N patients (% of total)",
+    "N patients (% of total population)",
 ]
 
 for i, header in enumerate(headers, start=1):
@@ -916,9 +916,9 @@ for variable_idx, (variable_name, result_name) in enumerate(variables):
 widths = {
     "A": 24,
     "B": 24,
-    "C": 25,
+    "C": 35,
     "D": 24,
-    "E": 25,
+    "E": 35,
 }
 
 for column, width in widths.items():
