@@ -278,6 +278,10 @@ left_alignment = Alignment(
     vertical="center",
 )
 
+center_alignment = Alignment(
+    horizontal="center",
+    vertical="center",
+)
 
 # =====================================================================
 # 10. Excel helper functions
@@ -499,12 +503,11 @@ def format_metric_block(
 # =====================================================================
 
 ws["A1"] = f"GA {cutoff}"
-ws["A1"].font = title_font
-ws["A1"].alignment = left_alignment
+ws["A1"].font = Font(bold=True, size=14, color="FFFFFF")
+ws["A1"].fill = PatternFill(fill_type="solid", fgColor="595959")
+ws["A1"].alignment = center_alignment
 
-ws.merge_cells(
-    "A1:J1"
-)
+ws.merge_cells("A1:J1")
 
 
 # =====================================================================
@@ -513,32 +516,25 @@ ws.merge_cells(
 
 format_metric_block(
     ws,
-    title_row=3,
-    population_row=4,
-    header_row=5,
-    data_start_row=6,
-    population_left="All patients",
-    population_right="Non-treatment",
+    title_row=2,
+    population_row=3,
+    header_row=4,
+    data_start_row=5,
+    population_left="Model — All patients",
+    population_right="Model — Non-treatment",
 )
 
 for i, subgroup_name in enumerate(
     ["All", "PPROM", "C-Section"],
-    start=6,
+    start=5,
 ):
-
     write_metric_row(
-        ws,
-        i,
-        1,
-        subgroup_name,
+        ws, i, 1, subgroup_name,
         results["All"][subgroup_name]["Model"],
     )
 
     write_metric_row(
-        ws,
-        i,
-        6,
-        subgroup_name,
+        ws, i, 6, subgroup_name,
         results["Non-treated"][subgroup_name]["Model"],
     )
 
@@ -549,32 +545,25 @@ for i, subgroup_name in enumerate(
 
 format_metric_block(
     ws,
-    title_row=10,
-    population_row=11,
-    header_row=12,
-    data_start_row=13,
-    population_left="All patients (CL Available)",
-    population_right="Non-treatment (CL Available)",
+    title_row=8,
+    population_row=9,
+    header_row=10,
+    data_start_row=11,
+    population_left="CL — All patients",
+    population_right="CL — Non-treatment",
 )
 
 for i, subgroup_name in enumerate(
     ["All", "PPROM", "C-Section"],
-    start=13,
+    start=11,
 ):
-
     write_metric_row(
-        ws,
-        i,
-        1,
-        subgroup_name,
+        ws, i, 1, subgroup_name,
         results["All"][subgroup_name]["CL"],
     )
 
     write_metric_row(
-        ws,
-        i,
-        6,
-        subgroup_name,
+        ws, i, 6, subgroup_name,
         results["Non-treated"][subgroup_name]["CL"],
     )
 
@@ -585,19 +574,18 @@ for i, subgroup_name in enumerate(
 
 format_metric_block(
     ws,
-    title_row=17,
-    population_row=18,
-    header_row=19,
-    data_start_row=20,
-    population_left="All patients (CL Available)",
-    population_right="Non-treatment (CL Available)",
+    title_row=14,
+    population_row=15,
+    header_row=16,
+    data_start_row=17,
+    population_left="Model CL — All patients",
+    population_right="Model CL — Non-treatment",
 )
 
 for i, subgroup_name in enumerate(
     ["All", "PPROM", "C-Section"],
-    start=20,
+    start=17,
 ):
-
     write_metric_row(
         ws,
         i,
@@ -611,9 +599,7 @@ for i, subgroup_name in enumerate(
         i,
         6,
         subgroup_name,
-        results["Non-treated"][subgroup_name][
-            "Model (CL available)"
-        ],
+        results["Non-treated"][subgroup_name]["Model (CL available)"],
     )
 
 
@@ -621,7 +607,6 @@ for i, subgroup_name in enumerate(
 # 15. General formatting
 # =====================================================================
 
-# Column widths
 widths = {
     "A": 18,
     "B": 22,
@@ -639,67 +624,35 @@ for column, width in widths.items():
     ws.column_dimensions[column].width = width
 
 
-# Apply alignment
+# Center all cells
 for row in ws.iter_rows(
     min_row=1,
     max_row=ws.max_row,
     min_col=1,
     max_col=10,
 ):
-
     for cell in row:
-
         if cell.value is not None:
-
-            if cell.column in [1, 6]:
-                cell.alignment = left_alignment
-
-            else:
-                cell.alignment = normal_alignment
+            cell.alignment = center_alignment
 
 
-# Add stronger borders around the two population blocks
-for row in range(4, 9):
-    for col in [1, 5, 6, 10]:
-
-        ws.cell(
-            row,
-            col,
-        ).border = Border(
-            left=medium_gray if col in [1, 6] else thin_gray,
-            right=medium_gray if col in [5, 10] else thin_gray,
-            bottom=thin_gray,
-        )
-
-
-for row in range(11, 16):
-    for col in [1, 5, 6, 10]:
-
-        ws.cell(
-            row,
-            col,
-        ).border = Border(
-            left=medium_gray if col in [1, 6] else thin_gray,
-            right=medium_gray if col in [5, 10] else thin_gray,
-            bottom=thin_gray,
-        )
-
-
-for row in range(18, 23):
-    for col in [1, 5, 6, 10]:
-
-        ws.cell(
-            row,
-            col,
-        ).border = Border(
-            left=medium_gray if col in [1, 6] else thin_gray,
-            right=medium_gray if col in [5, 10] else thin_gray,
-            bottom=thin_gray,
-        )
+# Stronger borders around population blocks
+for start_row, end_row in [
+    (3, 7),
+    (9, 13),
+    (15, 19),
+]:
+    for row in range(start_row, end_row + 1):
+        for col in [1, 5, 6, 10]:
+            ws.cell(row, col).border = Border(
+                left=medium_gray if col in [1, 6] else thin_gray,
+                right=medium_gray if col in [5, 10] else thin_gray,
+                bottom=thin_gray,
+            )
 
 
 # Freeze title
-ws.freeze_panes = "A3"
+ws.freeze_panes = "A2"
 
 
 # =====================================================================
