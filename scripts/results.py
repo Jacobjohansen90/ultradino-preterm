@@ -219,9 +219,9 @@ with tqdm(total=total, desc="Calculating metrics") as pbar:
             # -------------------------------------------------------------
             # Smoking
             # -------------------------------------------------------------
-            smoking = (subgroup_df["smoking"].cast(pl.String).filter((pl.col("smoking") != "-1")
-                                                                     & (~pl.col("smoking").str.ends_with("99")))
-                       .with_columns(pl.when(pl.col("smoking").str.ends_with("00")).then(False)
+            smoking = (subgroup_df["smoking_status"].cast(pl.String).filter((pl.col("smoking_status") != "-1")
+                                                                     & (~pl.col("smoking_status").str.ends_with("99")))
+                       .with_columns(pl.when(pl.col("smoking_status").str.ends_with("00")).then(False)
                                      .otherwise(True).alias("smoking_binary")))
 
             smoking_n = len(smoking)
