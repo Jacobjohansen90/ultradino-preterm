@@ -3,44 +3,13 @@ import polars as pl
 from sklearn.metrics import roc_auc_score, roc_curve
 
 
-# ---------------------------------------------------------------------
-# 1. Collapse df to one row per child and join with predictions
-# ---------------------------------------------------------------------
-
-df_combined = (
-    preds
-    .join(
-        df.group_by("CPR_CHILD").agg([
-            pl.col("GA").first(),
-            pl.col("induced").first(),
-            pl.col("c-section").first(),
-            pl.col("pprom").first(),
-            pl.col("c-section_during_birth").first(),
-            pl.col("contractions_with_preterm_birth").first(),
-            pl.col("CL_read").first(),
-        ]),
-        on="CPR_CHILD",
-        how="left",
-    )
-    .filter(
-        (pl.col("GA") // 7 >= cutoff)
-        | (~pl.col("induced") & ~pl.col("c-section"))
-        | pl.col("pprom")
-        | (
-            pl.col("c-section")
-            & (
-                pl.col("c-section_during_birth")
-                | pl.col("contractions_with_preterm_birth")
-            )
-            & ~pl.col("induced")
-        )
-    )
-)
+model = 'baseline_34'
 
 
-# ---------------------------------------------------------------------
-# 2. Metric functions
-# ---------------------------------------------------------------------
+
+cutoff = model.split('_')[-1]
+
+output_path = f"/users/data/UCPH/DeepFetal/projects/preterm/misc/{cutoff}.xlsx"
 
 def sens_at_85_spec(y_true, y_score, target_spec=0.85):
     fpr, tpr, thresholds = roc_curve(y_true, y_score)
@@ -115,21 +84,52 @@ def bootstrap_metrics(
         "sens_ci_upper": sens_ci[1],
     }
 
-
 # ---------------------------------------------------------------------
-# 3. Define populations
+# 1. Collapse df to one row per child and join with predictions
 # ---------------------------------------------------------------------
 
-populations = {
-    "All": pl.lit(True),
-    "Non-treated": ~pl.col("treatment"),
-}
+cutoff = model.split('_')[-1]
+path = '/users/data/UCPH/DeepFetal/projects/preterm/training_runs/Running/'
+preds = pl.read_parquet(path + model + f"/results/predictions/predictions_{cutoff}.parquet")
+df = pl.read_parquet('/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/test2.parquet')
 
-pprom_groups = {
-    "All": None,
-    "PPROM": True,
-    "Non-PPROM": False,
-}
+df_combined = (
+    preds
+    .join(
+        df.group_by("CPR_CHILD").agg([
+            pl.col("GA").first(),
+            pl.col("induced").first(),
+            pl.col("c-section").first(),
+            pl.col("pprom").first(),
+            pl.col("c-section_during_birth").first(),
+            pl.col("contractions_with_preterm_birth").first(),
+            pl.col("CL").first(),
+        ]),
+        on="CPR_CHILD",
+        how="left",
+    )
+    .filter(
+        (pl.col("GA") // 7 >= cutoff)
+        | (~pl.col("induced") & ~pl.col("c-section"))
+        | pl.col("pprom")
+        | (
+            pl.col("c-section")
+            & (
+                pl.col("c-section_during_birth")
+                | pl.col("contractions_with_preterm_birth")
+            )
+            & ~pl.col("induced")
+        )
+    )
+)
+
+
+populations = {"All": pl.lit(True),
+               "Non-treated": ~pl.col("treatment")}
+
+sub_groups = {"All": None,
+              "PPROM": "pprom",
+              "C-section": "c-section_during_birth"}
 
 
 # ---------------------------------------------------------------------
@@ -144,14 +144,14 @@ for population_name, population_filter in populations.items():
 
     results[population_name] = {}
 
-    for pprom_name, pprom_value in pprom_groups.items():
+    for sub_group_name, sub_group_value in sub_groups.items():
 
-        if pprom_value is None:
+        if sub_group_value is None:
             subgroup_df = population_df
         else:
-            subgroup_df = population_df.filter(
-                pl.col("pprom") == pprom_value
-            )
+            subgroup_df = population_df.filter((pl.col("GA") // 7 >= cutoff)
+                                               | ((pl.col("GA") // 7 < cutoff)
+                                                  & pl.col(sub_group_value)))
 
         # -------------------------------------------------------------
         # Model — all patients
@@ -168,7 +168,7 @@ for population_name, population_filter in populations.items():
         # -------------------------------------------------------------
 
         cl_df = subgroup_df.filter(
-            pl.col("CL_read") != 0
+            pl.col("CL") != 0
         )
 
         # -------------------------------------------------------------
@@ -187,11 +187,11 @@ for population_name, population_filter in populations.items():
 
         cl_results = bootstrap_metrics(
             cl_df,
-            score_col="CL_read",
+            score_col="CL",
             lower_is_positive=True,
         )
 
-        results[population_name][pprom_name] = {
+        results[population_name][sub_group_name] = {
             "Model": model_results,
             "Model (CL available)": model_cl_results,
             "CL": cl_results,
@@ -202,33 +202,263 @@ for population_name, population_filter in populations.items():
 # 5. Print results
 # ---------------------------------------------------------------------
 
-for population, population_results in results.items():
+from openpyxl import load_workbook
+from copy import copy
 
-    print(f"\n{'=' * 75}")
-    print(population)
-    print(f"{'=' * 75}")
 
-    for subgroup, metrics in population_results.items():
+# ---------------------------------------------------------------------
+# 5. Create Excel output
+# ---------------------------------------------------------------------
 
-        print(f"\n{subgroup}")
-        print("-" * len(subgroup))
+template_path = "/path/to/Results.xlsx"
+output_path = f"/path/to/Results_GA{cutoff}.xlsx"
 
-        for method, r in metrics.items():
+wb_template = load_workbook(template_path)
+ws_template = wb_template["Metrics"]
 
-            print(f"\n  {method}")
-            print(f"  N:                  {r['n']:,}")
-            print(f"  Positive:            {r['n_positive']:,}")
-            print(f"  Negative:            {r['n_negative']:,}")
-            print(
-                f"  AUC:                 {r['auc']:.3f} "
-                f"(95% CI: "
-                f"{r['auc_ci_lower']:.3f}–"
-                f"{r['auc_ci_upper']:.3f})"
-            )
-            print(
-                f"  Sens. @ 85% spec.:   "
-                f"{r['sens_at_85_spec']:.3f} "
-                f"(95% CI: "
-                f"{r['sens_ci_lower']:.3f}–"
-                f"{r['sens_ci_upper']:.3f})"
-            )
+# Create a new workbook using the existing Metrics sheet as template
+wb = load_workbook(template_path)
+ws = wb["Metrics"]
+
+# Clear existing Metrics sheet
+for row in ws.iter_rows():
+    for cell in row:
+        cell.value = None
+
+
+# ---------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------
+
+def format_metric(r, metric, ci_lower, ci_upper):
+    return (
+        f"{r[metric]:.3f} "
+        f"({r[ci_lower]:.3f}-{r[ci_upper]:.3f})"
+    )
+
+
+def write_result_row(ws, row, start_col, subgroup_name, result):
+    ws.cell(row=row, column=start_col, value=subgroup_name)
+
+    ws.cell(
+        row=row,
+        column=start_col + 1,
+        value=format_metric(
+            result,
+            "auc",
+            "auc_ci_lower",
+            "auc_ci_upper",
+        ),
+    )
+
+    ws.cell(
+        row=row,
+        column=start_col + 2,
+        value=format_metric(
+            result,
+            "sens_at_85_spec",
+            "sens_ci_lower",
+            "sens_ci_upper",
+        ),
+    )
+
+    ws.cell(
+        row=row,
+        column=start_col + 3,
+        value=result["n_positive"],
+    )
+
+    ws.cell(
+        row=row,
+        column=start_col + 4,
+        value=result["n"],
+    )
+
+
+# ---------------------------------------------------------------------
+# Copy formatting from the first GA block in the template
+# ---------------------------------------------------------------------
+
+# The template has the desired formatting already.
+# We use the first GA block (rows 1-17) as the formatting template.
+
+for row in range(1, 18):
+    for col in range(1, 11):
+        source = ws_template.cell(row=row, column=col)
+        target = ws.cell(row=row, column=col)
+
+        if source.has_style:
+            target._style = copy(source._style)
+
+        if source.number_format:
+            target.number_format = source.number_format
+
+        if source.alignment:
+            target.alignment = copy(source.alignment)
+
+        if source.border:
+            target.border = copy(source.border)
+
+        if source.fill:
+            target.fill = copy(source.fill)
+
+        if source.font:
+            target.font = copy(source.font)
+
+
+# ---------------------------------------------------------------------
+# Header
+# ---------------------------------------------------------------------
+
+ws["A1"] = f"GA {cutoff}"
+
+ws["A2"] = "Model"
+
+ws["A3"] = "All patients"
+ws["F3"] = "Non-treatment"
+
+ws["B4"] = "AUC"
+ws["C4"] = "Sens@Spec"
+ws["D4"] = "N-preterm"
+ws["E4"] = "N-total"
+
+ws["G4"] = "AUC"
+ws["H4"] = "Sens@Spec"
+ws["I4"] = "N-preterm"
+ws["J4"] = "N-total"
+
+
+# ---------------------------------------------------------------------
+# Model
+# ---------------------------------------------------------------------
+
+subgroup_rows = {
+    "All": 5,
+    "PPROM": 6,
+    "C-Section": 7,
+}
+
+for subgroup_name, row in subgroup_rows.items():
+
+    write_result_row(
+        ws,
+        row,
+        1,
+        subgroup_name,
+        results["All"][subgroup_name]["Model"],
+    )
+
+    write_result_row(
+        ws,
+        row,
+        6,
+        subgroup_name,
+        results["Non-treated"][subgroup_name]["Model"],
+    )
+
+
+# ---------------------------------------------------------------------
+# Cervical Length
+# ---------------------------------------------------------------------
+
+ws["A8"] = "Cervical Length"
+
+ws["A9"] = "All patients (CL Available)"
+ws["F9"] = "Non-treatment (CL Available)"
+
+ws["B10"] = "AUC"
+ws["C10"] = "Sens@Spec"
+ws["D10"] = "N-preterm"
+ws["E10"] = "N-total"
+
+ws["G10"] = "AUC"
+ws["H10"] = "Sens@Spec"
+ws["I10"] = "N-preterm"
+ws["J10"] = "N-total"
+
+cl_rows = {
+    "All": 11,
+    "PPROM": 12,
+    "C-Section": 13,
+}
+
+for subgroup_name, row in cl_rows.items():
+
+    write_result_row(
+        ws,
+        row,
+        1,
+        subgroup_name,
+        results["All"][subgroup_name]["CL"],
+    )
+
+    write_result_row(
+        ws,
+        row,
+        6,
+        subgroup_name,
+        results["Non-treated"][subgroup_name]["CL"],
+    )
+
+
+# ---------------------------------------------------------------------
+# Model — CL patients
+# ---------------------------------------------------------------------
+
+ws["A14"] = "Model (CL patients)"
+
+ws["A15"] = "All patients (CL Available)"
+ws["F15"] = "Non-treatment (CL Available)"
+
+ws["B16"] = "AUC"
+ws["C16"] = "Sens@Spec"
+ws["D16"] = "N-preterm"
+ws["E16"] = "N-total"
+
+ws["G16"] = "AUC"
+ws["H16"] = "Sens@Spec"
+ws["I16"] = "N-preterm"
+ws["J16"] = "N-total"
+
+model_cl_rows = {
+    "All": 17,
+    "PPROM": 18,
+    "C-Section": 19,
+}
+
+# Need formatting for rows 18-19 as well
+for row in [18, 19]:
+    for col in range(1, 11):
+        source = ws_template.cell(row=6 + (row - 18), column=col)
+        target = ws.cell(row=row, column=col)
+
+        if source.has_style:
+            target._style = copy(source._style)
+
+
+for subgroup_name, row in model_cl_rows.items():
+
+    write_result_row(
+        ws,
+        row,
+        1,
+        subgroup_name,
+        results["All"][subgroup_name]["Model (CL available)"],
+    )
+
+    write_result_row(
+        ws,
+        row,
+        6,
+        subgroup_name,
+        results["Non-treated"][subgroup_name]["Model (CL available)"],
+    )
+
+
+# ---------------------------------------------------------------------
+# Save
+# ---------------------------------------------------------------------
+
+wb.save(output_path)
+
+print(f"Saved: {output_path}")

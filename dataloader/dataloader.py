@@ -117,9 +117,8 @@ class PreTermDataset(Dataset):
             
             img_data.append(data_temp)
         
-        img_data = torch.tensor(img_data)
-        img_data = img_data.unsqueeze(0)
-                
+        img_data = torch.tensor(img_data).unsqueeze(0)
+        
         #Get patient identifier
         ID = data.get(self.ID_var)
         
