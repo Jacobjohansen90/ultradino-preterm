@@ -783,20 +783,21 @@ ws_bias["A1"].font = Font(bold=True, size=14, color="FFFFFF")
 ws_bias["A1"].fill = PatternFill(fill_type="solid", fgColor="595959")
 ws_bias["A1"].alignment = center_alignment
 
-ws_bias.merge_cells("A1:L1")
+ws_bias.merge_cells("A1:E1")
 
 
 # =====================================================================
 # Population headers
 # =====================================================================
 
-ws_bias.merge_cells("A3:F3")
-ws_bias.merge_cells("G3:L3")
+ws_bias.merge_cells("B3:C3")
+ws_bias.merge_cells("D3:E3")
 
-ws_bias["A3"] = "All patients"
-ws_bias["G3"] = "Non-treatment"
+ws_bias["B3"] = "All patients"
+ws_bias["D3"] = "Non-treatment"
 
-for col in ["A3", "G3"]:
+for col in ["B3", "D3"]:
+
     ws_bias[col].font = header_font
     ws_bias[col].fill = subsection_fill
     ws_bias[col].alignment = center_alignment
@@ -807,22 +808,21 @@ for col in ["A3", "G3"]:
 # =====================================================================
 
 headers = [
-    "Subgroup",
-    "Patients (% of total)",
-    "BMI",
-    "Age",
-    "Fertility",
-    "Smoking",
+    "Variable",
+    "Value (SD) / Count (%)",
+    "N patients (% of total)",
+    "Value (SD) / Count (%)",
+    "N patients (% of total)",
 ]
 
 for i, header in enumerate(headers, start=1):
 
-    cell = ws_bias.cell(4, i, header)
-    cell.font = header_font
-    cell.fill = header_fill
-    cell.alignment = center_alignment
+    cell = ws_bias.cell(
+        row=4,
+        column=i,
+        value=header,
+    )
 
-    cell = ws_bias.cell(4, i + 6, header)
     cell.font = header_font
     cell.fill = header_fill
     cell.alignment = center_alignment
@@ -832,60 +832,77 @@ for i, header in enumerate(headers, start=1):
 # Data
 # =====================================================================
 
-for row, subgroup_name in enumerate(
-    ["All", "PPROM", "C-Section"],
-    start=5,
-):
+subgroups = [
+    "All",
+    "PPROM",
+    "C-Section",
+]
 
-    for start_col, population_name in [
-        (1, "All"),
-        (7, "Non-treated"),
-    ]:
+variables = [
+    ("BMI", "BMI", "value"),
+    ("Age", "Age", "value"),
+    ("Fertility", "Fertility treatment", "value"),
+    ("Smoking", "Smoking", "value"),
+]
 
-        result = bias_results[population_name][subgroup_name]
-        total = result["Total patients"]
+row = 5
+
+for variable_name, result_name, _ in variables:
+
+    for subgroup_name in subgroups:
+
+        # -------------------------------------------------------------
+        # All patients
+        # -------------------------------------------------------------
+
+        result_all = bias_results["All"][subgroup_name]
+        total_all = result_all["Total patients"]
+
+        variable_label = f"{variable_name} ({subgroup_name})"
+
+        all_value = result_all[result_name]["value"]
+        all_non_null = result_all[result_name]["non_null"]
+
+        # -------------------------------------------------------------
+        # Non-treatment
+        # -------------------------------------------------------------
+
+        result_non_treated = bias_results["Non-treated"][subgroup_name]
+        total_non_treated = result_non_treated["Total patients"]
+
+        non_treated_value = result_non_treated[result_name]["value"]
+        non_treated_non_null = result_non_treated[result_name]["non_null"]
 
         values = [
-            subgroup_name,
+            variable_label,
 
-            # Patients
-            f"{total} (100.0%)",
+            # All patients
+            all_value,
+            f"{all_non_null} ({100 * all_non_null / total_all:.1f}%)"
+            if total_all > 0 else "-",
 
-            # BMI
+            # Non-treatment
+            non_treated_value,
             (
-                f"{result['BMI']['non_null']} | "
-                f"{result['BMI']['value']}"
-            ),
-
-            # Age
-            (
-                f"{result['Age']['non_null']} | "
-                f"{result['Age']['value']}"
-            ),
-
-            # Fertility
-            (
-                f"{result['Fertility treatment']['non_null']} | "
-                f"{result['Fertility treatment']['value']}"
-            ),
-
-            # Smoking
-            (
-                f"{result['Smoking']['non_null']} | "
-                f"{result['Smoking']['value']}"
+                f"{non_treated_non_null} "
+                f"({100 * non_treated_non_null / total_non_treated:.1f}%)"
+                if total_non_treated > 0
+                else "-"
             ),
         ]
 
-        for offset, value in enumerate(values):
+        for col, value in enumerate(values, start=1):
 
             cell = ws_bias.cell(
                 row=row,
-                column=start_col + offset,
+                column=col,
                 value=value,
             )
 
             cell.alignment = center_alignment
             cell.border = Border(bottom=thin_gray)
+
+        row += 1
 
 
 # =====================================================================
@@ -893,18 +910,11 @@ for row, subgroup_name in enumerate(
 # =====================================================================
 
 widths = {
-    "A": 18,
-    "B": 22,
-    "C": 24,
+    "A": 24,
+    "B": 24,
+    "C": 25,
     "D": 24,
-    "E": 24,
-    "F": 24,
-    "G": 18,
-    "H": 22,
-    "I": 24,
-    "J": 24,
-    "K": 24,
-    "L": 24,
+    "E": 25,
 }
 
 for column, width in widths.items():
@@ -915,13 +925,21 @@ for column, width in widths.items():
 # Borders
 # =====================================================================
 
-for row in range(3, 8):
+for row_idx in range(3, ws_bias.max_row + 1):
 
-    for col in [1, 6, 7, 12]:
+    for col in range(1, 6):
 
-        ws_bias.cell(row, col).border = Border(
-            left=medium_gray if col in [1, 7] else thin_gray,
-            right=medium_gray if col in [6, 12] else thin_gray,
+        ws_bias.cell(row_idx, col).border = Border(
+            left=(
+                medium_gray
+                if col in [1, 2, 4]
+                else thin_gray
+            ),
+            right=(
+                medium_gray
+                if col in [1, 3, 5]
+                else thin_gray
+            ),
             bottom=thin_gray,
         )
 
@@ -930,13 +948,15 @@ for row in range(3, 8):
 # General formatting
 # =====================================================================
 
-for row in ws_bias.iter_rows(
+for row_cells in ws_bias.iter_rows(
     min_row=1,
     max_row=ws_bias.max_row,
     min_col=1,
-    max_col=12,
+    max_col=5,
 ):
-    for cell in row:
+
+    for cell in row_cells:
+
         if cell.value is not None:
             cell.alignment = center_alignment
 
@@ -945,7 +965,7 @@ for row in ws_bias.iter_rows(
 # Freeze panes
 # =====================================================================
 
-ws_bias.freeze_panes = "A4"
+ws_bias.freeze_panes = "A5"
 
 # =====================================================================
 # 17. Save
