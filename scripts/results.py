@@ -196,46 +196,61 @@ with tqdm(total=total, desc="Calculating metrics") as pbar:
             if sub_group_name == "All":
 
                 subgroup_df = population_df
+                demographic_df = subgroup_df
+
 
             elif sub_group_name == "Preterm":
 
                 subgroup_df = population_df.filter(
                     pl.col("GA") // 7 < cutoff
                 )
+                demographic_df = subgroup_df
 
             elif sub_group_name == "Non-preterm":
 
                 subgroup_df = population_df.filter(
                     pl.col("GA") // 7 >= cutoff
                 )
+                demographic_df = subgroup_df
 
             else:
 
-                subgroup_df = population_df.filter((pl.col("GA") // 7 < cutoff) & pl.col(sub_group_value))
+                subgroup_df = population_df.filter(
+                    (pl.col("GA") // 7 >= cutoff)
+                    | (
+                        (pl.col("GA") // 7 < cutoff)
+                        & pl.col(sub_group_value)
+                    )
+                )
+                demographic_df = population_df.filter((pl.col("GA") // 7 < cutoff)
+                        & pl.col(sub_group_value)
+                    )
+
+
 
             # =============================================================
             # Demographics
             # =============================================================
 
-            total_patients = len(subgroup_df)
+            total_patients = len(demographic_df)
 
             # -------------------------------------------------------------
             # BMI
             # -------------------------------------------------------------
 
-            bmi = subgroup_df["maternal_BMI"].drop_nulls()
+            bmi = demographic_df["maternal_BMI"].drop_nulls()
 
             # -------------------------------------------------------------
             # Age
             # -------------------------------------------------------------
 
-            age = subgroup_df["maternal_age"].drop_nulls()
+            age = demographic_df["maternal_age"].drop_nulls()
 
             # -------------------------------------------------------------
             # Fertility treatment
             # -------------------------------------------------------------
 
-            fertility = subgroup_df[
+            fertility = demographic_df[
                 "fertility_treatment_2_years_prior"
             ].drop_nulls()
 
@@ -246,7 +261,7 @@ with tqdm(total=total, desc="Calculating metrics") as pbar:
             # -------------------------------------------------------------
 
             smoking = (
-                subgroup_df
+                demographic_df
                 .select(
                     pl.col("smoking_status")
                     .cast(pl.String)
