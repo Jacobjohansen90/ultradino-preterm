@@ -211,13 +211,7 @@ with tqdm(total=total, desc="Calculating metrics") as pbar:
 
             else:
 
-                subgroup_df = population_df.filter(
-                    (pl.col("GA") // 7 >= cutoff)
-                    | (
-                        (pl.col("GA") // 7 < cutoff)
-                        & pl.col(sub_group_value)
-                    )
-                )
+                subgroup_df = population_df.filter((pl.col("GA") // 7 < cutoff) & pl.col(sub_group_value))
 
             # =============================================================
             # Demographics
