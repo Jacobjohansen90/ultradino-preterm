@@ -287,9 +287,8 @@ clinical_df = df.group_by("CPR_CHILD").agg([
 
     # Mean physical pixel spacing across images
     pl.mean_horizontal(
-        pl.col("physical_delta_x"),
-        pl.col("physical_delta_y"),
-    ).mean().alias("physical_delta"),
+        pl.col("physical_delta_x").list.first(),
+        pl.col("physical_delta_y").list.first()).mean().alias("physical_delta"),
 
     # Number of images per child
     pl.len().alias("number_of_imgs"),
