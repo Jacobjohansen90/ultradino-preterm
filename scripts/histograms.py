@@ -103,39 +103,61 @@ def plot_variable_histograms(
     
         population_df = df.filter(population_filter)
     
-        all_values = (
-            population_df
-            .get_column(variable)
-            .drop_nulls()
-            .to_numpy()
-        )
-    
-        if len(all_values) == 0:
+        if population_df.height == 0:
             continue
     
-        bin_edges = np.histogram_bin_edges(all_values, bins=bins)
+        # Define the reference populations using the actual GA cutoff
+        actual_positives = pl.col("GA") // 7 < cutoff
+        actual_negatives = pl.col("GA") // 7 >= cutoff
     
-        # Each classification group gets its own comparison against all patients
-        groups = {
-            "TP": (
-                (pl.col("preds_binary") == 1)
-                & (pl.col("label") == 1)
-            ),
-            "FP": (
-                (pl.col("preds_binary") == 1)
-                & (pl.col("label") == 0)
-            ),
-            "TN": (
-                (pl.col("preds_binary") == 0)
-                & (pl.col("label") == 0)
-            ),
-            "FN": (
-                (pl.col("preds_binary") == 0)
-                & (pl.col("label") == 1)
-            ),
+        # Each group is compared against all patients and its respective
+        # actual-label group.
+        comparisons = {
+            "TP": {
+                "filter": (
+                    (pl.col("preds_binary") == 1)
+                    & (pl.col("label") == 1)
+                ),
+                "references": {
+                    "all": pl.lit(True),
+                    "actual_positives": actual_positives,
+                },
+            },
+            "FN": {
+                "filter": (
+                    (pl.col("preds_binary") == 0)
+                    & (pl.col("label") == 1)
+                ),
+                "references": {
+                    "all": pl.lit(True),
+                    "actual_positives": actual_positives,
+                },
+            },
+            "TN": {
+                "filter": (
+                    (pl.col("preds_binary") == 0)
+                    & (pl.col("label") == 0)
+                ),
+                "references": {
+                    "all": pl.lit(True),
+                    "actual_negatives": actual_negatives,
+                },
+            },
+            "FP": {
+                "filter": (
+                    (pl.col("preds_binary") == 1)
+                    & (pl.col("label") == 0)
+                ),
+                "references": {
+                    "all": pl.lit(True),
+                    "actual_negatives": actual_negatives,
+                },
+            },
         }
     
-        for group_name, group_filter in groups.items():
+        for group_name, group_info in comparisons.items():
+    
+            group_filter = group_info["filter"]
     
             group_values = (
                 population_df
@@ -152,51 +174,77 @@ def plot_variable_histograms(
                 )
                 continue
     
-            fig, ax = plt.subplots(figsize=(9, 6))
+            for reference_name, reference_filter in (
+                group_info["references"].items()
+            ):
     
-            ax.hist(
-                all_values,
-                bins=bin_edges,
-                alpha=0.4,
-                density=True,
-                edgecolor="black",
-                linewidth=0.5,
-                label=f"All patients (n={len(all_values):,})",
-            )
+                reference_df = population_df.filter(reference_filter)
     
-            ax.hist(
-                group_values,
-                bins=bin_edges,
-                alpha=0.5,
-                density=True,
-                edgecolor="black",
-                linewidth=0.5,
-                label=f"{group_name} (n={len(group_values):,})",
-            )
+                reference_values = (
+                    reference_df
+                    .get_column(variable)
+                    .drop_nulls()
+                    .to_numpy()
+                )
     
-            ax.set_title(
-                f"{variable} — "
-                f"{population_name.replace('_', ' ').title()} — "
-                f"All vs. {group_name}"
-            )
-            ax.set_xlabel(variable)
-            ax.set_ylabel("Probability density")
-            ax.legend()
-            ax.grid(axis="y", alpha=0.25)
+                if len(reference_values) == 0:
+                    continue
     
-            fig.tight_layout()
+                # Use the reference distribution to define consistent bins
+                bin_edges = np.histogram_bin_edges(
+                    reference_values,
+                    bins=bins,
+                )
     
-            filename = (
-                f"{variable}_{population_name}_{group_name}.png"
-            )
+                fig, ax = plt.subplots(figsize=(9, 6))
     
-            fig.savefig(
-                save_path / filename,
-                dpi=300,
-                bbox_inches="tight",
-            )
+                ax.hist(
+                    reference_values,
+                    bins=bin_edges,
+                    alpha=0.4,
+                    density=True,
+                    edgecolor="black",
+                    linewidth=0.5,
+                    label=(
+                        f"{reference_name.replace('_', ' ').title()} "
+                        f"(n={len(reference_values):,})"
+                    ),
+                )
     
-            plt.close(fig)
+                ax.hist(
+                    group_values,
+                    bins=bin_edges,
+                    alpha=0.5,
+                    density=True,
+                    edgecolor="black",
+                    linewidth=0.5,
+                    label=f"{group_name} (n={len(group_values):,})",
+                )
+    
+                ax.set_title(
+                    f"{variable} — "
+                    f"{population_name.replace('_', ' ').title()} — "
+                    f"{group_name} vs. {reference_name.replace('_', ' ').title()}"
+                )
+                ax.set_xlabel(variable)
+                ax.set_ylabel("Probability density")
+                ax.legend()
+                ax.grid(axis="y", alpha=0.25)
+    
+                fig.tight_layout()
+    
+                filename = (
+                    f"{variable}_{population_name}_"
+                    f"{group_name}_vs_{reference_name}.png"
+                )
+    
+                fig.savefig(
+                    save_path / filename,
+                    dpi=300,
+                    bbox_inches="tight",
+                )
+    
+                plt.close(fig)
 
     # ================================================================
     # 6. Clinical subgroup histograms
