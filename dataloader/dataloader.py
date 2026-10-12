@@ -205,11 +205,8 @@ class DataSplits:
         train_df = pl.read_parquet(cfg.data.train_path)
         test_df = pl.read_parquet(cfg.data.test_path)
         
-        test_df = pl.concat([train_df, test_df])
-
-        #self.train_df = train_df.with_columns(pl.lit(-1, dtype=pl.Int64).alias("fold"))
+        self.train_df = train_df.with_columns(pl.lit(-1, dtype=pl.Int64).alias("fold"))
         
-        self.train_df = train_df.head(0).with_columns(pl.lit(-1, dtype=pl.Int64).alias("fold"))
         
         # Group GA cutoffs
         groups = (test_df.group_by(self.unique_column).agg(pl.col("GA").min().alias("GA"))
@@ -220,7 +217,6 @@ class DataSplits:
                                 .alias("GA_group")))
         
         
-
         # Distribute groups evenly within each GA group
         groups = (groups.with_columns(pl.int_range(pl.len())
                                       .shuffle().over("GA_group").alias("fold"))
