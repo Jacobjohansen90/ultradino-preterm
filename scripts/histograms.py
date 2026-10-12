@@ -11,7 +11,7 @@ import argparse
 import polars as pl
 from pathlib import Path
 import numpy as np
-
+from sklearn.metrics import roc_curve
 import matplotlib.pyplot as plt
 
 
@@ -61,19 +61,19 @@ def plot_variable_histograms(
         "positives": {
             "all_patients": pl.lit(True),
             "true_positives": (
-                (pl.col("preds") == 1) & (pl.col("label") == 1)
+                (pl.col("preds_binary") == 1) & (pl.col("label") == 1)
             ),
             "false_positives": (
-                (pl.col("preds") == 1) & (pl.col("label") == 0)
+                (pl.col("preds_binary") == 1) & (pl.col("label") == 0)
             ),
         },
         "negatives": {
             "all_patients": pl.lit(True),
             "true_negatives": (
-                (pl.col("preds") == 0) & (pl.col("label") == 0)
+                (pl.col("preds_binary") == 0) & (pl.col("label") == 0)
             ),
             "false_negatives": (
-                (pl.col("preds") == 0) & (pl.col("label") == 1)
+                (pl.col("preds_binary") == 0) & (pl.col("label") == 1)
             ),
         },
     }
@@ -132,10 +132,14 @@ def plot_variable_histograms(
                     .to_numpy()
                 )
 
+                if len(values) == 0:
+                    continue
+
                 ax.hist(
                     values,
                     bins=bin_edges,
                     alpha=0.4,
+                    density=True,
                     label=(
                         f"{group_name.replace('_', ' ').title()} "
                         f"(n={len(values):,})"
@@ -150,7 +154,7 @@ def plot_variable_histograms(
                 f"{comparison_name.title()}"
             )
             ax.set_xlabel(variable)
-            ax.set_ylabel("Number of patients")
+            ax.set_ylabel("Probability density")
             ax.legend()
             ax.grid(axis="y", alpha=0.25)
 
@@ -214,19 +218,25 @@ def plot_variable_histograms(
                 all_values,
                 bins=bin_edges,
                 alpha=0.4,
+                density=True,
                 edgecolor="black",
                 linewidth=0.5,
                 label=f"All patients (n={len(all_values):,})",
             )
 
-            ax.hist(
-                subgroup_values,
-                bins=bin_edges,
-                alpha=0.5,
-                edgecolor="black",
-                linewidth=0.5,
-                label=f"{subgroup_name} (n={len(subgroup_values):,})",
-            )
+            if len(subgroup_values) > 0:
+                ax.hist(
+                    subgroup_values,
+                    bins=bin_edges,
+                    alpha=0.5,
+                    density=True,
+                    edgecolor="black",
+                    linewidth=0.5,
+                    label=(
+                        f"{subgroup_name} "
+                        f"(n={len(subgroup_values):,})"
+                    ),
+                )
 
             ax.set_title(
                 f"{variable} — "
@@ -234,7 +244,7 @@ def plot_variable_histograms(
                 f"{subgroup_name}"
             )
             ax.set_xlabel(variable)
-            ax.set_ylabel("Number of patients")
+            ax.set_ylabel("Probability density")
             ax.legend()
             ax.grid(axis="y", alpha=0.25)
 
@@ -337,6 +347,26 @@ df_combined = df_combined.join(
     how="left",
 )
 
+y_true = df_combined["label"].to_numpy()
+y_score = df_combined["preds"].to_numpy()
+
+fpr, tpr, thresholds = roc_curve(y_true, y_score)
+
+specificity = 1 - fpr
+valid = specificity >= 0.85
+
+best_idx = np.argmax(np.where(valid, tpr, -1))
+threshold_85_spec = thresholds[best_idx]
+
+print(f"Threshold at 85% specificity: {threshold_85_spec:.4f}")
+print(f"Sensitivity: {tpr[best_idx]:.3f}")
+print(f"Specificity: {specificity[best_idx]:.3f}")
+
+df_combined = df_combined.with_columns(
+    (pl.col("preds") >= float(threshold_85_spec))
+    .cast(pl.Int8)
+    .alias("preds_binary")
+)
 
 # =====================================================================
 # 5. Validate
