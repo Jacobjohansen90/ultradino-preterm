@@ -342,7 +342,7 @@ df_combined = df_combined.join(
 # 5. Validate
 # =====================================================================
 
-assert df_combined["CPR_CHILD"].is_unique(), (
+assert not df_combined["CPR_CHILD"].is_duplicated().any(), (
     "df_combined contains duplicate CPR_CHILD values."
 )
 
