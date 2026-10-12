@@ -98,78 +98,104 @@ def plot_variable_histograms(
     # ================================================================
     # 5. Prediction group histograms
     # ================================================================
-
+    
     for population_name, population_filter in populations.items():
-
+    
         population_df = df.filter(population_filter)
-
-        for comparison_name, groups in comparisons.items():
-
-            all_values = (
+    
+        all_values = (
+            population_df
+            .get_column(variable)
+            .drop_nulls()
+            .to_numpy()
+        )
+    
+        if len(all_values) == 0:
+            continue
+    
+        bin_edges = np.histogram_bin_edges(all_values, bins=bins)
+    
+        # Each classification group gets its own comparison against all patients
+        groups = {
+            "TP": (
+                (pl.col("preds_binary") == 1)
+                & (pl.col("label") == 1)
+            ),
+            "FP": (
+                (pl.col("preds_binary") == 1)
+                & (pl.col("label") == 0)
+            ),
+            "TN": (
+                (pl.col("preds_binary") == 0)
+                & (pl.col("label") == 0)
+            ),
+            "FN": (
+                (pl.col("preds_binary") == 0)
+                & (pl.col("label") == 1)
+            ),
+        }
+    
+        for group_name, group_filter in groups.items():
+    
+            group_values = (
                 population_df
+                .filter(group_filter)
                 .get_column(variable)
                 .drop_nulls()
                 .to_numpy()
             )
-
-            if len(all_values) == 0:
+    
+            if len(group_values) == 0:
+                print(
+                    f"Skipping {variable} {population_name} {group_name}: "
+                    "no patients in group."
+                )
                 continue
-
-            bin_edges = np.histogram_bin_edges(
-                all_values,
-                bins=bins,
-            )
-
+    
             fig, ax = plt.subplots(figsize=(9, 6))
-
-            for group_name, group_filter in groups.items():
-
-                values = (
-                    population_df
-                    .filter(group_filter)
-                    .get_column(variable)
-                    .drop_nulls()
-                    .to_numpy()
-                )
-
-                if len(values) == 0:
-                    continue
-
-                ax.hist(
-                    values,
-                    bins=bin_edges,
-                    alpha=0.4,
-                    density=True,
-                    label=(
-                        f"{group_name.replace('_', ' ').title()} "
-                        f"(n={len(values):,})"
-                    ),
-                    edgecolor="black",
-                    linewidth=0.5,
-                )
-
+    
+            ax.hist(
+                all_values,
+                bins=bin_edges,
+                alpha=0.4,
+                density=True,
+                edgecolor="black",
+                linewidth=0.5,
+                label=f"All patients (n={len(all_values):,})",
+            )
+    
+            ax.hist(
+                group_values,
+                bins=bin_edges,
+                alpha=0.5,
+                density=True,
+                edgecolor="black",
+                linewidth=0.5,
+                label=f"{group_name} (n={len(group_values):,})",
+            )
+    
             ax.set_title(
                 f"{variable} — "
                 f"{population_name.replace('_', ' ').title()} — "
-                f"{comparison_name.title()}"
+                f"All vs. {group_name}"
             )
             ax.set_xlabel(variable)
             ax.set_ylabel("Probability density")
             ax.legend()
             ax.grid(axis="y", alpha=0.25)
-
+    
             fig.tight_layout()
-
+    
             filename = (
-                f"{variable}_{population_name}_{comparison_name}.png"
+                f"{variable}_{population_name}_{group_name}.png"
             )
-
+    
             fig.savefig(
                 save_path / filename,
                 dpi=300,
                 bbox_inches="tight",
             )
-
+    
             plt.close(fig)
 
     # ================================================================
@@ -367,6 +393,13 @@ df_combined = df_combined.with_columns(
     .cast(pl.Int8)
     .alias("preds_binary")
 )
+
+df_combined = df_combined.with_columns(
+    pl.col("maternal_BMI").clip(upper_bound=50),
+    pl.col("physical_delta").clip(upper_bound=0.05),
+)
+
+
 
 # =====================================================================
 # 5. Validate
