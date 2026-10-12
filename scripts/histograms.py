@@ -325,7 +325,7 @@ df_combined = df_combined.filter(
 # 4. Merge bias variables
 # =====================================================================
 
-assert bias_df["b_cpr"].is_unique(), (
+assert not bias_df["b_cpr"].is_duplicated().any(), (
     "bias_df contains duplicate b_cpr values; "
     "the join could duplicate prediction rows."
 )
