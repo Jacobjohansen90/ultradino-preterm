@@ -57,28 +57,32 @@ def plot_variable_histograms(
     # ================================================================
     # 2. Define prediction groups
     # ================================================================
-
+    
     comparisons = {
         "positives": {
             "all_patients": pl.lit(True),
             "true_positives": (
-                (pl.col("preds_binary") == 1) & (pl.col("label") == 1)
+                (pl.col("preds_binary_model") == 1)
+                & (pl.col("label") == 1)
             ),
             "false_positives": (
-                (pl.col("preds_binary") == 1) & (pl.col("label") == 0)
+                (pl.col("preds_binary_model") == 1)
+                & (pl.col("label") == 0)
             ),
         },
         "negatives": {
             "all_patients": pl.lit(True),
             "true_negatives": (
-                (pl.col("preds_binary") == 0) & (pl.col("label") == 0)
+                (pl.col("preds_binary_model") == 0)
+                & (pl.col("label") == 0)
             ),
             "false_negatives": (
-                (pl.col("preds_binary") == 0) & (pl.col("label") == 1)
+                (pl.col("preds_binary_model") == 0)
+                & (pl.col("label") == 1)
             ),
         },
     }
-
+    
     # ================================================================
     # 3. Define clinical subgroups
     # ================================================================
@@ -111,12 +115,10 @@ def plot_variable_histograms(
         actual_positives = pl.col("GA") // 7 < cutoff
         actual_negatives = pl.col("GA") // 7 >= cutoff
     
-        # Each group is compared against all patients and its respective
-        # actual-label group.
         comparisons = {
             "TP": {
                 "filter": (
-                    (pl.col("preds_binary") == 1)
+                    (pl.col("preds_binary_model") == 1)
                     & (pl.col("label") == 1)
                 ),
                 "references": {
@@ -126,7 +128,7 @@ def plot_variable_histograms(
             },
             "FN": {
                 "filter": (
-                    (pl.col("preds_binary") == 0)
+                    (pl.col("preds_binary_model") == 0)
                     & (pl.col("label") == 1)
                 ),
                 "references": {
@@ -136,7 +138,7 @@ def plot_variable_histograms(
             },
             "TN": {
                 "filter": (
-                    (pl.col("preds_binary") == 0)
+                    (pl.col("preds_binary_model") == 0)
                     & (pl.col("label") == 0)
                 ),
                 "references": {
@@ -146,7 +148,7 @@ def plot_variable_histograms(
             },
             "FP": {
                 "filter": (
-                    (pl.col("preds_binary") == 1)
+                    (pl.col("preds_binary_model") == 1)
                     & (pl.col("label") == 0)
                 ),
                 "references": {
