@@ -250,99 +250,111 @@ def plot_variable_histograms(
                 plt.close(fig)
 
     # ================================================================
-    # 6. Model-positive patients: CL-positive vs CL-negative
+    # 6. Compare model predictions against CL predictions
     # ================================================================
     
     for population_name, population_filter in populations.items():
     
         population_df = df_CL.filter(population_filter)
     
-        # Only patients predicted positive by the model
-        model_positive_df = population_df.filter(
-            pl.col("preds_binary_model") == 1
-        )
-    
-        cl_groups = {
-            "model_positive_CL_positive": (
-                pl.col("preds_binary_CL") == 1
-            ),
-            "model_positive_CL_negative": (
-                pl.col("preds_binary_CL") == 0
-            ),
+        comparisons = {
+            "model_positive": {
+                "filter": pl.col("preds_binary_model") == 1,
+                "title": "Model-positive patients",
+            },
+            "model_negative": {
+                "filter": pl.col("preds_binary_model") == 0,
+                "title": "Model-negative patients",
+            },
         }
     
-        group_values = {}
+        cl_groups = {
+            "CL_positive": pl.col("CL") < cl_cutoff,
+            "CL_negative": pl.col("CL") >= cl_cutoff,
+        }
     
-        for group_name, group_filter in cl_groups.items():
-            values = (
-                model_positive_df
-                .filter(group_filter)
-                .get_column(variable)
-                .drop_nulls()
-                .to_numpy()
+        for model_group_name, model_group_info in comparisons.items():
+    
+            model_df = population_df.filter(
+                model_group_info["filter"]
             )
     
-            group_values[group_name] = values
+            group_values = {}
     
-            print(
-                f"{variable} | {population_name} | "
-                f"{group_name}: n={len(values)}"
-            )
+            for cl_group_name, cl_filter in cl_groups.items():
     
-        nonempty_values = [
-            values for values in group_values.values()
-            if len(values) > 0
-        ]
+                values = (
+                    model_df
+                    .filter(cl_filter)
+                    .get_column(variable)
+                    .drop_nulls()
+                    .to_numpy()
+                )
     
-        if not nonempty_values:
-            print(
-                f"Skipping {variable} {population_name}: "
-                "no valid observations in either group."
-            )
-            continue
+                group_name = f"{model_group_name}_{cl_group_name}"
+                group_values[group_name] = values
     
-        all_values = np.concatenate(nonempty_values)
-        bin_edges = np.histogram_bin_edges(all_values, bins=bins)
+                print(
+                    f"{variable} | {population_name} | "
+                    f"{group_name}: n={len(values)}"
+                )
     
-        fig, ax = plt.subplots(figsize=(9, 6))
+            nonempty_values = [
+                values for values in group_values.values()
+                if len(values) > 0
+            ]
     
-        for group_name, values in group_values.items():
-            if len(values) == 0:
+            if not nonempty_values:
+                print(
+                    f"Skipping {variable} | {population_name} | "
+                    f"{model_group_name}: both CL groups are empty."
+                )
                 continue
     
-            ax.hist(
-                values,
-                bins=bin_edges,
-                alpha=0.5,
-                density=True,
-                edgecolor="black",
-                linewidth=0.5,
-                label=f"{group_name} (n={len(values):,})",
+            all_values = np.concatenate(nonempty_values)
+            bin_edges = np.histogram_bin_edges(all_values, bins=bins)
+    
+            fig, ax = plt.subplots(figsize=(9, 6))
+    
+            for group_name, values in group_values.items():
+    
+                if len(values) == 0:
+                    continue
+    
+                ax.hist(
+                    values,
+                    bins=bin_edges,
+                    alpha=0.5,
+                    density=True,
+                    edgecolor="black",
+                    linewidth=0.5,
+                    label=f"{group_name} (n={len(values):,})",
+                )
+    
+            ax.set_title(
+                f"{variable} — "
+                f"{population_name.replace('_', ' ').title()} — "
+                f"{model_group_info['title']}: CL-positive vs CL-negative"
+            )
+            ax.set_xlabel(variable)
+            ax.set_ylabel("Probability density")
+            ax.legend()
+            ax.grid(axis="y", alpha=0.25)
+    
+            fig.tight_layout()
+    
+            filename = (
+                f"{variable}_{population_name}_"
+                f"{model_group_name}_CL_positive_vs_negative.png"
             )
     
-        ax.set_title(
-            f"{variable} — {population_name.replace('_', ' ').title()} — "
-            f"Model-positive: CL-positive vs CL-negative"
-        )
-        ax.set_xlabel(variable)
-        ax.set_ylabel("Probability density")
-        ax.legend()
-        ax.grid(axis="y", alpha=0.25)
+            fig.savefig(
+                save_path / filename,
+                dpi=300,
+                bbox_inches="tight",
+            )
     
-        fig.tight_layout()
-    
-        filename = (
-            f"{variable}_{population_name}_"
-            f"model_positive_CL_positive_vs_negative.png"
-        )
-    
-        fig.savefig(
-            save_path / filename,
-            dpi=300,
-            bbox_inches="tight",
-        )
-    
-        plt.close(fig)
+            plt.close(fig)
 
 
     # ================================================================
