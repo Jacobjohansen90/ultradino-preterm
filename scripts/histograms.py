@@ -553,7 +553,7 @@ df_combined = df_combined.with_columns(
 df_combined = df_combined.with_columns(
     pl.col("maternal_BMI").clip(upper_bound=50),
     pl.col("physical_delta").clip(upper_bound=0.05),
-    pl.col("numner_of_imgs").clip(upper_bound=20)
+    pl.col("number_of_imgs").clip(upper_bound=20)
 )
 
 
