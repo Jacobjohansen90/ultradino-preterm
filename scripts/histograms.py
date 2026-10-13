@@ -172,11 +172,7 @@ def plot_variable_histograms(
             )
             
             if group_df.height == 0:
-                print(
-                    f"FN filter matches zero rows: "
-                    f"{population_name}, {variable}"
-                )
-                continue
+                print(f"EMPTY: variable={variable}, population={population_name}, group={group_name}")
             
             if len(group_values) == 0:
                 print(
