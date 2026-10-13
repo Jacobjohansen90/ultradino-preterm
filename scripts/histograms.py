@@ -248,31 +248,32 @@ def plot_variable_histograms(
                 plt.close(fig)
 
     # ================================================================
-    # 6. Positive predictions: CL below vs. above cutoff
+    # 6. Model-positive patients: CL-positive vs CL-negative
     # ================================================================
     
     for population_name, population_filter in populations.items():
     
         population_df = df_CL.filter(population_filter)
     
-        # Restrict to positive predictions and valid CL values
-        positive_df = population_df.filter(
-            (pl.col("preds_binary") == 1)
-            & pl.col("CL").is_not_null()
+        # Only patients predicted positive by the model
+        model_positive_df = population_df.filter(
+            pl.col("preds_binary_model") == 1
         )
     
-        # Define the two groups
         cl_groups = {
-            f"CL_below_{cl_cutoff}": pl.col("CL") < cl_cutoff,
-            f"CL_at_or_above_{cl_cutoff}": pl.col("CL") >= cl_cutoff,
+            "model_positive_CL_positive": (
+                pl.col("preds_binary_CL") == 1
+            ),
+            "model_positive_CL_negative": (
+                pl.col("preds_binary_CL") == 0
+            ),
         }
     
         group_values = {}
     
         for group_name, group_filter in cl_groups.items():
-    
             values = (
-                positive_df
+                model_positive_df
                 .filter(group_filter)
                 .get_column(variable)
                 .drop_nulls()
@@ -281,23 +282,29 @@ def plot_variable_histograms(
     
             group_values[group_name] = values
     
-        # Skip if both groups are empty
-        if not any(len(values) > 0 for values in group_values.values()):
+            print(
+                f"{variable} | {population_name} | "
+                f"{group_name}: n={len(values)}"
+            )
+    
+        nonempty_values = [
+            values for values in group_values.values()
+            if len(values) > 0
+        ]
+    
+        if not nonempty_values:
+            print(
+                f"Skipping {variable} {population_name}: "
+                "no valid observations in either group."
+            )
             continue
     
-        # Use the combined positive-prediction distribution for consistent bins
-        all_values = np.concatenate([
-            values
-            for values in group_values.values()
-            if len(values) > 0
-        ])
-    
+        all_values = np.concatenate(nonempty_values)
         bin_edges = np.histogram_bin_edges(all_values, bins=bins)
     
         fig, ax = plt.subplots(figsize=(9, 6))
     
         for group_name, values in group_values.items():
-    
             if len(values) == 0:
                 continue
     
@@ -312,9 +319,8 @@ def plot_variable_histograms(
             )
     
         ax.set_title(
-            f"{variable} — "
-            f"{population_name.replace('_', ' ').title()} — "
-            f"Positive predictions: CL below vs. at/above {cl_cutoff}"
+            f"{variable} — {population_name.replace('_', ' ').title()} — "
+            f"Model-positive: CL-positive vs CL-negative"
         )
         ax.set_xlabel(variable)
         ax.set_ylabel("Probability density")
@@ -325,7 +331,7 @@ def plot_variable_histograms(
     
         filename = (
             f"{variable}_{population_name}_"
-            f"positive_pred_CL_cutoff_{cl_cutoff}.png"
+            f"model_positive_CL_positive_vs_negative.png"
         )
     
         fig.savefig(
@@ -555,16 +561,20 @@ print(f"Sensitivity: {tpr[best_idx]:.3f}")
 print(f"Specificity: {specificity[best_idx]:.3f}")
 
 # Define binary predictions using the CL-based threshold
-df_CL = df_CL.with_columns(
-    (pl.col("CL") < cl_cutoff)
-    .cast(pl.Int8)
-    .alias("preds_binary")
-)
 
 df_combined = df_combined.with_columns(
-    (pl.col("preds") >= threshold_85_spec).cast(pl.Int8).alias("preds_binary")
+    (pl.col("preds") >= threshold_85_spec)
+    .cast(pl.Int8)
+    .alias("preds_binary_model")
 )
 
+df_CL = df_combined.filter(
+    pl.col("CL").is_not_null() & (pl.col("CL") != 0)
+).with_columns(
+    (pl.col("CL") < cl_cutoff)
+    .cast(pl.Int8)
+    .alias("preds_binary_CL")
+)
 
 
 # =====================================================================
