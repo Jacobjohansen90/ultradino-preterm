@@ -43,7 +43,7 @@ def plot_variable_histograms(
     variable: str,
     save_path: str,
     bins: int = 30,
-):
+    cl_cutoff=25):
     # ================================================================
     # 1. Define populations
     # ================================================================
@@ -247,7 +247,97 @@ def plot_variable_histograms(
                 plt.close(fig)
 
     # ================================================================
-    # 6. Clinical subgroup histograms
+    # 6. Positive predictions: CL below vs. above cutoff
+    # ================================================================
+    
+    for population_name, population_filter in populations.items():
+    
+        population_df = df.filter(population_filter)
+    
+        # Restrict to positive predictions and valid CL values
+        positive_df = population_df.filter(
+            (pl.col("preds_binary") == 1)
+            & pl.col("CL").is_not_null()
+        )
+    
+        # Define the two groups
+        cl_groups = {
+            f"CL_below_{cl_cutoff}": pl.col("CL") < cl_cutoff,
+            f"CL_at_or_above_{cl_cutoff}": pl.col("CL") >= cl_cutoff,
+        }
+    
+        group_values = {}
+    
+        for group_name, group_filter in cl_groups.items():
+    
+            values = (
+                positive_df
+                .filter(group_filter)
+                .get_column(variable)
+                .drop_nulls()
+                .to_numpy()
+            )
+    
+            group_values[group_name] = values
+    
+        # Skip if both groups are empty
+        if not any(len(values) > 0 for values in group_values.values()):
+            continue
+    
+        # Use the combined positive-prediction distribution for consistent bins
+        all_values = np.concatenate([
+            values
+            for values in group_values.values()
+            if len(values) > 0
+        ])
+    
+        bin_edges = np.histogram_bin_edges(all_values, bins=bins)
+    
+        fig, ax = plt.subplots(figsize=(9, 6))
+    
+        for group_name, values in group_values.items():
+    
+            if len(values) == 0:
+                continue
+    
+            ax.hist(
+                values,
+                bins=bin_edges,
+                alpha=0.5,
+                density=True,
+                edgecolor="black",
+                linewidth=0.5,
+                label=f"{group_name} (n={len(values):,})",
+            )
+    
+        ax.set_title(
+            f"{variable} — "
+            f"{population_name.replace('_', ' ').title()} — "
+            f"Positive predictions: CL below vs. at/above {cl_cutoff}"
+        )
+        ax.set_xlabel(variable)
+        ax.set_ylabel("Probability density")
+        ax.legend()
+        ax.grid(axis="y", alpha=0.25)
+    
+        fig.tight_layout()
+    
+        filename = (
+            f"{variable}_{population_name}_"
+            f"positive_pred_CL_cutoff_{cl_cutoff}.png"
+        )
+    
+        fig.savefig(
+            save_path / filename,
+            dpi=300,
+            bbox_inches="tight",
+        )
+    
+        plt.close(fig)
+
+
+    # ================================================================
+    # 7. Clinical subgroup histograms
     # ================================================================
 
     for population_name, population_filter in populations.items():
@@ -436,6 +526,24 @@ print(f"Threshold at 85% specificity: {threshold_85_spec:.4f}")
 print(f"Sensitivity: {tpr[best_idx]:.3f}")
 print(f"Specificity: {specificity[best_idx]:.3f}")
 
+y_true = df_combined["label"].to_numpy()
+y_score = -df_combined["CL"].to_numpy()
+
+fpr, tpr, thresholds = roc_curve(y_true, y_score)
+
+specificity = 1 - fpr
+valid = specificity >= 0.85
+
+best_idx = np.argmax(np.where(valid, tpr, -1))
+threshold_85_spec = thresholds[best_idx]
+
+# Convert back to the original CL scale
+cl_cutoff = -threshold_85_spec
+
+print(f"CL threshold at 85% specificity: {cl_cutoff:.4f}")
+print(f"Sensitivity: {tpr[best_idx]:.3f}")
+print(f"Specificity: {specificity[best_idx]:.3f}")
+
 df_combined = df_combined.with_columns(
     (pl.col("preds") >= float(threshold_85_spec))
     .cast(pl.Int8)
@@ -445,6 +553,7 @@ df_combined = df_combined.with_columns(
 df_combined = df_combined.with_columns(
     pl.col("maternal_BMI").clip(upper_bound=50),
     pl.col("physical_delta").clip(upper_bound=0.05),
+    pl.col("numner_of_imgs").clip(upper_bound=20)
 )
 
 
@@ -468,6 +577,7 @@ variables = [
     "maternal_BMI",
     "physical_delta",
     "number_of_imgs",
+    "CL"
 ]
 
 histogram_path = Path(output_path) / "histograms"
@@ -483,7 +593,7 @@ for variable in variables:
         df=df_combined,
         variable=variable,
         save_path=str(histogram_path),
-    )
+        cl_cutoff=cl_cutoff)
 
 print(f"Histograms saved to: {histogram_path}")
 
