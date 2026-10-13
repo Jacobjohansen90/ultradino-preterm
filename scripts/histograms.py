@@ -40,6 +40,7 @@ path = '/users/data/UCPH/DeepFetal/projects/preterm/training_runs/Running/'
 
 def plot_variable_histograms(
     df: pl.DataFrame,
+    df_CL: pl.DataFrame,
     variable: str,
     save_path: str,
     bins: int = 30,
@@ -252,7 +253,7 @@ def plot_variable_histograms(
     
     for population_name, population_filter in populations.items():
     
-        population_df = df.filter(population_filter)
+        population_df = df_CL.filter(population_filter)
     
         # Restrict to positive predictions and valid CL values
         positive_df = population_df.filter(
@@ -511,6 +512,13 @@ df_combined = df_combined.join(
     how="left",
 )
 
+# Apply variable cutoffs
+df_combined = df_combined.with_columns(
+    pl.col("maternal_BMI").clip(upper_bound=50),
+    pl.col("physical_delta").clip(upper_bound=0.05),
+    pl.col("number_of_imgs").clip(upper_bound=20),
+)
+
 y_true = df_combined["label"].to_numpy()
 y_score = df_combined["preds"].to_numpy()
 
@@ -526,10 +534,10 @@ print(f"Threshold at 85% specificity: {threshold_85_spec:.4f}")
 print(f"Sensitivity: {tpr[best_idx]:.3f}")
 print(f"Specificity: {specificity[best_idx]:.3f}")
 
-df_combined = df_combined.filter(pl.col("CL").is_not_null() & (pl.col("CL") != 0))
+df_CL = df_combined.filter(pl.col("CL").is_not_null() & (pl.col("CL") != 0))
 
-y_true = df_combined["label"].to_numpy()
-y_score = -df_combined["CL"].to_numpy()
+y_true = df_CL["label"].to_numpy()
+y_score = -df_CL["CL"].to_numpy()
 
 fpr, tpr, thresholds = roc_curve(y_true, y_score)
 
@@ -547,18 +555,13 @@ print(f"Sensitivity: {tpr[best_idx]:.3f}")
 print(f"Specificity: {specificity[best_idx]:.3f}")
 
 # Define binary predictions using the CL-based threshold
-df_combined = df_combined.with_columns(
+df_CL = df_CL.with_columns(
     (pl.col("CL") < cl_cutoff)
     .cast(pl.Int8)
     .alias("preds_binary")
 )
 
-# Apply variable cutoffs
-df_combined = df_combined.with_columns(
-    pl.col("maternal_BMI").clip(upper_bound=50),
-    pl.col("physical_delta").clip(upper_bound=0.05),
-    pl.col("number_of_imgs").clip(upper_bound=20),
-)
+
 
 
 
@@ -595,6 +598,7 @@ for variable in variables:
 
     plot_variable_histograms(
         df=df_combined,
+        df_CL=df_CL,
         variable=variable,
         save_path=str(histogram_path),
         cl_cutoff=cl_cutoff)
