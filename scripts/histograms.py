@@ -561,7 +561,9 @@ df_CL = df_CL.with_columns(
     .alias("preds_binary")
 )
 
-
+df_combined = df_combined.with_columns(
+    (pl.col("preds") >= threshold_85_spec).cast(pl.Int8).alias("preds_binary")
+)
 
 
 
