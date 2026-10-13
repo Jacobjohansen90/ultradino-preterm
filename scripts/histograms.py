@@ -115,6 +115,16 @@ def plot_variable_histograms(
         actual_positives = pl.col("GA") // 7 < cutoff
         actual_negatives = pl.col("GA") // 7 >= cutoff
     
+    
+        print(population_df.select(
+        (pl.col("preds_binary_model") == 0).sum().alias("model_negative"),
+        (pl.col("label") == 1).sum().alias("actual_positive"),
+        (
+            (pl.col("preds_binary_model") == 0)
+            & (pl.col("label") == 1)
+        ).sum().alias("FN"),
+    ))
+    
         comparisons = {
             "TP": {
                 "filter": (
