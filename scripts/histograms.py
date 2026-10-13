@@ -162,18 +162,27 @@ def plot_variable_histograms(
     
             group_filter = group_info["filter"]
     
+            group_df = population_df.filter(group_filter)
+            
             group_values = (
-                population_df
-                .filter(group_filter)
+                group_df
                 .get_column(variable)
                 .drop_nulls()
                 .to_numpy()
             )
-    
+            
+            if group_df.height == 0:
+                print(
+                    f"FN filter matches zero rows: "
+                    f"{population_name}, {variable}"
+                )
+                continue
+            
             if len(group_values) == 0:
                 print(
-                    f"Skipping {variable} {population_name} {group_name}: "
-                    "no patients in group."
+                    f"{population_name}, {variable}: "
+                    f"{group_df.height} FN patients exist, "
+                    f"but all have null {variable}"
                 )
                 continue
     
