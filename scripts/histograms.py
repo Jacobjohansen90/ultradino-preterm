@@ -563,9 +563,9 @@ specificity = 1 - fpr
 valid = specificity >= 0.85
 
 best_idx = np.argmax(np.where(valid, tpr, -1))
-threshold_85_spec = thresholds[best_idx]
+model_cutoff = thresholds[best_idx]
 
-print(f"Threshold at 85% specificity: {threshold_85_spec:.4f}")
+print(f"Threshold at 85% specificity: {model_cutoff:.4f}")
 print(f"Sensitivity: {tpr[best_idx]:.3f}")
 print(f"Specificity: {specificity[best_idx]:.3f}")
 
@@ -592,7 +592,7 @@ print(f"Specificity: {specificity[best_idx]:.3f}")
 # Define binary predictions using the CL-based threshold
 
 df_combined = df_combined.with_columns(
-    (pl.col("preds") >= threshold_85_spec)
+    (pl.col("preds") >= model_cutoff)
     .cast(pl.Int8)
     .alias("preds_binary_model")
 )
