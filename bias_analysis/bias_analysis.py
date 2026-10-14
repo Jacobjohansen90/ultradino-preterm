@@ -60,6 +60,8 @@ def bias_analysis(cfg_path, model_path):
                 summary["category"] = category
                 results[var.name][population]["categories"].append(summary)
 
+    return results
+
 def categorize_variable(df, var):
     if var.type == "interval":
         categories = list(var.categories)
