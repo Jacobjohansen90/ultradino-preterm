@@ -307,7 +307,6 @@ def save_bias_analysis_excel(results, save_path):
     for variable_index, (variable, population_data) in enumerate(results.items()):
         n_categories = len(population_data["All population"]["categories"])
         corrected_alpha = 0.05 / n_categories
-        print(corrected_alpha)
         variable_start_row = row
 
         if variable_index % 2 == 0:
@@ -512,4 +511,4 @@ def save_bias_analysis_excel(results, save_path):
     wb.save(save_path)
 
 results = bias_analysis(cfg_path, model_path)
-save_bias_analysis_excel(results, model_path + 'bias_analysis.excl')
+save_bias_analysis_excel(results, model_path + 'bias_analysis.xlsx')
