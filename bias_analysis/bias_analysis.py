@@ -26,7 +26,7 @@ def bias_analysis(cfg_path, model_path):
     bias_df = pl.read_csv(cfg.paths.bias_variables, ignore_errors=True)
     predictions = pl.read_parquet(model_path + 'results/predictions/predictions_34.parquet') #Temporary dummy loader
     
-    df = predictions.join(bias_df, how='left', left_on='cpr', right_on='b_cpr')
+    df = predictions.join(bias_df, how='left', left_on='CPR_CHILD', right_on='b_cpr')
     
     if df.height != predictions.height:
         logger.warning(f"WARNING: {predictions.height - df.height} children missing from bias analysis")
