@@ -509,4 +509,5 @@ def save_bias_analysis_excel(results, save_path):
 
     wb.save(save_path)
 
-bias_analysis(cfg_path, model_path)
+results = bias_analysis(cfg_path, model_path)
+save_bias_analysis_excel(results, model_path + 'bias_analysis.excl')
