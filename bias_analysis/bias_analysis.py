@@ -13,8 +13,8 @@ import numpy as np
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 
-cfg_path = '/home/jacob/Desktop/NAS/Work/bias_analysis.yaml'
-
+cfg_path = '/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/bias_analysis.yaml'
+model_path = '/users/data/UCPH/DeepFetal/projects/preterm/training_runs/Running/baseline_34/'
 
 def bias_analysis(cfg_path, model_path):
     cfg = OmegaConf.load(cfg_path)
@@ -24,7 +24,7 @@ def bias_analysis(cfg_path, model_path):
 
     
     bias_df = pl.read_csv(cfg.paths.bias_variables, ignore_errors=True)
-    predictions = pl.read_parquet('/home/jacob/Desktop/NAS/Work/predictions_34.parquet') #Temporary dummy loader
+    predictions = pl.read_parquet(model_path + 'results/predictions/predictions_34.parquet') #Temporary dummy loader
     
     df = predictions.join(bias_df, how='left', left_on='cpr', right_on='b_cpr')
     
@@ -508,3 +508,5 @@ def save_bias_analysis_excel(results, save_path):
             cell.border = Border(left=cell.border.left, right=cell.border.right, top=cell.border.top, bottom=population_border)
 
     wb.save(save_path)
+
+bias_analysis(cfg_path, model_path)

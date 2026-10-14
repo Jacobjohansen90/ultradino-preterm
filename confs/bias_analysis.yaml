@@ -1,0 +1,160 @@
+paths:
+  bias_variables: /users/data/UCPH/DeepFetal/projects/preterm/Data/misc/bias_variables.csv
+
+#For binary, the categories correspond to [True, False]
+variables: 
+  - name: BMI
+    variable: [maternal_BMI, lab_bmi]
+    type: interval
+    categories: [18.5, 25, 30, 35]
+    nulls: remove
+  - name: Age
+    variable: maternal_age
+    type: interval
+    categories: [20, 25, 30, 40]
+    nulls: remove
+  - name: Fertility Treatment
+    variable: 'fertility_treatment_2_years_prior'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove
+  - name: PCOS/PMOS
+    variable: pcos
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove
+  - name: Endometriose
+    variable: endometriose
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove
+  - name: Previous Surgical Abortion
+    variable: 'previous_surgical_abortion'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove
+  - name: Previous Spontaneous Abortion
+    variable: 'previous_spontaneous_abortion'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove
+  - name: Cervical Conization
+    variable: 'cervical_conization'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove
+  - name: Other Cervical Surgery
+    variable: 'other_cervical_surgery'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove
+  - name: Sex of Baby
+    variable: 'female_fetus'
+    type: binary
+    categories: ['Female', 'Male']
+    nulls: remove
+  - name: Uterine Malformation
+    variable: 'uterine_malformation'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove    
+  - name: Uterine Fibroids
+    variable: 'current_fibroids'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove     
+  - name: Vaginal Bleeding in Current Pregnancy
+    variable: 'current_vaginal_bleeding'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove     
+  - name: Urinary Tract Infection in Current Pregnancy
+    variable: 'current_infection_UTI_bacteriuria_pyelonephritis'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Genital Infection in Current Pregnancy
+    variable: 'current_infection_genital'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Pre-Existing Diabetes
+    variable: 'maternal_comorbidity_pre_existing_diabetes'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Chronic Hypertension
+    variable: 'maternal_comorbidity_chronic_hypertension'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Cardiac Disease
+    variable: 'maternal_comorbidity_cardiac_disease'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Chronic Respiratory Disease
+    variable: 'maternal_comorbidity_chronic_respiratory'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Chronic Renal Disease
+    variable: 'maternal_comorbidity_chronic_renal'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Auto-immune Disease
+    variable: 'maternal_comorbidity_autuimmune'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Chronic Gastrointestinal Issues
+    variable: 'maternal_comorbidity_chronic_gastrointestinal'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Thyroid Disease
+    variable: 'maternal_comorbidity_thyroid'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Neurological Disease
+    variable: 'maternal_comorbidity_neurological'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Psychiatric Condition
+    variable: 'maternal_comorbidity_psychiatric'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Blook Immune Disease
+    variable: 'maternal_comorbidity_significant_blook_immune_disease'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Malignancy
+    variable: 'maternal_comorbidity_malignancy'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Current hCG
+    variable: [current_hcg, current_hcg_lab_dat]
+    type: centiles
+    categories: [5,95]
+    nulls: remove   
+  - name: Current PAPP-A
+    variable: [current_papp, current_papp_lab_dat]
+    type: centiles
+    categories: [5,95]
+    nulls: remove   
+  - name: Any Maternal Comorbidity
+    variable: 'maternal_comorbidity'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
+  - name: Previous Late Miscarriage
+    variable: 'previous_late_miscarriage'
+    type: binary
+    categories: ['yes', 'no']
+    nulls: remove   
