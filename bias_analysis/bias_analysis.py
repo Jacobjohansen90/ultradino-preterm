@@ -213,11 +213,11 @@ def permutation_test(df, category_df, threshold, n_permutations=2000, seed=None)
     perm_sens = []
 
     for _ in range(n_permutations):
-        indices = rng.choice(len(positive_preds),
+        indices = rng.choice(len(overall_preds),
                              size=len(positive_category_preds),
                              replace=False)
 
-        random_sens = np.mean(positive_preds[indices] >= threshold)
+        random_sens = np.mean(overall_preds[indices] >= threshold)
 
         perm_sens.append(random_sens - overall_sens)
 
@@ -231,11 +231,11 @@ def permutation_test(df, category_df, threshold, n_permutations=2000, seed=None)
     perm_spec = []
 
     for _ in range(n_permutations):
-        indices = rng.choice(len(negative_preds),
+        indices = rng.choice(len(overall_preds),
                              size=len(category_negative_preds),
                              replace=False)
 
-        random_spec = np.mean(negative_preds[indices] < threshold)
+        random_spec = np.mean(overall_preds[indices] < threshold)
 
         perm_spec.append(random_spec - overall_spec)
 
