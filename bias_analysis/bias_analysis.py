@@ -42,7 +42,7 @@ def bias_analysis(cfg_path, model_path):
 
         for population, population_df in [("All population", df), ("Non-treated", df.filter(~pl.col("treatment")))]:
 
-            var_df = population_df.select(['cpr', 'preds', 'label', var.variable])
+            var_df = population_df.select(['CPR_CHILD', 'preds', 'label', var.variable])
 
             var_df = handle_nulls(var_df, var)
             var_df, order = categorize_variable(var_df, var)
