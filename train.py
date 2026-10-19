@@ -77,7 +77,7 @@ for fold in range(cfg.data.folds):
 
             torch.save(model.state_dict(), f"{save_path}/weights/fold_{fold}/{str(epoch+1).zfill(3)}.pth")        
     
-    best_epoch = metrics.get_best()
+    best_epoch = metrics.get_best_epoch()
     
     for cutoff in cfg.tasks.preterm.cutoffs:
         model.load_state_dict(f"{save_path}/weights/fold_{fold}/{best_epoch[str(cutoff)]}.pth", weights_only=True)
