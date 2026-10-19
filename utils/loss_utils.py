@@ -41,8 +41,8 @@ class ModelLoss():
                     if mask.sum() > 0:
                         temp_loss = self.loss_fns[task_name](logits, labels)[mask].mean()*weight
                         loss += temp_loss
-                        self.loss[task_name]['loss'] += temp_loss.item()
-                        self.loss[task_name]['count'] += mask.sum().item()
+                        self.loss[task_name]['loss'].append(temp_loss.item())
+                        self.loss[task_name]['count'].append(mask.sum().item())
 
             elif task_name == 'segmentation':
                 continue
