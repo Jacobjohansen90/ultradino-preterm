@@ -12,6 +12,7 @@ import numpy as np
 from PIL import Image
 import albumentations as A
 import polars as pl
+from torch.utils.data import DataLoader
 
 FUS13M_MEAN = 0.1842924807
 FUS13M_STD = 0.2187705424
@@ -32,6 +33,7 @@ class PreTermDataset(Dataset):
         self.get_segs = 'segmentation' in cfg.tasks.keys()
         self.cutoffs = cfg.tasks.preterm.cutoffs
         self.remove = cfg.data.remove
+        self.tta = cfg.data.test_time_augmentations
         
         self.aux_vars = []
         for task in cfg.tasks.aux_tasks:
@@ -47,7 +49,8 @@ class PreTermDataset(Dataset):
                                          A.RandomGamma(gamma_limit=(80, 120), p=0.5),
                                          A.GaussNoise(std_range=(0.05, 0.2), p=0.5),
                                          A.GridDistortion(num_steps=5, distort_limit=(-0.3, 0.3), p=0.5),
-                                         A.HorizontalFlip(p=0.5),                 
+                                         A.HorizontalFlip(p=0.5),
+                                         A.VerticalFlip(p=0.5),
                                          A.Resize(height=self.img_size[0], width=self.img_size[1]),
                                          A.ToGray(p=1.0, num_output_channels=1),
                                          A.Normalize(mean=self.norm_mean, std=self.norm_std),
@@ -81,17 +84,20 @@ class PreTermDataset(Dataset):
         ehr_data = torch.tensor(ehr_data)
         ehr_data = ehr_data.unsqueeze(0)
                 
-        #Prepare labels
-        GA_weeks = data.get('GA')//7
-        GA_weeks = torch.tensor([float(GA_weeks)])
 
-        #Prepare auxilary task vars
-        aux_vars = {}
+        #Prepare labels
+        labels = {}
+
+        GA_weeks = data.get('GA')//7
+        GA_weeks = torch.tensor([float(GA_weeks)])        
+
+        labels['GA_weeks'] = GA_weeks
+        
         for var in self.aux_vars:
             if var == 'GA_weeks':
-                aux_vars[var] = GA_weeks
+                continue
             else:
-                aux_vars[var] = torch.tensor([float(data.get(var) or 0.0)])
+                labels[var] = torch.tensor([float(data.get(var))])
                 
         #Get segmentations
         if self.get_segs:
@@ -101,12 +107,22 @@ class PreTermDataset(Dataset):
         else:
             segmentation = torch.tensor([0], dtype=torch.bool)
  
-        #Prepare Image       
-        img = Image.open(data.get('no_ocr_preprocessed_file_path'))
+        #Prepare Image    
+        img_path = data.get('no_ocr_preprocessed_file_path')
+        img = Image.open(img_path)
         img = np.asarray(img)
         h = img.shape[0]
         w = img.shape[1]
         img = self.transforms(image=img)['image']
+        
+        #Test time agumentations
+        if not self.train and self.tta:
+            imgs = torch.stack([img,
+                                torch.flip(img, dims=[-1]),
+                                torch.flip(img, dims=[-2]),
+                                torch.flip(img, dims=[-2, -1])], dim=0)
+        else:
+            imgs = img.unsqueeze(0)
 
         #Prepare image metadata
         img_data = []
@@ -135,10 +151,8 @@ class PreTermDataset(Dataset):
 
         for cutoff in self.cutoffs:
             mask = 0
-            
             preterm = data.get('GA')//7 < cutoff
             
-
             if not preterm:
                 mask = 1
             elif not induced and not c_sec:
@@ -159,54 +173,64 @@ class PreTermDataset(Dataset):
         
         treatment = progesterone or cerclage
 
-        return {'img': img, 
+        return {'imgs': imgs, 
+                'img_path': img_path,
                 'img_data': img_data, 
                 'ehr_data': ehr_data, 
-                'GA_weeks': GA_weeks, 
                 'masks': masks,
                 'ID': ID, 
                 'treatment': treatment,
-                'aux_vars': aux_vars,
+                'labels': labels,
                 'segmentation': segmentation}
 
 
 def collate_fn(batch):
-    imgs = torch.stack([sample['img'] for sample in batch])
-    img_data = torch.stack([sample['img_data'] for sample in batch])
-    ehr_data = torch.stack([sample['ehr_data'] for sample in batch])
-    GA_weeks = torch.stack([sample['GA_weeks'] for sample in batch])
-    masks = {cutoff: torch.stack([sample['masks'][cutoff] for sample in batch]) for cutoff in batch[0]['masks']}
-    IDs = [sample['ID'] for sample in batch]
-    treatment = [sample['treatment'] for sample in batch]    
-    aux_vars = {key: torch.stack([sample['aux_vars'][key] for sample in batch]) for key in batch[0]['aux_vars']}
-    segmentation = torch.stack([sample['segmentation'] for sample in batch])
+    #Reform imgs into (B,C,H,W)
+    imgs = torch.stack([sample['imgs'] for sample in batch])
+    B,R = imgs.shape[:2]
+    imgs = imgs.reshape(B*R, *imgs.shape[2:])
+    
+    #Repeat all data for each img
+    img_paths = [f"{sample['img_path']}_{i+1}" for sample in batch for i in range(R)]
+    img_data = torch.stack([sample['img_data'] for sample in batch]).repeat_interleave(R, dim=0)
+    ehr_data = torch.stack([sample['ehr_data'] for sample in batch]).repeat_interleave(R, dim=0)
+    masks = {cutoff: torch.stack([sample['masks'][cutoff] for sample in batch]).repeat_interleave(R, dim=0) for cutoff in batch[0]['masks']}
+    IDs = [sample['ID'] for sample in batch for _ in range(R)]
+    treatment = [sample['treatment'] for sample in batch for _ in range(R)]    
+    labels = {key: torch.stack([sample['labels'][key] for sample in batch]).repeat_interleave(R, dim=0) for key in batch[0]['labels']}
+    segmentation = torch.stack([sample['segmentation'] for sample in batch]).repeat_interleave(R, dim=0)
     
 
     sample =  {"imgs": imgs,
+               "img_paths": img_paths,
                "img_data": img_data,
                "ehr_data": ehr_data,
-               "GA_weeks": GA_weeks,
                "masks": masks,
                "IDs": IDs,
                'treatment': treatment,
-               'aux_vars': aux_vars,
+               'labels': labels,
                'segmentation': segmentation}
 
     return sample
    
     
 class DataSplits:
-    def __init__(self, cfg, unique_column='CPR_MOTHER'):
+    def __init__(self, cfg, save_path, unique_column='CPR_MOTHER'):
         self.unique_column=unique_column
-        self.folds=cfg.data.folds
         self.oversample_ratio = cfg.data.oversample_ratio
         self.highest_GA = max(cfg.tasks.preterm.cutoffs)
+        self.folds=cfg.data.folds
+        
+        if self.folds < 2:
+            raise Exception(f"{self.folds} folds set, must be atleast 2")        
+
+        if self.folds == 2:
+            print('Warining: Only 2 folds selected, one fold will be used for validation and one for testing')
         
         train_df = pl.read_parquet(cfg.data.train_path)
         test_df = pl.read_parquet(cfg.data.test_path)
         
         self.train_df = train_df.with_columns(pl.lit(-1, dtype=pl.Int64).alias("fold"))
-        
         
         # Group GA cutoffs
         groups = (test_df.group_by(self.unique_column).agg(pl.col("GA").min().alias("GA"))
@@ -230,6 +254,7 @@ class DataSplits:
         assert (self.test_df.group_by(self.unique_column).agg(pl.col("fold").n_unique().alias("n_folds"))
                 .filter(pl.col("n_folds") != 1).height == 0)
         
+        self.save_distributions(save_path)
         
     def save_distributions(self, save_path):
         df = self.test_df.unique("CPR_CHILD")
@@ -264,23 +289,28 @@ class DataSplits:
             test_df_fold.write_parquet(save_path + f"test_df_fold_{fold}.parquet")
         
         
-    def get_split(self, fold):
+    def get_split(self, fold, cfg):
         if not 0 <= fold < self.folds:
             raise Exception(f"Data only contains {self.folds} folds")
 
         test_df = self.test_df.filter(pl.col('fold') == fold)
+        val_fold = (fold + 1) % self.folds
+        val_df = self.test_df.filter(pl.col('fold') == val_fold)
 
-        train_df = self.test_df.filter(pl.col('fold') != fold)
+        train_df = self.test_df.filter((pl.col('fold') != fold) & (pl.col('fold') != val_fold))
         train_df = pl.concat([self.train_df, train_df])
         
         #Temp fix
         train_df = train_df.filter(pl.col("GA").is_not_null())
         
         for col in ["CPR_MOTHER", "CPR_CHILD", "file_path"]:
-            overlap = (set(train_df[col].drop_nulls().unique()) & set(test_df[col].drop_nulls().unique()))
-            
-            if overlap:
-                raise ValueError(f"{col}: {len(overlap)} overlaps. \n Examples: {list(overlap)[:10]}")
+            overlap_test = (set(train_df[col].drop_nulls().unique()) & set(test_df[col].drop_nulls().unique()))
+            overlap_val = (set(train_df[col].drop_nulls().unique()) & set(val_df[col].drop_nulls().unique()))
+            if overlap_test:
+                raise ValueError(f"{col}: contains {len(overlap_test)} overlaps in test/train. \n Examples: {list(overlap_test)[:10]}")
+            if overlap_val:
+                raise ValueError(f"{col}: contains {len(overlap_val)} overlaps in val/train. \n Examples: {list(overlap_val)[:10]}")
+
             
         if self.oversample_ratio != 0:
             positives = train_df.filter(pl.col("GA") // 7 < self.highest_GA)
@@ -298,7 +328,43 @@ class DataSplits:
                 
             train_df = pl.concat([negatives, positives]) 
         
+        TrainData = PreTermDataset(train_df, cfg, train=True)
+        ValData = PreTermDataset(val_df, cfg, train=False)
+        TestData = PreTermDataset(test_df, cfg, train=False)
+        
+        if cfg.data.test_time_augmentations:
+            if (cfg.data.batch_size % 4) != 0:
+                print(f"Batch size not divisible by 4. Changing it from {cfg.data.batch_size} to {cfg.data.batch_size - (cfg.data.batch_size % 3)}")
+            batch_size = cfg.batch_size - (cfg.data.batch_size % 4)
+            val_test_batch_size = batch_size//4
+        else:
+            batch_size = cfg.data.batch_size
+            val_test_batch_size = batch_size
+        
+        TrainLoader = DataLoader(TrainData,
+                                 batch_size,
+                                 shuffle=True,
+                                 pin_memory=True,
+                                 drop_last=True,
+                                 num_workers=cfg.data.workers,
+                                 collate_fn=collate_fn)
+        
+        ValLoader = DataLoader(ValData,
+                               val_test_batch_size,
+                               shuffle=False,
+                               pin_memory=False,
+                               drop_last=False,
+                               num_workers=cfg.data.workers,
+                               collate_fn=collate_fn)
+
+        TestLoader = DataLoader(TestData,
+                                val_test_batch_size,
+                                shuffle=False,
+                                pin_memory=False,
+                                drop_last=False,
+                                num_workers=cfg.data.workers,
+                                collate_fn=collate_fn)
         
             
-        return train_df, test_df
+        return TrainLoader, ValLoader, TestLoader
         
