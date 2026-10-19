@@ -28,7 +28,7 @@ class ModelLoss():
                 tasks[task_name] = [[cutoff, weight, task_cfg.label_smoothing_value] for cutoff, weight in zip(cutoffs, weights)]
         
         self.tasks = tasks
-        self.loss = {task_name: 0.0 for task_name in self.tasks.keys()}
+        self.loss = self.loss = {task_name: {'loss': [], 'count': []} for task_name in self.tasks}
         
     def __call__(self, outputs, data):
         loss = 0
@@ -41,7 +41,8 @@ class ModelLoss():
                     if mask.sum() > 0:
                         temp_loss = self.loss_fns[task_name](logits, labels)[mask].mean()*weight
                         loss += temp_loss
-                        self.loss[task_name] += temp_loss.item() / mask.sum()
+                        self.loss[task_name]['loss'] += temp_loss.item()
+                        self.loss[task_name]['count'] += mask.sum().item()
 
             elif task_name == 'segmentation':
                 continue
@@ -54,14 +55,23 @@ class ModelLoss():
                     if mask.sum () > 0:
                         temp_loss = self.loss_fns[var](logits, labels)[mask].mean()*weight
                         loss += temp_loss
-                        self.loss[task_name] += temp_loss.item() / mask.sum()
+                        self.loss[task_name]['loss'].append(temp_loss.item())
+                        self.loss[task_name]['count'].append(mask.sum().item())
 
         return loss
 
     def get_loss(self, reset=True):
-        loss_dict = self.loss
+        loss_dict = {}
+
+        for task_name, values in self.loss.items():
+            counts = values['count']
+            losses = values['loss']
+    
+            total_count = sum(counts)
+            loss_dict[task_name] = (sum(l*c for l, c in zip(losses, counts)) / total_count if total_count > 0 else 0.0)
+
         if reset:
-            self.loss = {task_name: 0.0 for task_name in self.tasks.keys()}
+            self.loss = self.loss = {task_name: {'loss': [], 'count': []} for task_name in self.tasks}
 
         return loss_dict
 
