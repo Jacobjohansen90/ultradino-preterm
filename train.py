@@ -80,7 +80,7 @@ for fold in range(cfg.data.folds):
     best_epoch = metrics.get_best_epoch()
     
     for cutoff in cfg.tasks.preterm.cutoffs:
-        model.load_state_dict(f"{save_path}/weights/fold_{fold}/{best_epoch[str(cutoff)]}.pth", weights_only=True)
+        model.load_state_dict(torch.load(f"{save_path}/weights/fold_{fold}/{best_epoch[str(cutoff)]}.pth", weights_only=True))
         model.eval()
         with torch.no_grad():
             for data in tqdm(TestLoader):
