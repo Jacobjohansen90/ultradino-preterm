@@ -30,7 +30,7 @@ class ModelLoss():
         self.tasks = tasks
         self.loss = {task_name: 0.0 for task_name in self.tasks.keys()}
         
-    def loss(self, data):
+    def __call__(self, data):
         loss = 0
         for task_name, task_values in self.tasks.items():
             if task_name == 'preterm':
