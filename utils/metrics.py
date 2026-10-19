@@ -52,13 +52,13 @@ class Metrics():
             cutoffs = self.cutoffs
         else:
             cutoffs = [cutoff]
-            for cutoff in cutoffs:
-                mask = data["masks"][str(cutoff)].flatten().cpu().numpy()
-                self.dfs[str(cutoff)].append(pl.DataFrame({'CPR_CHILD': data['IDs'],
-                                                           'img_path': data['img_paths'],
-                                                           'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
-                                                           'label': (data['GA_weeks'] < float(cutoff)).flatten().cpu().numpy(),
-                                                           'treatment': data['treatment']}).filter(mask))
+        for cutoff in cutoffs:
+            mask = data["masks"][str(cutoff)].flatten().cpu().numpy()
+            self.dfs[str(cutoff)].append(pl.DataFrame({'CPR_CHILD': data['IDs'],
+                                                       'img_path': data['img_paths'],
+                                                       'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
+                                                       'label': (data['GA_weeks'] < float(cutoff)).flatten().cpu().numpy(),
+                                                       'treatment': data['treatment']}).filter(mask))
 
     def log_epoch(self, train_loss, val_loss):
         self.epoch += 1
