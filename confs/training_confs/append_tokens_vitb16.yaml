@@ -2,8 +2,8 @@ info:
   name: baseline
 
 data:
-  train_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/train2.parquet
-  test_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/test2.parquet
+  train_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/train.parquet
+  test_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/test.parquet
   batch_size: 128
   folds: 5
   workers: 32
