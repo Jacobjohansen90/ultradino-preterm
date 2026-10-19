@@ -200,7 +200,7 @@ class Metrics():
                                      pl.lit(best['agg']).alias('agg'),
                                      pl.lit(best['tta']).alias('tta'),
                                      pl.lit(best["threshold"]).alias('threshold'),
-                                     (pl.col("preds") >= best["cutoff"])
+                                     (pl.col("preds") >= best["threshold"])
                                      .cast(pl.Int8).alias("preds_binary")]))
         
         self.test_preds[str(cutoff)].append(patient_df)
