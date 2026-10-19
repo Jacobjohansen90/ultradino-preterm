@@ -33,7 +33,6 @@ class PreTermDataset(Dataset):
         self.get_segs = 'segmentation' in cfg.tasks.keys()
         self.cutoffs = cfg.tasks.preterm.cutoffs
         self.remove = cfg.data.remove
-        self.tta = cfg.data.test_time_augmentations
         
         self.aux_vars = []
         for task in cfg.tasks.aux_tasks:
@@ -116,7 +115,7 @@ class PreTermDataset(Dataset):
         img = self.transforms(image=img)['image']
         
         #Test time agumentations
-        if not self.train and self.tta:
+        if not self.train:
             imgs = torch.stack([img,
                                 torch.flip(img, dims=[-1]),
                                 torch.flip(img, dims=[-2]),

@@ -7,27 +7,29 @@ data:
   batch_size: 128
   folds: 5
   workers: 32
-  ehr_data: []
+  ehr_data: [CL]
   img_data: [physical_delta_x, physical_delta_y]
   img_size: [224, 224]
   oversample_ratio: 1 #0 = No oversampling
-  remove: ['pprom']
-  test_time_augmentations: True
-  
-  
+  remove: []
+
 tasks:
   preterm:
-    cutoffs: [34,32] #Sharp cutoff (GA < GA_cutoff)
+    cutoffs: [34] #Sharp cutoff (GA < GA_cutoff)
     loss: bce
     weights: 1 #List of same length as cutoffs or int applied to all cutoffs
     label_smoothing_value: 2 #0 = No label smoothing
     pos_weight: 1
   aux_tasks:
-    - var: CL_read
+    - var: CL
       loss: l2
       weights: 0.001
       mask_value: 0
-    - var: CL
+    - var: Age
+      loss: l2
+      weights: 0.001
+      mask_value: 0
+    - var: BMI
       loss: l2
       weights: 0.001
       mask_value: 0
