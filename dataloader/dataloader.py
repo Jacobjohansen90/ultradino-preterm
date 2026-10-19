@@ -331,14 +331,11 @@ class DataSplits:
         ValData = PreTermDataset(val_df, cfg, train=False)
         TestData = PreTermDataset(test_df, cfg, train=False)
         
-        if cfg.data.test_time_augmentations:
-            if (cfg.data.batch_size % 4) != 0:
-                print(f"Batch size not divisible by 4. Changing it from {cfg.data.batch_size} to {cfg.data.batch_size - (cfg.data.batch_size % 3)}")
-            batch_size = cfg.batch_size - (cfg.data.batch_size % 4)
-            val_test_batch_size = batch_size//4
-        else:
-            batch_size = cfg.data.batch_size
-            val_test_batch_size = batch_size
+        
+        if (cfg.data.batch_size % 4) != 0:
+            print(f"Batch size not divisible by 4. Changing it from {cfg.data.batch_size} to {cfg.data.batch_size - (cfg.data.batch_size % 3)}")
+        batch_size = cfg.batch_size - (cfg.data.batch_size % 4)
+        val_test_batch_size = batch_size//4
         
         TrainLoader = DataLoader(TrainData,
                                  batch_size,

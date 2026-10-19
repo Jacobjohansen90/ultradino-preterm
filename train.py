@@ -35,7 +35,7 @@ metrics = Metrics(cfg, save_path)
 
 for fold in range(cfg.data.folds):
     
-    TrainLoader, ValLoader, TestLoader = Data.get_split(fold)
+    TrainLoader, ValLoader, TestLoader = Data.get_split(fold, cfg)
     
     model = model_from_conf(cfg)
 
