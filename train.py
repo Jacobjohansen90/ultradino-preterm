@@ -52,7 +52,7 @@ for fold in range(cfg.data.folds):
                                data['img_data'].to(cfg.device.type), 
                                data['ehr_data'].to(cfg.device.type))
 
-            loss = Loss(data)
+            loss = Loss(outputs, data)
             loss.backward()
             optimizer.step()
             
@@ -69,7 +69,7 @@ for fold in range(cfg.data.folds):
                 
                 metrics.update(outputs, data)
                 
-                loss = Loss(data)
+                loss = Loss(outputs, data)
     
             val_loss = Loss.get_loss()
             

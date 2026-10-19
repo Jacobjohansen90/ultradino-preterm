@@ -30,13 +30,13 @@ class ModelLoss():
         self.tasks = tasks
         self.loss = {task_name: 0.0 for task_name in self.tasks.keys()}
         
-    def __call__(self, data):
+    def __call__(self, outputs, data):
         loss = 0
         for task_name, task_values in self.tasks.items():
             if task_name == 'preterm':
                 for cutoff, weight, ls_val in task_values:
                     labels = self.label_smoothing(data, cutoff, ls_val).to(self.device)
-                    logits = data[task_name][str(cutoff)]['logits']
+                    logits = outputs[task_name][str(cutoff)]['logits']
                     mask = data['masks'][str(cutoff)].to(self.device)
                     if mask.sum() > 0:
                         temp_loss = self.loss_fns[task_name](logits, labels)[mask].mean()*weight
@@ -49,7 +49,7 @@ class ModelLoss():
             elif task_name == 'aux_tasks':
                 for var, weight, mask_val in task_values:
                     labels = data['labels'][var].to(self.device)
-                    logits = data[task_name][var]['logits']
+                    logits = outputs[task_name][var]['logits']
                     mask = self.mask_values(labels, mask_val)
                     if mask.sum () > 0:
                         temp_loss = self.loss_fns[var](logits, labels)[mask].mean()*weight
