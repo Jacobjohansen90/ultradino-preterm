@@ -17,7 +17,10 @@ class Metrics():
     def __init__(self, cfg, save_path):
         self.cutoffs = cfg.tasks.preterm.cutoffs
         self.epoch = 0
-        self.metrics = self.get_metrics()
+        self.fold = 0
+        self.device = cfg.device.type
+        self.n_bootstrap = 10000
+
         self.dfs = {str(c): [] for c in self.cutoffs}
         self.test_preds = {str(c): [] for c in self.cutoffs}
         self.save_path = Path(save_path)
@@ -28,9 +31,6 @@ class Metrics():
                                     'tta': None} for c in self.cutoffs}
         self.best_predictions = {str(c): None for c in self.cutoffs}
         self.best_df = {}
-        self.fold = 0
-        self.device = cfg.device.type
-        self.n_bootstrap = 10000
         
         self.pred_path = Path(self.save_path) / "predictions" 
         self.metrics_path = Path(self.save_path) / "metrics"
@@ -44,14 +44,21 @@ class Metrics():
                         "max": pl.col("preds").max(),
                         "quantile": pl.col("preds").quantile(0.75)}
 
-    def update(self, outputs, data):
-        for cutoff in self.cutoffs:
-            mask = data["masks"][str(cutoff)].flatten().cpu().numpy()
-            self.dfs[str(cutoff)].append(pl.DataFrame({'CPR_CHILD': data['IDs'],
-                                                       'img_path': data['img_paths'],
-                                                       'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
-                                                       'label': (data['GA_weeks'] < float(cutoff)).flatten().cpu().numpy(),
-                                                       'treatment': data['treatment']}).filter(mask))
+        self.metrics = self.get_metrics()
+
+
+    def update(self, outputs, data, cutoff=None):
+        if cutoff is None:
+            cutoffs = self.cutoffs
+        else:
+            cutoffs = [cutoff]
+            for cutoff in cutoffs:
+                mask = data["masks"][str(cutoff)].flatten().cpu().numpy()
+                self.dfs[str(cutoff)].append(pl.DataFrame({'CPR_CHILD': data['IDs'],
+                                                           'img_path': data['img_paths'],
+                                                           'preds': outputs['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy(),
+                                                           'label': (data['GA_weeks'] < float(cutoff)).flatten().cpu().numpy(),
+                                                           'treatment': data['treatment']}).filter(mask))
 
     def log_epoch(self, train_loss, val_loss):
         self.epoch += 1
