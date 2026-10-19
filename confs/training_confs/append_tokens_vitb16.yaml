@@ -21,10 +21,6 @@ tasks:
     label_smoothing_value: 2 #0 = No label smoothing
     pos_weight: 1
   aux_tasks:
-    - var: CL
-      loss: l2
-      weights: 0.001
-      mask_value: 0
     - var: Age
       loss: l2
       weights: 0.001
