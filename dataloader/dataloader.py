@@ -96,7 +96,7 @@ class PreTermDataset(Dataset):
             if var == 'GA_weeks':
                 continue
             else:
-                labels[var] = torch.tensor([float(data.get(var))])
+                labels[var] = torch.tensor([float(data.get(var) or 0.0)])
                 
         #Get segmentations
         if self.get_segs:
