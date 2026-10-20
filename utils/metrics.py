@@ -236,9 +236,8 @@ class Metrics():
                     
                     preds = torch.tensor(fold_df["preds"].to_numpy(), dtype=torch.float32).to(self.device)
                     labels = torch.tensor(fold_df["label"].to_numpy(),dtype=torch.int32).to(self.device)
-                    threshold = fold_df['threshold'][0]
     
-                    metrics = self.get_metrics(t=threshold)
+                    metrics = self.get_metrics()
                     
                     if fold == 0:
                         results = {name: [] for name in metrics.keys()}
@@ -260,9 +259,14 @@ class Metrics():
     
                     if len(values) == 0:
                         continue
-    
-                    ax.vlines(i, values.min(), values.max(), linewidth=2)
-                    ax.scatter(i, values.mean(), marker="o", s=60, zorder=3)
+                    ymin, ymax = values.min(), values.max()
+                    mean = values.mean()
+                    cap_width = 0.1
+                    color = f"C{i}"
+                    
+                    ax.vlines(i, ymin, ymax, linewidth=2, color=color)
+                    ax.hlines([ymin, ymax], i - cap_width, i + cap_width, linewidth=2, color=color)
+                    ax.scatter(i, mean, marker="o", s=60, color=color, zorder=3)
     
                 ax.set_xticks(range(len(results)))
                 ax.set_xticklabels(results.keys(), rotation=45, ha="right")
@@ -342,7 +346,7 @@ class Metrics():
     
             report = "".join(report)
                 
-            with open(self.save_path + f"GA_{cutoff}.txt", "w") as f:
+            with open(self.save_path / f"GA_{cutoff}.txt", "w") as f:
                 f.write(report)
                             
                     
