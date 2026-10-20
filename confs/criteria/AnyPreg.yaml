@@ -483,3 +483,41 @@ conditional_criteria:
           column: DiagnoseKode
           operator: "=="
           value: "BKHA1"
+          
+    #Twins etc
+  - name: Multi-births
+    function: mark_df
+    default: no_mark
+    mark_name: multi_birth
+    actions:
+    - action: include
+      filter_on: [CPR_MOTHER, BIRTH_ID]
+      conditions:
+        - condition: 
+          table: ${paths.input_dir_SDS}/mfr.csv
+          match_on: [CPR_MODER, FOEDSELSLOEBENUMMER]
+          column: [CPR_MODER, FOEDSELSLOEBENUMMER]
+          operator: "unique"
+          value: True
+        - condition: or
+          table: ${paths.input_dir_SDS}/nyfoedte.csv
+          match_on: [CPRnummer_Mor, DW_EK_Foedsel]
+          column: [CPRnummer_Mor, DW_EK_Foedsel]
+          operator: "unique"
+          value: True
+        - condition: or
+          table: ${paths.input_dir_SP}/Mor - Fødselsresume - DEL 1.csv
+          match_on: [MOR_CPR, BABY_Fødsel_ID]
+          column: [MOR_CPR, BABY_Fødsel_ID]
+          operator: "unique"
+          value: True
+    - action: include_birth
+      filter_on: CPR_MOTHER
+      conditions:
+        - condition: 
+          table: ${paths.input_dir_SP}/Mor - Obstetrisk Historik DEL 1.csv
+          match_on: MOR_CPR
+          date_column: Kontakt dato
+          column: Flerfold
+          operator: ">="
+          value: 1

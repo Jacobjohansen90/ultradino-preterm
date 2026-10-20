@@ -9,6 +9,7 @@ data:
   workers: 32
   ehr_data: [GA_at_scan]
   img_data: [physical_delta_x, physical_delta_y]
+  segmentation: False
   img_size: [224, 224]
   oversample_ratio: 1 #0 = No oversampling
   remove: []
@@ -42,7 +43,6 @@ auxiliary:
 
 model:
   vit:
-    type: vitb16
     #weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/vitb16.pth #VitB
     weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/oversampled_vitb16.pth 
     #weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/oversampled_vitl16.pth 
@@ -50,10 +50,14 @@ model:
   
   ehr:
     weights_path: 
-  
-  transform:
-    layer_dims: []
-
+    dropout: 0.2
+    
+  transforms:
+    vit_layer_dims: []
+    ehr_layer_dims: []
+    seg_channel_dims: []
+    dropout: 0.2
+    
   head:
     layer_dims: []
     dropout: 0.2

@@ -30,7 +30,7 @@ class PreTermDataset(Dataset):
         self.setup_transforms()
         self.ID_var = ID
         self.df = df
-        self.get_segs = 'segmentation' in cfg.tasks.keys()
+        self.get_segs = 'segmentation' in cfg.tasks.keys() or cfg.data.segmentation
         self.cutoffs = cfg.tasks.preterm.cutoffs
         self.remove = cfg.data.remove
         
@@ -38,10 +38,6 @@ class PreTermDataset(Dataset):
         for task in cfg.tasks.aux_tasks:
             self.aux_vars.append(task.var)
 
-        if self.get_segs:
-            self.seg_labels = cfg.tasks.segmentation.foreground
-        
-        
     def setup_transforms(self):
         if self.train:
             self.transforms = A.Compose([A.RandomBrightnessContrast(brightness_limit=(-0.3, 0.3), contrast_limit=(-0.3, 0.3), p=0.5),

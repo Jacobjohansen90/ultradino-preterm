@@ -305,9 +305,9 @@ class Metrics():
                     boot_values = []
                 
                     for _ in range(self.n_bootstrap):
-                        idx = rng.integers(0, len(df), size=len(df))
+                        idx = rng.integers(0, len(pop_df), size=len(pop_df))
                         boot_labels = labels[idx]
-                
+        
                         if torch.unique(boot_labels).numel() < 2:
                             continue
                 
