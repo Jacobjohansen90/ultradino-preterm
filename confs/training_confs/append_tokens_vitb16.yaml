@@ -1,13 +1,13 @@
 info:
-  name: baseline
+  name: test
 
 data:
   train_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/train.parquet
   test_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/dataset_v6/test.parquet
   batch_size: 128
-  folds: 5
+  folds: 3
   workers: 32
-  ehr_data: [GA_at_scan]
+  ehr_data: []
   img_data: [physical_delta_x, physical_delta_y]
   segmentation: False
   img_size: [224, 224]
@@ -28,7 +28,7 @@ tasks:
       mask_value: 0
 
 training:
-  epochs: 40
+  epochs: 1
   vit_frozen_until: 10  #VIT is frozen until this epoch
   ehr_frozen_until: 10 #EHR is frozen until this epoch
   #Unfreezeing strategy. Unfreeze blocks_per_step every_n_epochs until top_n_blocks are unfrozen.

@@ -29,7 +29,7 @@ image_criteria:
 
   - name: Image must be no_ocr processed
     function: filter_df
-    default: remove
+    default: keep
     actions:
     - action: exclude
       filter_on: file_path
