@@ -23,7 +23,7 @@ def vit_from_conf(cfg):
 
     if model_type is not None:
         model = vit_load.load_pretrained_ultradino(model_type, cfg.model.vit.weights_path)
-        logger.info('Loading pretrained encoder from %s', cfg.weights_path)
+        logger.info('Loading pretrained encoder from %s', cfg.model.vit.weights_path)
     else:
         raise Exception("Weight path must contain the model type [Vits16/Vitb16/Vitl16]")
             
