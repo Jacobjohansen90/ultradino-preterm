@@ -223,7 +223,7 @@ class Metrics():
         self.fold += 1
         self.best_df = {}
         
-    def log_final_model(self):
+    def log_model(self):
         for cutoff in self.cutoffs:   
             df = pl.concat(self.test_preds[str(cutoff)])
             df.write_parquet(self.pred_path / f"predictions_{cutoff}.parquet")
