@@ -421,21 +421,23 @@ def apply_inclusion_exclusion(df, cfg):
     conditioned = {}
     mothers = df['CPR_MOTHER'].unique()
     children = df['CPR_CHILD'].unique()
-    for criteria in cfg.image_criteria:
-        fn = custom_funcs[criteria.function]
-        df = fn(df, criteria)
-        discards, mothers, children = discard(discards, df, criteria, mothers, children)
-
-    for criteria in cfg.population_criteria:       
-        fn = custom_funcs[criteria.function]
-        df = fn(df, criteria)
-        discards, mothers, children = discard(discards, df, criteria, mothers, children)
-
+    if cfg.image_criteria is not None:
+        for criteria in cfg.image_criteria:
+            fn = custom_funcs[criteria.function]
+            df = fn(df, criteria)
+            discards, mothers, children = discard(discards, df, criteria, mothers, children)
     
-    for criteria in cfg.conditional_criteria:
-        fn = custom_funcs[criteria.function]
-        df = fn(df, criteria)
-        conditioned = condition(conditioned, df, criteria)
+    if cfg.population_criteria is not None:
+        for criteria in cfg.population_criteria:       
+            fn = custom_funcs[criteria.function]
+            df = fn(df, criteria)
+            discards, mothers, children = discard(discards, df, criteria, mothers, children)
+
+    if cfg.conditional_criteria is not None:
+        for criteria in cfg.conditional_criteria:
+            fn = custom_funcs[criteria.function]
+            df = fn(df, criteria)
+            conditioned = condition(conditioned, df, criteria)
     
     return df, discards, conditioned
     
