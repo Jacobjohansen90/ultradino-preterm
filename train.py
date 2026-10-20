@@ -50,7 +50,8 @@ for fold in range(cfg.data.folds):
             optimizer.zero_grad()
             outputs, _ = model(data['imgs'].to(cfg.device.type), 
                                data['img_data'].to(cfg.device.type), 
-                               data['ehr_data'].to(cfg.device.type))
+                               data['ehr_data'].to(cfg.device.type),
+                               data['segmentation'].to(cfg.device.type))
 
             loss = Loss(outputs, data)
             loss.backward()
@@ -65,7 +66,8 @@ for fold in range(cfg.data.folds):
             for data in tqdm(ValLoader, desc='Validating'):
                 outputs, _ = model(data['imgs'].to(cfg.device.type), 
                                    data['img_data'].to(cfg.device.type), 
-                                   data['ehr_data'].to(cfg.device.type))
+                                   data['ehr_data'].to(cfg.device.type),
+                                   data['segmentation'].to(cfg.device.type))
                 
                 metrics.update(outputs, data)
                 
@@ -86,7 +88,8 @@ for fold in range(cfg.data.folds):
             for data in tqdm(TestLoader, desc=f"Testing GA {cutoff} model"):
                 outputs, _ = model(data['imgs'].to(cfg.device.type), 
                                    data['img_data'].to(cfg.device.type), 
-                                   data['ehr_data'].to(cfg.device.type))
+                                   data['ehr_data'].to(cfg.device.type),
+                                   data['segmentation'].to(cfg.device.type))
                 
                 metrics.update(outputs, data, cutoff)
                 

@@ -21,9 +21,11 @@ def setup(cfg):
     
     else:
         if os.path.exists(path):
-            raise Exception("Model experiment exists in Running folder.")
+            raise Exception("Model experiment exists in Running folder.\n"
+                            "You can disable this check by naming the model 'test'")
         if os.path.exists(path.replace('Running', 'Evaluated')):
-            raise Exception("Model experiment exists in Evaluated folder.")
+            raise Exception("Model experiment exists in Evaluated folder.\n"
+                            "You can disable this check by naming the model 'test'")
             
     os.makedirs(path + 'misc', exist_ok=True)
     for i in range(cfg.data.folds):

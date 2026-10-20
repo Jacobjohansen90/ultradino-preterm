@@ -100,7 +100,7 @@ class PreTermDataset(Dataset):
             segmentation = np.isin(segmentation, self.seg_labels)
             segmentation = torch.from_numpy(segmentation)
         else:
-            segmentation = torch.tensor([0], dtype=torch.bool)
+            segmentation = torch.tensor([], dtype=torch.bool)
  
         #Prepare Image    
         img_path = data.get('no_ocr_preprocessed_file_path')
