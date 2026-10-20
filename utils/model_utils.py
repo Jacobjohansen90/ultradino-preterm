@@ -76,15 +76,15 @@ def model_from_conf(cfg):
     #Transforms
     img_data_transform = Transform(len(cfg.data.img_data), 
                                    vit_model.embed_dim,
-                                   layer_dims=cfg.model.transform.layer_dims)
+                                   layer_dims=cfg.model.transforms.vit_layer_dims)
     
     ehr_transform = Transform(ehr_model.embed_dim, 
                               vit_model.embed_dim,
-                              layer_dims=cfg.model.transform.layer_dims)
+                              layer_dims=cfg.model.transforms.ehr_layer_dims)
         
     segmentation_transform = CNNTransform(cfg.data.img_size, 
                                           vit_model.embed_dim,
-                                          layer_dims=cfg.model.transform.layer_dims)
+                                          layer_dims=cfg.model.transforms.seg_channel_dims)
     
     model_parts['img_data_transform'] = img_data_transform
     model_parts['ehr_transform'] = ehr_transform
