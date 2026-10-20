@@ -55,21 +55,21 @@ logger.info(f"Found {df_pop['CPR_MOTHER'].n_unique()} mothers - " + str(datetime
 
 #%%Extract info from database
 
-df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
+# df_img = sqlite_extractor(cfg, list(df_pop['CPR_MOTHER'].unique()))
 
 #Link cervix preds and image df
-df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds, infer_schema=False)
-df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
-del df_cervix_preds
+# df_cervix_preds = pl.read_csv(cfg.paths.cervix_preds, infer_schema=False)
+# df_img = df_img.join(df_cervix_preds, on='file_path', how='left')
+# del df_cervix_preds
 
-df_img.write_parquet(cfg.paths.data_dir + 'data_dump/img_data.parquet')
+# df_img.write_parquet(cfg.paths.data_dir + 'data_dump/img_data.parquet')
 
-logger.info(f"Found {len(df_img)} images - " + str(datetime.now().strftime('%H:%M:%S')))
-logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
+# logger.info(f"Found {len(df_img)} images - " + str(datetime.now().strftime('%H:%M:%S')))
+# logger.info(f"Found images for {df_img['CPR_MOTHER'].n_unique()} mothers - " + str(datetime.now().strftime('%H:%M:%S')))
 
 #%%Merge image and population dfs
-df = merge_population_and_image_df(df_img, df_pop, cfg)
-
+# df = merge_population_and_image_df(df_img, df_pop, cfg)
+df = df_pop
 df.write_parquet(cfg.paths.data_dir + "data_dump/total_data.parquet")
 
 #%%Apply inclusion/exclusion criteria for train and test set
@@ -88,7 +88,7 @@ for incl_excl in['test', 'train']:
     
 
     #Calculate cervix length for remaining images
-    df_temp = get_CL(df_temp, cfg)
+    # df_temp = get_CL(df_temp, cfg)
 
     #Make train/test split and save the data
 
@@ -104,7 +104,7 @@ for incl_excl in['test', 'train']:
 df_train = pl.read_parquet(cfg.paths.data_dir + 'train.parquet')
 df_test = pl.read_parquet(cfg.paths.data_dir + 'test.parquet')
 
-cols_to_check=['CPR_MOTHER', 'CPR_CHILD', 'no_ocr_preprocessed_file_path']
+cols_to_check=['CPR_MOTHER', 'CPR_CHILD']#, 'no_ocr_preprocessed_file_path']
 
 for col in cols_to_check:
     overlap = (df_train.select(col).unique().join(df_test.select(col).unique(),

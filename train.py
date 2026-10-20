@@ -46,7 +46,7 @@ for fold in range(cfg.data.folds):
         update_freezing(model, epoch, cfg)
         model.train()
 
-        for data in tqdm(TrainLoader):
+        for data in tqdm(TrainLoader, desc='Training'):
             optimizer.zero_grad()
             outputs, _ = model(data['imgs'].to(cfg.device.type), 
                                data['img_data'].to(cfg.device.type), 
@@ -62,7 +62,7 @@ for fold in range(cfg.data.folds):
         model.eval()
         
         with torch.no_grad():
-            for data in ValLoader:
+            for data in tqdm(ValLoader, desc='Validating'):
                 outputs, _ = model(data['imgs'].to(cfg.device.type), 
                                    data['img_data'].to(cfg.device.type), 
                                    data['ehr_data'].to(cfg.device.type))
@@ -83,7 +83,7 @@ for fold in range(cfg.data.folds):
         model.load_state_dict(torch.load(f"{save_path}/weights/fold_{fold}/{best_epoch[str(cutoff)]}.pth", weights_only=True))
         model.eval()
         with torch.no_grad():
-            for data in tqdm(TestLoader):
+            for data in tqdm(TestLoader, desc=f"Testing GA {cutoff} model"):
                 outputs, _ = model(data['imgs'].to(cfg.device.type), 
                                    data['img_data'].to(cfg.device.type), 
                                    data['ehr_data'].to(cfg.device.type))
