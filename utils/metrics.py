@@ -275,7 +275,7 @@ class Metrics():
                 ax.grid(axis="y", alpha=0.3)
     
                 plt.tight_layout()
-                fig.savefig(self.save_path / f"Fold variability {pop} {cutoff}.png", dpi=300)
+                fig.savefig(self.save_path / f"Fold variability - {pop} - GA {cutoff}.png", dpi=300)
                 plt.close(fig)
         
                 #Get overall metrics and 95% CI

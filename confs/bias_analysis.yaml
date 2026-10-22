@@ -1,6 +1,6 @@
 paths:
-  bias_variables: /users/data/UCPH/DeepFetal/projects/preterm/Data/misc/bias_variables.csv
-
+  #bias_variables: /users/data/UCPH/DeepFetal/projects/preterm/Data/misc/bias_variables.csv
+  bias_variables: /home/jacob/Desktop/predictions/bias_variables.csv
 #For binary, the categories correspond to [True, False]
 variables: 
   - name: BMI
