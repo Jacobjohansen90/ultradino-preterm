@@ -94,6 +94,8 @@ for fold in range(cfg.data.folds):
                 metrics.update(outputs, data, cutoff)
                 
             metrics.log_fold(cutoff)
+
+    metrics.reset()
             
 metrics.log_model()
 

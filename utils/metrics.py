@@ -90,10 +90,10 @@ class Metrics():
                         output = metric(preds, labels)
                     
                         if isinstance(output, tuple):
-                            metrics[f"{name}_{agg}_{tta}"] = output[0].item()
-                            metrics[f"{name}_cutoff_{agg}_{tta}"] = output[1].item()
+                            metrics[f"{name}_{agg}_{tta}"] = round(output[0].item(), 3)
+                            metrics[f"{name}_cutoff_{agg}_{tta}"] = round(output[1].item(), 3)
                         else:
-                            metrics[f"{name}_{agg}_{tta}"] = output.item()
+                            metrics[f"{name}_{agg}_{tta}"] = round(output.item(), 3)
                       
                         
                 best_tta = max(["tta", "no-tta"], key=lambda tta: metrics[f"SensAtSpec_{agg}_{tta}"])
@@ -117,10 +117,10 @@ class Metrics():
                     self.best_df[str(cutoff)] = df
            
                 row = {'epoch': self.epoch,
-                       'train_loss': round(sum(train_loss.values()), 5), 
-                       'train_preterm_loss': round(train_loss['preterm'], 5),
-                       'val_loss': round(sum(val_loss.values()), 5),
-                       'val_preterm_loss': round(val_loss['preterm'], 5),
+                       'train_loss': round(sum(train_loss.values()), 4), 
+                       'train_preterm_loss': round(train_loss['preterm'], 4),
+                       'val_loss': round(sum(val_loss.values()), 4),
+                       'val_preterm_loss': round(val_loss['preterm'], 4),
                        **dict(sorted(metrics.items()))}
 
                 metrics_df = pl.DataFrame([row])
@@ -204,10 +204,7 @@ class Metrics():
                                      .cast(pl.Int8).alias("preds_binary")]))
         
         self.test_preds[str(cutoff)].append(patient_df)
-        self.dfs = {str(c): [] for c in self.cutoffs}
     
-        self.reset()
-        
     def reset(self):
         for cutoff in self.cutoffs:
             self.best_predictions[str(cutoff)].write_parquet(self.pred_path / f"validation/predictions_{cutoff}_fold_{self.fold}.parquet")        
@@ -217,7 +214,8 @@ class Metrics():
                                     'epoch': -1,
                                     'agg': None,
                                     'tta': None} for c in self.cutoffs}
-        
+
+        self.dfs = {str(c): [] for c in self.cutoffs}
         self.best_predictions = {str(c): None for c in self.cutoffs}
         self.epoch = 0
         self.fold += 1
