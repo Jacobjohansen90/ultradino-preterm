@@ -42,6 +42,7 @@ def generate_insight(model_path, bias_cfg_path):
                                    
     #Make df per child, not per image
     test_df = test_df.unique(subset=["CPR_CHILD"])
+    print(test_df.height)
     
     #Merge
     overall_df = test_df.join(cl_df, how='left', on=['CPR_MOTHER', 'study_date'])    
@@ -59,6 +60,10 @@ def subgroup_analysis(preds_path, save_path, variable_df, variable_cfg):
         for path in sorted(Path(preds_path).iterdir()):
             if path.name.endswith(".parquet"):
                 GA = path.stem.split("_")[-1]
+                predictions = pl.read_parquet(path)
+                df = predictions.join(variable_df, how='left', on='CPR_CHILD')
+                
+                
                 results[GA] = {}
                 
                 results[GA]['all'] = subgroup_metrics(variable_df, GA)                
