@@ -29,7 +29,8 @@ def generate_insight(model_path, bias_cfg_path):
 
     #Manual cervix lengths    
     cl_df = pl.read_parquet(cfg.paths.cl_manual)
-    cl_df = cl_df.filter(pl.col("GA-U").is_between(18, 24, closed="both"))
+    cl_df = cl_df.filter(pl.col("GA-U").is_between(16, 24, closed="both"))
+    #Merge multiple cervix length measurements into one
     cl_df = (cl_df.group_by(["CPR_MOTHER", "study_date"]).agg(pl.col("cervix_length").mean()))
 
     #Load test data
@@ -43,12 +44,11 @@ def generate_insight(model_path, bias_cfg_path):
                                    
     #Make df per child, not per image
     test_df = test_df.unique(subset=["CPR_CHILD"])
-    print(test_df.height)
     
     #Merge
     overall_df = test_df.join(cl_df, how='left', on=['CPR_MOTHER', 'study_date'])    
     overall_df = overall_df.join(bias_df, how='left', left_on='CPR_CHILD', right_on='b_cpr')
-    print(overall_df.height)
+
     #Run bias analysis
     bias_analysis(model_path + 'predictions', save_path, overall_df, cfg)
     
@@ -138,7 +138,6 @@ def bias_analysis(preds_path, save_path, variable_df, variable_cfg):
             predictions = pl.read_parquet(path)
             
             df = predictions.join(variable_df, how='left', on='CPR_CHILD')
-            print(df.height)
             results = {}
             orders = {}
             for var in tqdm(variable_cfg.bias_variables, desc=f"Processing Variables, GA {GA}"):
@@ -360,7 +359,8 @@ def calculate_difference(category_df, pop_df, n_permutations=10000):
         overall_mean = overall.mean()
     
         observed_diff = subgroup.mean() - overall_mean
-    
+        if metric == "spec":
+            observed_diff = -observed_diff
         n_subgroup = len(subgroup)
         permuted_diffs = np.empty(n_permutations)
     
