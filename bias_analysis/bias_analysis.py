@@ -37,8 +37,9 @@ def generate_insight(model_path, bias_cfg_path):
     test_df = pl.concat(test_dfs, how="vertical")
     test_df = test_df.with_columns(pl.len().over("CPR_CHILD").alias("num_images"))
     #Merge deltas and convert to μm
-    test_df = test_df.with_columns((((pl.col("physical_delta_x") + pl.col("physical_delta_y")) / 2) * 10000)
-                                   .alias("physical_delta"))
+    test_df = test_df.with_columns(((pl.col("physical_delta_x").list.mean() +
+                                     pl.col("physical_delta_y").list.mean()) / 2 * 10000).alias("physical_delta"))
+                                   
     #Make df per child, not per image
     test_df = test_df.unique(subset=["CPR_CHILD"])
     
