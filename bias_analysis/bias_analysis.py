@@ -135,16 +135,16 @@ def bias_analysis(preds_path, save_path, variable_df, variable_cfg):
             results = {}
             orders = {}
             for var in tqdm(variable_cfg.bias_variables, desc=f"Processing Variables, GA {GA}"):
-                if isinstance(var.bias_variables, (list, ListConfig)):
-                    df = df.with_columns(pl.coalesce([pl.col(var.bias_variables[0]), pl.col(var.bias_variables[1])])
-                                         .alias(var.bias_variables[0]))
-                    var.bias_variables = var.bias_variables[0]
+                if isinstance(var.variable, (list, ListConfig)):
+                    df = df.with_columns(pl.coalesce([pl.col(var.variable[0]), pl.col(var.variable[1])])
+                                         .alias(var.variable[0]))
+                    var.variable = var.variable[0]
         
                 results[var.name] = {}
         
                 for pop, pop_df in [("All Births", df), ("Non-treated", df.filter(~pl.col("treatment")))]:
         
-                    var_df = pop_df.select(['CPR_CHILD', 'preds', 'preds_binary', 'label', 'threshold', var.bias_variables])
+                    var_df = pop_df.select(['CPR_CHILD', 'preds', 'preds_binary', 'label', 'threshold', var.variable])
         
                     var_df = handle_nulls(var_df, var)
                     var_df, order = categorize_variable(var_df, var)
@@ -152,8 +152,8 @@ def bias_analysis(preds_path, save_path, variable_df, variable_cfg):
                     results[var.name][pop] = {}
                     results[var.name][pop]["Overall"] = calculate_metrics(var_df)
 
-                    for category_df in var_df.partition_by(var.bias_variables, maintain_order=True):
-                        category = category_df[var.bias_variables][0]
+                    for category_df in var_df.partition_by(var.variable, maintain_order=True):
+                        category = category_df[var.variable][0]
                         results[var.name][pop][category] = calculate_metrics(category_df, var_df)
                     orders[var.name] = ['Overall'] + order
             bias_wb = bias_to_excel(bias_wb, results, orders, GA)
