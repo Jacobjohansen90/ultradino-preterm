@@ -47,7 +47,7 @@ def generate_insight(model_path, bias_cfg_path):
     #Merge
     overall_df = test_df.join(cl_df, how='left', on=['CPR_MOTHER', 'study_date'])    
     overall_df = overall_df.join(bias_df, how='left', left_on='CPR_CHILD', right_on='b_cpr')
-    
+    print(overall_df.height)
     #Run bias analysis
     bias_analysis(model_path + 'predictions', save_path, overall_df, cfg)
     
@@ -137,7 +137,7 @@ def bias_analysis(preds_path, save_path, variable_df, variable_cfg):
             predictions = pl.read_parquet(path)
             
             df = predictions.join(variable_df, how='left', on='CPR_CHILD')
-    
+            print(df.height)
             results = {}
             orders = {}
             for var in tqdm(variable_cfg.bias_variables, desc=f"Processing Variables, GA {GA}"):
