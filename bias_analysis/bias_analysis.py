@@ -30,7 +30,8 @@ def generate_insight(model_path, bias_cfg_path):
     #Manual cervix lengths    
     cl_df = pl.read_parquet(cfg.paths.cl_manual)
     cl_df = cl_df.filter(pl.col("GA-U").is_between(18, 24, closed="both"))
-    
+    cl_df = (cl_df.group_by(["CPR_MOTHER", "study_date"]).agg(pl.col("cervix_length").mean()))
+
     #Load test data
     files = sorted((Path(model_path) / "misc").glob("*.parquet"))
     test_dfs = [pl.read_parquet(file) for file in files]
