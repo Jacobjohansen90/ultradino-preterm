@@ -1,8 +1,15 @@
 paths:
-  #bias_variables: /users/data/UCPH/DeepFetal/projects/preterm/Data/misc/bias_variables.csv
-  bias_variables: /home/jacob/Desktop/predictions/bias_variables.csv
+  bias_variables: /users/data/UCPH/DeepFetal/projects/preterm/Data/misc/bias_variables.csv
+  cl_manual: /users/data/UCPH/DeepFetal/projects/preterm/Data/misc/CL_2009-2025.parquet
+
+#Groups included in the sub group analysis
+subgroups: 
+  - name: PPROM
+    var: pprom
+    value: True
+
 #For binary, the categories correspond to [True, False]
-variables: 
+bias_variables: 
   - name: BMI
     variable: [maternal_BMI, lab_bmi]
     type: interval
@@ -17,6 +24,25 @@ variables:
     variable: 'fertility_treatment_2_years_prior'
     type: binary
     categories: ['yes', 'no']
+    nulls: remove
+  - name: Cervix length (Manual)
+    variable: cervix_length
+    type: interval
+    categories: [25]
+    nulls: remove
+  - name: Physical Delta
+    variable: physical_delta
+    type: interval
+    categories: [95, 105, 117, 134]
+    nulls: remove
+  - name: Study date
+    variable: study_date
+    type: year_interval
+    categories: [2014, 2019]
+  - name: GA at scan
+    variable: GA_at_scan
+    type: interval
+    categories: [126, 154]
     nulls: remove
   - name: PCOS/PMOS
     variable: pcos

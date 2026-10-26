@@ -8,51 +8,143 @@ Created on Fri Sep 25 11:54:23 2026
 
 import polars as pl
 from omegaconf import OmegaConf, ListConfig
-import logging
 import numpy as np
-from sklearn.metrics import roc_auc_score
 from pathlib import Path
 from tqdm import tqdm
+from sklearn.metrics import roc_auc_score, roc_curve
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
+   
 
-
-def bias_analysis(model_path, bias_cfg_path):
-    save_path = Path(model_path + 'bias_analysis/')
-    save_path.mkdir()
-    
-    logging.basicConfig(filename=save_path / 'bias.log', filemode='w', level=logging.INFO)
-    logger = logging.getLogger('')
-
+def generate_insight(model_path, bias_cfg_path):
+    #Setup
+    save_path = Path(model_path)
     cfg = OmegaConf.load(bias_cfg_path)    
+    
+    #Load and merge dataframes    
+
+    #Bias variables from EHR
     bias_df = pl.read_csv(cfg.paths.bias_variables, ignore_errors=True)
+
+    #Manual cervix lengths    
+    cl_df = pl.read_parquet(cfg.paths.cl_manual)
+    cl_df = cl_df.filter(pl.col("GA-U").is_between(18, 24, closed="both"))
     
-    wb = Workbook()
-    wb.remove(wb.active)
+    #Load test data
+    files = sorted((Path(model_path) / "misc").glob("*.parquet"))
+    test_dfs = [pl.read_parquet(file) for file in files]
+    test_df = pl.concat(test_dfs, how="vertical")
+    test_df = test_df.with_columns(pl.len().over("CPR_CHILD").alias("num_images"))
+    #Merge deltas and convert to μm
+    test_df = test_df.with_columns((((pl.col("physical_delta_x") + pl.col("physical_delta_y")) / 2) * 10000)
+                                   .alias("physical_delta"))
+    #Make df per child, not per image
+    test_df = test_df.unique(subset=["CPR_CHILD"])
     
-    for path in sorted((Path(model_path) / "predictions").iterdir()):
+    #Merge
+    overall_df = test_df.join(cl_df, how='left', on=['CPR_MOTHER', 'study_date'])    
+    overall_df = overall_df.join(bias_df, how='left', left_on='CPR_CHILD', right_on='b_cpr')
+    
+    #Run bias analysis
+    bias_analysis(model_path + 'predictions', save_path, overall_df, cfg)
+    
+    #Run sub group analysis
+    
+    
+    
+def subgroup_analysis(preds_path, save_path, variable_df, variable_cfg):
+        results = {}
+        for path in sorted(Path(preds_path).iterdir()):
+            if path.name.endswith(".parquet"):
+                GA = path.stem.split("_")[-1]
+                results[GA] = {}
+                
+                results[GA]['all'] = subgroup_metrics(variable_df, GA)                
+                
+                for subgroup in variable_cfg.subgroups:
+                    var = subgroup["var"]
+                    value = subgroup["value"]
+                    name = subgroup["name"]
+                    temp_df = variable_df.filter(pl.col(var) == value)
+                    results[GA][name] = subgroup_metrics(temp_df, GA)
+
+def subgroup_metrics(df, GA, n_bootstrap=10000):
+    labels = df["label"].to_numpy().astype(int)
+    preds = df["preds"].to_numpy()
+
+    n_patients = df.height
+    n_preterm = df.filter(pl.col("GA_weeks") < int(GA) * 7).height
+
+    # Point estimates
+    auc = roc_auc_score(labels, preds)
+
+    fpr, tpr, thresholds = roc_curve(labels, preds)
+    valid = np.where(1 - fpr >= 0.85)[0]
+    idx = valid[np.argmax(tpr[valid])]
+    sens_at_85_spec = tpr[idx]
+
+    # Bootstrap confidence intervals
+    rng = np.random.default_rng()
+    boot_auc = []
+    boot_sens = []
+    n = len(labels)
+
+    for _ in range(n_bootstrap):
+        idx = rng.integers(0, n, size=n)
+        y = labels[idx]
+        p = preds[idx]
+
+        # AUC requires both classes
+        if np.unique(y).size < 2:
+            continue
+
+        boot_auc.append(roc_auc_score(y, p))
+
+        fpr_b, tpr_b, _ = roc_curve(y, p)
+        valid_b = np.where(1 - fpr_b >= 0.85)[0]
+
+        if len(valid_b):
+            best_idx = valid_b[np.argmax(tpr_b[valid_b])]
+            boot_sens.append(tpr_b[best_idx])
+
+    auc_ci = np.percentile(boot_auc, [2.5, 97.5])
+    sens_ci = np.percentile(boot_sens, [2.5, 97.5])
+
+    return {"n_patients": n_patients,
+            "n_preterm": n_preterm,
+            "AUC": auc,
+            "AUC_ci_low": auc_ci[0],
+            "AUC_ci_high": auc_ci[1],
+            "SensAtSpec": sens_at_85_spec,
+            "SensAtSpec_ci_low": sens_ci[0],
+            "SensAtSpec_ci_high": sens_ci[1]}
+
+
+def bias_analysis(preds_path, save_path, variable_df, variable_cfg):    
+    bias_wb = Workbook()
+    bias_wb.remove(bias_wb.active)
+    
+    for path in sorted(Path(preds_path).iterdir()):
         if path.name.endswith(".parquet"):
             GA = path.stem.split("_")[-1]
             predictions = pl.read_parquet(path)
             
-            df = predictions.join(bias_df, how='left', left_on='CPR_CHILD', right_on='b_cpr')
+            df = predictions.join(variable_df, how='left', on='CPR_CHILD')
     
-            if df.height != predictions.height:
-                logger.warning(f"WARNING: {predictions.height - df.height} children missing from bias analysis")
-            
             results = {}
             orders = {}
-            for var in tqdm(cfg.variables[:2], desc=f"Processing Variables, GA {GA}"):
-                if isinstance(var.variable, (list, ListConfig)):
-                    df = df.with_columns(pl.coalesce([pl.col(var.variable[0]), pl.col(var.variable[1])]).alias(var.variable[0]))
-                    var.variable = var.variable[0]
+            for var in tqdm(variable_cfg.bias_variables, desc=f"Processing Variables, GA {GA}"):
+                if isinstance(var.bias_variables, (list, ListConfig)):
+                    df = df.with_columns(pl.coalesce([pl.col(var.bias_variables[0]), pl.col(var.bias_variables[1])])
+                                         .alias(var.bias_variables[0]))
+                    var.bias_variables = var.bias_variables[0]
         
                 results[var.name] = {}
         
                 for pop, pop_df in [("All Births", df), ("Non-treated", df.filter(~pl.col("treatment")))]:
         
-                    var_df = pop_df.select(['CPR_CHILD', 'preds', 'preds_binary', 'label', 'threshold', var.variable])
+                    var_df = pop_df.select(['CPR_CHILD', 'preds', 'preds_binary', 'label', 'threshold', var.bias_variables])
         
                     var_df = handle_nulls(var_df, var)
                     var_df, order = categorize_variable(var_df, var)
@@ -60,12 +152,12 @@ def bias_analysis(model_path, bias_cfg_path):
                     results[var.name][pop] = {}
                     results[var.name][pop]["Overall"] = calculate_metrics(var_df)
 
-                    for category_df in var_df.partition_by(var.variable, maintain_order=True):
-                        category = category_df[var.variable][0]
+                    for category_df in var_df.partition_by(var.bias_variables, maintain_order=True):
+                        category = category_df[var.bias_variables][0]
                         results[var.name][pop][category] = calculate_metrics(category_df, var_df)
                     orders[var.name] = ['Overall'] + order
-            wb = to_excel(wb, results, orders, GA)
-    wb.save(Path(save_path) / "bias_analysis.xlsx")
+            bias_wb = bias_to_excel(bias_wb, results, orders, GA)
+    bias_wb.save(Path(save_path) / "bias_analysis.xlsx")
 
 
 def calculate_metrics(df, pop_df=None, n_permutations=10000):
@@ -186,10 +278,29 @@ def categorize_variable(df, var):
 
         return df.with_columns(expr.alias(var.variable)), order
     
+    elif var.type == "year_interval":
+        categories = list(var.categories)
+    
+        order = ([f"<{categories[0]}"]
+                 + [f"{lower}-{upper}" for lower, upper in zip(categories[:-1], categories[1:])]
+                 + [f"{categories[-1]}+"])
+    
+        year = pl.col(var.variable).dt.year()
+    
+        expr = pl.when(year < categories[0])
+        expr = expr.then(pl.lit(order[0]))
+    
+        for lower, upper, label in zip(categories[:-1], categories[1:], order[1:]):
+            expr = expr.when(year < upper).then(pl.lit(label))
+    
+        expr = expr.otherwise(pl.lit(order[-1]))
+    
+        return df.with_columns(expr.alias(var.variable)), order
+    
     else:
         raise Exception(f"Type {var.type} not implemented")
         
-        
+  
 def handle_nulls(df, var):
     if var.nulls == "remove":
         return df.filter(pl.col(var.variable).is_not_null())
@@ -258,18 +369,7 @@ def calculate_difference(category_df, pop_df, n_permutations=10000):
     return results
 
    
-def to_excel(wb, results, orders, GA, significance_level=0.05):
-    def format_percent(value):
-        return "-" if np.isnan(value) else f"{value:.1%}"
-
-    def format_percent_diff(value):
-        return "-" if np.isnan(value) else f"({value:+.1%})"
-
-    def format_value(value, round_value=False):
-        if value is None or not np.isfinite(value):
-            return "-"
-        return round(value) if round_value else value
-    
+def bias_to_excel(wb, results, orders, GA, significance_level=0.05):   
     ws = wb.create_sheet(title=f"GA {GA}")
 
     section_font = Font(size=14, bold=True, color="FFFFFF")

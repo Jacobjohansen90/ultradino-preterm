@@ -208,7 +208,7 @@ class Metrics():
     def reset(self):
         for cutoff in self.cutoffs:
             self.best_predictions[str(cutoff)].write_parquet(self.pred_path / f"validation/predictions_{cutoff}_fold_{self.fold}.parquet")        
-            self.best_df[str(cutoff)].write_parquet(self.pred_path / f"validation/df_{cutoff}_fold_{self.fold}.parquet")
+            self.best_df[str(cutoff)].write_parquet(self.pred_path / f"validation/image_preds_{cutoff}_fold_{self.fold}.parquet")
         self.best_score = {str(c): {'score': -float("inf"),
                                     'threshold': None,
                                     'epoch': -1,
