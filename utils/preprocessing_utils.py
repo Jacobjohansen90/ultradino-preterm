@@ -440,11 +440,16 @@ def apply_inclusion_exclusion(df, cfg):
             conditioned = condition(conditioned, df, criteria)
     
     return df, discards, conditioned
-    
 
+def merge_EHR(df, cfg):
+    bias_df = pl.read_csv(cfg.bias_variables, ignore_errors=True)
+    df = df.join(bias_df, how='left', left_on='CPR_CHILD', right_on='b_cpr')
+    return df
+   
 #%%Cervical length functions
 
 def get_CL(df, cfg):
+    #Get CL from segmentation
     required_cols = ['physical_delta_x', 'physical_delta_y', 
                      'region_location_min_x0', 'region_location_max_x1',
                      'region_location_min_y0', 'region_location_max_y1']
@@ -462,6 +467,13 @@ def get_CL(df, cfg):
                             unit="img"))
     
     df = df.with_columns(pl.Series("CL", results))
+    
+    # Get CL from manual readings
+    cl_df = pl.read_parquet(cfg.manual_cl)
+    cl_df = (cl_df.group_by(["CPR_MOTHER", "study_date"]).agg(pl.col("cervix_length").mean().alias("CL_manual"))
+             .select(["CPR_MOTHER", "study_date", "CL_manual"]))
+
+    df = df.join(cl_df, how="left", on=["CPR_MOTHER", "study_date"])
     
     return df
 

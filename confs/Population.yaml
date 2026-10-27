@@ -11,6 +11,8 @@ paths:
   train_cfg: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/criteria/AnyPreg.yaml
   test_cfg: /projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/criteria/FirstPreg.yaml
   cervix_preds: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/cervix_preds_v3.csv
+  manual_cl: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/CL_2009-2025.parquet
+  bias_variables: /projects/users/data/UCPH/DeepFetal/projects/preterm/Data/misc/bias_variables.csv
 
 population: 
   population_key: CPR_CHILD

@@ -201,7 +201,9 @@ class Metrics():
                                      pl.lit(best['tta']).alias('tta'),
                                      pl.lit(best["threshold"]).alias('threshold'),
                                      (pl.col("preds") >= best["threshold"])
-                                     .cast(pl.Int8).alias("preds_binary")]))
+                                     .cast(pl.Int8).alias("preds_binary"),
+                                     (pl.col("preds") + (0.5 - best["threshold"]))
+                                     .alias("preds_calibrated")]))
         
         self.test_preds[str(cutoff)].append(patient_df)
     
@@ -228,7 +230,6 @@ class Metrics():
             report = []
             for pop, pop_df in [("All Births", df), ("Non-treated", df.filter(~pl.col("treatment")))]:
                 #Get fold variability
-                
                 for fold in range(self.fold):
                     fold_df = pop_df.filter(pl.col("fold") == fold)
                     
@@ -282,7 +283,7 @@ class Metrics():
                 n_preterm = int(pop_df["label"].sum())
                 n_non_preterm = len(pop_df) - n_preterm
                 
-                preds = torch.tensor(pop_df["preds"].to_numpy(), dtype=torch.float32).to(self.device)
+                preds = torch.tensor(pop_df["preds_calibrated"].to_numpy(), dtype=torch.float32).to(self.device)
                 preds_binary = torch.tensor(pop_df["preds_binary"].to_numpy(), dtype=torch.float32).to(self.device)
                 labels = torch.tensor(pop_df["label"].to_numpy(), dtype=torch.int32).to(self.device)
                 

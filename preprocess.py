@@ -20,7 +20,8 @@ from utils.preprocessing_utils import (merge_population_tables,
                                        link_tables,
                                        make_train_test_split,
                                        sqlite_extractor,
-                                       get_CL)
+                                       get_CL,
+                                       merge_EHR)
 
 #%%Load variable YAML and setup logger and dirs
 cfg = OmegaConf.load('/projects/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/Population.yaml')
@@ -86,11 +87,12 @@ for incl_excl in['test', 'train']:
     
     
 
-    #Calculate cervix length for remaining images
+    #Get cervix length for remaining images
     df_temp = get_CL(df_temp, cfg)
 
-    #Make train/test split and save the data
+    df_temp = merge_EHR(df_temp, cfg)
 
+    #Make train/test split and save the data
     df_temp = make_train_test_split(df_temp, cfg, split=incl_excl)
     df_temp.write_parquet(cfg.paths.data_dir + f"{incl_excl}.parquet")
 
@@ -103,7 +105,7 @@ for incl_excl in['test', 'train']:
 df_train = pl.read_parquet(cfg.paths.data_dir + 'train.parquet')
 df_test = pl.read_parquet(cfg.paths.data_dir + 'test.parquet')
 
-cols_to_check=['CPR_MOTHER', 'CPR_CHILD']#, 'no_ocr_preprocessed_file_path']
+cols_to_check=['CPR_MOTHER', 'CPR_CHILD', 'no_ocr_preprocessed_file_path']
 
 for col in cols_to_check:
     overlap = (df_train.select(col).unique().join(df_test.select(col).unique(),
@@ -119,7 +121,6 @@ for col in cols_to_check:
 df_test.write_parquet(cfg.paths.data_dir + 'test.parquet')
 
     
-
 #%% Calculate stats
 
 """

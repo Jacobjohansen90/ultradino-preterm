@@ -22,17 +22,6 @@ def generate_insight(model_path, bias_cfg_path):
     save_path = Path(model_path)
     cfg = OmegaConf.load(bias_cfg_path)    
     
-    #Load and merge dataframes    
-
-    #Bias variables from EHR
-    bias_df = pl.read_csv(cfg.paths.bias_variables, ignore_errors=True)
-
-    #Manual cervix lengths    
-    cl_df = pl.read_parquet(cfg.paths.cl_manual)
-    cl_df = cl_df.filter(pl.col("GA-U").is_between(16, 24, closed="both"))
-    #Merge multiple cervix length measurements into one
-    cl_df = (cl_df.group_by(["CPR_MOTHER", "study_date"]).agg(pl.col("cervix_length").mean()))
-
     #Load test data
     files = sorted((Path(model_path) / "misc").glob("*.parquet"))
     test_dfs = [pl.read_parquet(file) for file in files]
@@ -45,12 +34,8 @@ def generate_insight(model_path, bias_cfg_path):
     #Make df per child, not per image
     test_df = test_df.unique(subset=["CPR_CHILD"])
     
-    #Merge
-    overall_df = test_df.join(cl_df, how='left', on=['CPR_MOTHER', 'study_date'])    
-    overall_df = overall_df.join(bias_df, how='left', left_on='CPR_CHILD', right_on='b_cpr')
-
     #Run bias analysis
-    bias_analysis(model_path + 'predictions', save_path, overall_df, cfg)
+    bias_analysis(model_path + 'predictions', save_path, test_df, cfg)
     
     #Run sub group analysis
     
@@ -62,23 +47,27 @@ def subgroup_analysis(preds_path, save_path, variable_df, variable_cfg):
             if path.name.endswith(".parquet"):
                 GA = path.stem.split("_")[-1]
                 predictions = pl.read_parquet(path)
-                df = predictions.join(variable_df, how='left', on='CPR_CHILD')
+                df_all = predictions.join(variable_df, how='left', on='CPR_CHILD')
+                df_CL = df_all.filter(pl.col("cervix_length").is_not_null())
+                                
+                results[GA] = {'Model': {},
+                               'CL': {},
+                               'Model (CL avaliable)': {}}
                 
-                
-                results[GA] = {}
-                
-                results[GA]['all'] = subgroup_metrics(variable_df, GA)                
+                results[GA]['Model']['All'] = subgroup_metrics(variable_df, GA)                
+                results[GA]['Model (CL avaliable)']['All'] = subgroup_metrics(variable_df, GA)                
                 
                 for subgroup in variable_cfg.subgroups:
                     var = subgroup["var"]
                     value = subgroup["value"]
                     name = subgroup["name"]
-                    temp_df = variable_df.filter(pl.col(var) == value)
+                    temp_df = variable_df.filter((pl.col("GA")//7 >= int(GA)) | (pl.col(var) == value))
                     results[GA][name] = subgroup_metrics(temp_df, GA)
 
 def subgroup_metrics(df, GA, n_bootstrap=10000):
     labels = df["label"].to_numpy().astype(int)
     preds = df["preds"].to_numpy()
+    preds_binary = df["preds_binary"].to_numpy()
 
     n_patients = df.height
     n_preterm = df.filter(pl.col("GA_weeks") < int(GA) * 7).height
