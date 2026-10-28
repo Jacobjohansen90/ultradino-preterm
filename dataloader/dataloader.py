@@ -143,12 +143,15 @@ class PreTermDataset(Dataset):
         c_sec_preg = data.get('c-section_during_birth')
         contrac = data.get('contractions_with_preterm_birth')
         induced = data.get('induced')
-
+        pprom = data.get('pprom')
+        
         for cutoff in self.cutoffs:
             mask = 0
             preterm = data.get('GA')//7 < cutoff
             
             if not preterm:
+                mask = 1
+            elif pprom:
                 mask = 1
             elif not induced and not c_sec:
                 mask = 1

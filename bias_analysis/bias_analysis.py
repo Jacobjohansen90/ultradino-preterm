@@ -37,7 +37,7 @@ def generate_insight(model_path, bias_cfg_path):
     bias_analysis(test_df, model_path, bias_cfg)
     
     #Run sub group analysis
-
+    subgroup_analysis(test_df, model_path, bias_cfg)
 
 
 def bias_analysis(variable_df, model_path, bias_cfg):    
@@ -66,7 +66,7 @@ def bias_analysis(variable_df, model_path, bias_cfg):
                                         
                     results[var.name][pop] = {}
                     
-                    var_df = pop_df.select(['CPR_CHILD', 'preds', 'preds_binary', 'preds_calibrated',
+                    var_df = pop_df.select(['CPR_CHILD', 'preds', 'preds_binary', 'preds_normalized',
                                             'label', 'threshold', var.variable])
                     var_df = var_df.filter(pl.col(var.variable).is_not_null())
 
@@ -86,16 +86,20 @@ def bias_analysis(variable_df, model_path, bias_cfg):
                         report['P (spec)'] = p_spec
                         results[var.name][pop][subgroup] = report
 
-            bias_wb = report_to_excel(bias_wb, results, orders, GA, 'Category', significance_pairs=significance_pairs)
+            bias_wb = report_to_excel(bias_wb, results, orders, f"GA {GA}", 'Category', significance_pairs=significance_pairs)
     bias_wb.save(Path(model_path) / "bias_analysis.xlsx")    
 
 def get_bias_metrics(df, overall_metrics=None):
     n = df.height
     n_preterm = df['label'].sum()
-
-    AUC = round(calculate_metrics(df, roc_auc_score, label_col='label', preds_col='preds_calibrated')['value'], 3)
-    sens = round(calculate_metrics(df, recall_score, label_col='label', preds_col='preds_binary')['value'], 3)
-    spec = round(calculate_metrics(df, specificity, label_col='label',  preds_col='preds_binary')['value'], 3)
+    
+    labels = df['label'].to_numpy()
+    preds = df['preds_normalized'].to_numpy()
+    preds_binary = df['preds_binary'].to_numpy()
+    
+    AUC = calculate_metrics(roc_auc_score, labels, preds)['value']
+    sens = calculate_metrics(recall_score, labels, preds_binary)['value']
+    spec = calculate_metrics(specificity, labels, preds_binary)['value']
 
 
     report = {'N': f"{n}",
@@ -138,11 +142,9 @@ def get_bias_metrics(df, overall_metrics=None):
         
         return report, None
 
-def calculate_metrics(df, metric, label_col='label', preds_col='preds', with_CI=False, n_bootstrap=10000):
-    labels = df[label_col].to_numpy().astype(bool)
-    preds = df[preds_col].to_numpy()
+def calculate_metrics(metric, labels, preds, with_CI=False, n_bootstrap=10000, n_digits=3):
     
-    results = {"value": metric(labels, preds)}
+    results = {"value": round(metric(labels, preds), n_digits)}
     
     if with_CI:
         rng = np.random.default_rng()
@@ -168,8 +170,8 @@ def calculate_metrics(df, metric, label_col='label', preds_col='preds', with_CI=
         else:
             ci_low, ci_high = np.nan, np.nan
 
-        results["ci_low"] = ci_low
-        results["ci_high"] = ci_high
+        results["ci_low"] = round(ci_low, n_digits)
+        results["ci_high"] = round(ci_high, n_digits)
 
     return results
             
@@ -276,90 +278,85 @@ def permutation_test(subgroup_df, pop_df, metric, preds_column='preds', n_permut
     return p_value
     
 
-def subgroup_analysis(preds_path, save_path, variable_df, variable_cfg):
+def subgroup_analysis(variable_df, model_path, variable_cfg):
         results = {}
-        for path in sorted(Path(preds_path).iterdir()):
+        for path in sorted((Path(model_path) / 'predictions/').iterdir()):
             if path.name.endswith(".parquet"):
                 GA = path.stem.split("_")[-1]
+
+                inclusion = ((pl.col("GA") // 7 >= int(GA))
+                             | (~pl.col("induced") & ~pl.col("c-section"))
+                             | pl.col("pprom")
+                             | (pl.col("c-section") & (pl.col("c-section_during_birth") 
+                                                       | pl.col("contractions_with_preterm_birth")) & ~pl.col("induced")))
+                
                 predictions = pl.read_parquet(path)
                 df_all = predictions.join(variable_df, how='left', on='CPR_CHILD')
+                df_all = (df_all.filter(inclusion).with_columns((pl.col("GA") // 7 < int(GA)).alias("preterm")))
                 df_CL = df_all.filter(pl.col("CL_manual").is_not_null())
                 
-                for pop, pop_df in [('All patients', df_all), ('Non-treated'), df_all.filter(~pl.col("treatment"))]:
+                results[GA] = {}
+                
+                for pop, pop_df in [('All patients', df_all), ('Non-treated', df_all.filter(~pl.col("treatment")))]:
                     report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL=None)
                     results[GA][f"Model - {pop}"] = report
                     
                 
-                for pop, pop_df in [('All patients', df_CL), ('Non-treated'), df_CL.filter(~pl.col("treatment"))]:
+                for pop, pop_df in [('All patients', df_CL), ('Non-treated', df_CL.filter(~pl.col("treatment")))]:
                     report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL="CL_manual")
                     results[GA][f"CL - {pop}"] = report
                     
                     report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL=None)
                     results[GA][f"Model (CL Avaliable) - {pop}"] = report
+        
+        orders = {ga: ["All"] + [subgroup.name for subgroup in variable_cfg.subgroups] for ga in results}
+        wb = Workbook()
+        wb.remove(wb.active)
+        wb = report_to_excel(wb , results, orders, 'Subgroup Analysis', 'Subgroup')
+        wb.save(Path(model_path) / "subgroup_analysis.xlsx")    
                 
-                
-                for subgroup in variable_cfg.subgroups:
-                    var = subgroup["var"]
-                    value = subgroup["value"]
-                    name = subgroup["name"]
-                    temp_df = variable_df.filter((pl.col("GA")//7 >= int(GA)) | (pl.col(var) == value))
-                    results[GA][name] = subgroup_metrics(temp_df, GA)
 
-def subgroup_metrics(df, GA, n_bootstrap=10000):
-    labels = df["label"].to_numpy().astype(int)
-    preds = df["preds"].to_numpy()
-    preds_binary = df["preds_binary"].to_numpy()
+def get_subgroup_metrics(df, variables, CL=None, n_bootstrap=10000):
+    results = {}
+    subgroups = [{"name": "All", "var": None, "value": None},
+                 *[dict(var) for var in variables]]
+    
+    for subgroup in subgroups:
+        name = subgroup["name"]
+        var = subgroup["var"]
+        value = subgroup["value"]
+    
+        if var is None:
+            subgroup_df = df
+        else:
+            subgroup_df = df.filter((pl.col("label") == 1) | (pl.col(var) == value))
+    
+    
+        labels = subgroup_df["label"].to_numpy().astype(int)
+        
+        if CL is None:
+            preds = subgroup_df["preds_normalized"].to_numpy()
+            preds_binary = subgroup_df["preds_binary"].to_numpy()
+        else:
+            preds = -subgroup_df[CL].to_numpy()
+            preds_binary = (subgroup_df[CL] < 25).to_numpy()
+        
+        AUC = calculate_metrics(roc_auc_score, labels, preds, with_CI=True)
+        Sens = calculate_metrics(recall_score, labels, preds_binary, with_CI=True)
+        Spec = calculate_metrics(specificity, labels, preds_binary, with_CI=True)
+        
+        results[name] = {'AUC': f"{AUC['value']} ({AUC['ci_low']}-{AUC['ci_high']})",
+                         'Sensitivity': f"{Sens['value']:.1%} ({Sens['ci_low']:.1%}-{Sens['ci_high']:.1%})",
+                         'Specificity': f"{Spec['value']:.1%} ({Spec['ci_low']:.1%}-{Spec['ci_high']:.1%})",
+                         'N': f"{subgroup_df.height}",
+                         'N Preterm': f"{labels.sum()}"}
 
-    n_patients = df.height
-    n_preterm = df.filter(pl.col("GA_weeks") < int(GA) * 7).height
-
-    # Point estimates
-    auc = roc_auc_score(labels, preds)
-
-    fpr, tpr, thresholds = roc_curve(labels, preds)
-    valid = np.where(1 - fpr >= 0.85)[0]
-    idx = valid[np.argmax(tpr[valid])]
-    sens_at_85_spec = tpr[idx]
-
-    # Bootstrap confidence intervals
-    rng = np.random.default_rng()
-    boot_auc = []
-    boot_sens = []
-    n = len(labels)
-
-    for _ in range(n_bootstrap):
-        idx = rng.integers(0, n, size=n)
-        y = labels[idx]
-        p = preds[idx]
-
-        # AUC requires both classes
-        if np.unique(y).size < 2:
-            continue
-
-        boot_auc.append(roc_auc_score(y, p))
-
-        fpr_b, tpr_b, _ = roc_curve(y, p)
-        valid_b = np.where(1 - fpr_b >= 0.85)[0]
-
-        if len(valid_b):
-            best_idx = valid_b[np.argmax(tpr_b[valid_b])]
-            boot_sens.append(tpr_b[best_idx])
-
-    auc_ci = np.percentile(boot_auc, [2.5, 97.5])
-    sens_ci = np.percentile(boot_sens, [2.5, 97.5])
-
-    return {"n_patients": n_patients,
-            "n_preterm": n_preterm,
-            "AUC": auc,
-            "AUC_ci_low": auc_ci[0],
-            "AUC_ci_high": auc_ci[1],
-            "SensAtSpec": sens_at_85_spec,
-            "SensAtSpec_ci_low": sens_ci[0],
-            "SensAtSpec_ci_high": sens_ci[1]}   
+    return results
+    
    
-def report_to_excel(wb, results, orders, GA, subgroup_name, 
+def report_to_excel(wb, results, orders, title, subgroup_name, 
                     significance_level=0.05, significance_pairs=None):
-    ws = wb.create_sheet(title=f"GA {GA}")
+    ws = wb.create_sheet(title=title)
 
     section_font = Font(size=14, bold=True, color="FFFFFF")
     header_font = Font(bold=True)

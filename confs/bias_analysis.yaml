@@ -7,6 +7,9 @@ subgroups:
   - name: PPROM
     var: pprom
     value: True
+  - name: C-section
+    var: c-section
+    value: True
 
 #For binary, the categories correspond to [True, False]
 bias_variables: 
