@@ -30,11 +30,12 @@ def generate_insight(model_path, bias_cfg_path):
     test_df = test_df.with_columns(((pl.col("physical_delta_x").list.mean() +
                                      pl.col("physical_delta_y").list.mean()) / 2 * 10000).alias("physical_delta"))
                                    
-    #Make df per child, not per image
-    test_df = test_df.unique(subset=["CPR_CHILD"])
+    #Make df per child, not per image. Avg physical_delta
+    test_df = test_df.group_by("CPR_CHILD").agg([pl.all().exclude(["CPR_CHILD", "physical_delta"]).first(),
+                                                 pl.col("physical_delta").mean()])
     
     #Run bias analysis
-    #bias_analysis(test_df, model_path, bias_cfg)
+    bias_analysis(test_df, model_path, bias_cfg)
     
     #Run sub group analysis
     subgroup_analysis(test_df, model_path, bias_cfg)
@@ -300,8 +301,8 @@ def subgroup_analysis(variable_df, model_path, variable_cfg):
                 df_CL = df_all.filter(pl.col("CL_manual").is_not_null())
                 
                 results['Model'] = {}
-                results['CL'] = {}
-                results['Model (CL Avaliable)'] = {}
+                results['Cervical Length'] = {}
+                results['Model (CL Available)'] = {}
                 
                 for pop, pop_df in [('All patients', df_all), ('Non-treated', df_all.filter(~pl.col("treatment")))]:
                     report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL=None)
@@ -309,10 +310,10 @@ def subgroup_analysis(variable_df, model_path, variable_cfg):
                                     
                 for pop, pop_df in [('All patients', df_CL), ('Non-treated', df_CL.filter(~pl.col("treatment")))]:
                     report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL="CL_manual")
-                    results['CL'][pop] = report
+                    results['Cervical Length'][pop] = report
                     
                     report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL=None)
-                    results['Model (CL Avaliable)'][pop] = report
+                    results['Model (CL Available)'][pop] = report
                     
                 orders = {model: ["All"] + [subgroup.name for subgroup in variable_cfg.subgroups] for model in results}
                 wb = report_to_excel(wb , results, orders, f"GA {GA}", 'Subgroup')
@@ -519,20 +520,14 @@ def report_to_excel(wb, results, orders, title, subgroup_name,
                 for c in range(start_col, end_col + 1):
                     cell = ws.cell(row=r, column=c)
 
-                    cell.border = Border(
-                        left=thick_side if c == start_col else thin_side,
-                        right=thick_side if c == end_col else thin_side,
-                        top=thick_side if r == section_start_row else thin_side,
-                        bottom=thick_side if r == section_end_row else thin_side
-                    )
+                    cell.border = Border(left=thick_side if c == start_col else thin_side,
+                                         right=thick_side if c == end_col else thin_side,
+                                         top=thick_side if r == section_start_row else thin_side,
+                                         bottom=thick_side if r == section_end_row else thin_side)
 
     # Adjust column widths
     for column in ws.columns:
-        max_length = max(
-            len(str(cell.value)) if cell.value is not None else 0
-            for cell in column
-        )
-
+        max_length = max(len(str(cell.value)) if cell.value is not None else 0 for cell in column)
         column_letter = get_column_letter(column[0].column)
         ws.column_dimensions[column_letter].width = max_length + 2
 
