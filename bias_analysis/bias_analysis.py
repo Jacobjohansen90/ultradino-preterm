@@ -39,6 +39,8 @@ def generate_insight(model_path, bias_cfg_path):
     #Run sub group analysis
     subgroup_analysis(test_df, model_path, bias_cfg)
 
+    #Generate histograms
+    
 
 def bias_analysis(variable_df, model_path, bias_cfg):    
     bias_wb = Workbook()
@@ -330,7 +332,7 @@ def get_subgroup_metrics(df, variables, CL=None, n_bootstrap=10000):
         if var is None:
             subgroup_df = df
         else:
-            subgroup_df = df.filter((pl.col("label") == 1) | (pl.col(var) == value))
+            subgroup_df = df.filter((pl.col("label") == 0) | (pl.col(var) == value))
     
     
         labels = subgroup_df["label"].to_numpy().astype(int)

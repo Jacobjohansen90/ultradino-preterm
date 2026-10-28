@@ -41,7 +41,8 @@ for fold in range(cfg.data.folds):
 
     optimizer = get_optimizer(model, cfg)
     scheduler = get_cosine_schedule_with_warmup(optimizer, cfg)
-    
+    Loss.reset_weight()
+
     for epoch in range(cfg.training.epochs):
         update_freezing(model, epoch, cfg)
         model.train()
@@ -78,7 +79,7 @@ for fold in range(cfg.data.folds):
             metrics.log_epoch(train_loss, val_loss)
 
             torch.save(model.state_dict(), f"{save_path}/weights/fold_{fold}/{str(epoch+1).zfill(3)}.pth")        
-    
+        Loss.update_weight()
     best_epoch = metrics.get_best_epoch()
     
     for cutoff in cfg.tasks.preterm.cutoffs:
@@ -98,4 +99,5 @@ for fold in range(cfg.data.folds):
     metrics.reset()
             
 metrics.log_model()
+
 

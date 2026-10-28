@@ -12,6 +12,8 @@ class ModelLoss():
     def __init__(self, cfg):
         self.loss_fns = get_loss(cfg)
         self.device = cfg.device.type
+        self.pos_weight = cfg.tasks.preterm.pos_weight
+        self.pos_weight_multiplier = cfg.tasks.preterm.pos_weight_multiplier
         tasks = {}
 
         for task_name, task_cfg in cfg.tasks.items():
@@ -88,6 +90,11 @@ class ModelLoss():
         else:
             return labels != mask_value
     
+    def update_weight(self):
+        self.loss_fns['preterm'].pos_weight.mul_(self.pos_weight_multiplier)
+    
+    def reset_weight(self):
+        self.loss_fns['preterm'].pos_weight.copy_(self.pos_weight)
     
 class DiceLoss(torch.nn.Module):
     def __init__(self, smooth=1.0):

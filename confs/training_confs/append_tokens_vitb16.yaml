@@ -21,6 +21,7 @@ tasks:
     weights: 1 #List of same length as cutoffs or int applied to all cutoffs
     label_smoothing_value: 2 #0 = No label smoothing
     pos_weight: 1
+    pos_weight_multiplier: 1.03
   aux_tasks:
     - var: CL
       loss: l2
