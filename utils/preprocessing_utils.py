@@ -469,7 +469,7 @@ def get_CL(df, cfg):
     df = df.with_columns(pl.Series("CL", results))
     
     # Get CL from manual readings
-    cl_df = pl.read_parquet(cfg.manual_cl)
+    cl_df = pl.read_parquet(cfg.paths.manual_cl)
     cl_df = (cl_df.group_by(["CPR_MOTHER", "study_date"]).agg(pl.col("cervix_length").mean().alias("CL_manual"))
              .select(["CPR_MOTHER", "study_date", "CL_manual"]))
 
