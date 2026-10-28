@@ -33,15 +33,11 @@ bias_variables:
     type: interval
     categories: [25]
     nulls: remove
-  - name: Physical Delta
-    variable: physical_delta
-    type: interval
-    categories: [95, 105, 117, 134]
-    nulls: remove
   - name: Study date
     variable: study_date
     type: year_interval
     categories: [2014, 2019]
+    nulls: remove
   - name: GA at scan
     variable: GA_at_scan
     type: interval
