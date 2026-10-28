@@ -34,7 +34,7 @@ def generate_insight(model_path, bias_cfg_path):
     test_df = test_df.unique(subset=["CPR_CHILD"])
     
     #Run bias analysis
-    bias_analysis(test_df, model_path, bias_cfg)
+    #bias_analysis(test_df, model_path, bias_cfg)
     
     #Run sub group analysis
     subgroup_analysis(test_df, model_path, bias_cfg)
@@ -295,17 +295,20 @@ def subgroup_analysis(variable_df, model_path, variable_cfg):
                 df_all = (df_all.filter(inclusion).with_columns((pl.col("GA") // 7 < int(GA)).alias("preterm")))
                 df_CL = df_all.filter(pl.col("CL_manual").is_not_null())
                 
+                results['Model'] = {}
+                results['CL'] = {}
+                results['Model (CL Avaliable)'] = {}
                 
                 for pop, pop_df in [('All patients', df_all), ('Non-treated', df_all.filter(~pl.col("treatment")))]:
                     report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL=None)
-                    results['Model'] = {pop: report}
+                    results['Model'][pop] = report
                                     
                 for pop, pop_df in [('All patients', df_CL), ('Non-treated', df_CL.filter(~pl.col("treatment")))]:
                     report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL="CL_manual")
-                    results['CL'] = {pop: report}
+                    results['CL'][pop] = report
                     
                     report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL=None)
-                    results['Model (CL Avaliable)'] = {pop: report}
+                    results['Model (CL Avaliable)'][pop] = report
                     
         orders = {model: ["All"] + [subgroup.name for subgroup in variable_cfg.subgroups] for model in results}
         wb = Workbook()
