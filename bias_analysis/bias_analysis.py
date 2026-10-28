@@ -11,7 +11,7 @@ from omegaconf import OmegaConf, ListConfig
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
-from sklearn.metrics import roc_auc_score, roc_curve
+from sklearn.metrics import roc_auc_score, recall_score, confusion_matrix
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
@@ -19,8 +19,7 @@ from openpyxl.utils import get_column_letter
 
 def generate_insight(model_path, bias_cfg_path):
     #Setup
-    save_path = Path(model_path)
-    cfg = OmegaConf.load(bias_cfg_path)    
+    bias_cfg = OmegaConf.load(bias_cfg_path)    
     
     #Load test data
     files = sorted((Path(model_path) / "misc").glob("*.parquet"))
@@ -35,93 +34,19 @@ def generate_insight(model_path, bias_cfg_path):
     test_df = test_df.unique(subset=["CPR_CHILD"])
     
     #Run bias analysis
-    bias_analysis(model_path + 'predictions', save_path, test_df, cfg)
+    bias_analysis(test_df, model_path, bias_cfg)
     
     #Run sub group analysis
-    
-    
-    
-def subgroup_analysis(preds_path, save_path, variable_df, variable_cfg):
-        results = {}
-        for path in sorted(Path(preds_path).iterdir()):
-            if path.name.endswith(".parquet"):
-                GA = path.stem.split("_")[-1]
-                predictions = pl.read_parquet(path)
-                df_all = predictions.join(variable_df, how='left', on='CPR_CHILD')
-                df_CL = df_all.filter(pl.col("cervix_length").is_not_null())
-                                
-                results[GA] = {'Model': {},
-                               'CL': {},
-                               'Model (CL avaliable)': {}}
-                
-                results[GA]['Model']['All'] = subgroup_metrics(variable_df, GA)                
-                results[GA]['Model (CL avaliable)']['All'] = subgroup_metrics(variable_df, GA)                
-                
-                for subgroup in variable_cfg.subgroups:
-                    var = subgroup["var"]
-                    value = subgroup["value"]
-                    name = subgroup["name"]
-                    temp_df = variable_df.filter((pl.col("GA")//7 >= int(GA)) | (pl.col(var) == value))
-                    results[GA][name] = subgroup_metrics(temp_df, GA)
-
-def subgroup_metrics(df, GA, n_bootstrap=10000):
-    labels = df["label"].to_numpy().astype(int)
-    preds = df["preds"].to_numpy()
-    preds_binary = df["preds_binary"].to_numpy()
-
-    n_patients = df.height
-    n_preterm = df.filter(pl.col("GA_weeks") < int(GA) * 7).height
-
-    # Point estimates
-    auc = roc_auc_score(labels, preds)
-
-    fpr, tpr, thresholds = roc_curve(labels, preds)
-    valid = np.where(1 - fpr >= 0.85)[0]
-    idx = valid[np.argmax(tpr[valid])]
-    sens_at_85_spec = tpr[idx]
-
-    # Bootstrap confidence intervals
-    rng = np.random.default_rng()
-    boot_auc = []
-    boot_sens = []
-    n = len(labels)
-
-    for _ in range(n_bootstrap):
-        idx = rng.integers(0, n, size=n)
-        y = labels[idx]
-        p = preds[idx]
-
-        # AUC requires both classes
-        if np.unique(y).size < 2:
-            continue
-
-        boot_auc.append(roc_auc_score(y, p))
-
-        fpr_b, tpr_b, _ = roc_curve(y, p)
-        valid_b = np.where(1 - fpr_b >= 0.85)[0]
-
-        if len(valid_b):
-            best_idx = valid_b[np.argmax(tpr_b[valid_b])]
-            boot_sens.append(tpr_b[best_idx])
-
-    auc_ci = np.percentile(boot_auc, [2.5, 97.5])
-    sens_ci = np.percentile(boot_sens, [2.5, 97.5])
-
-    return {"n_patients": n_patients,
-            "n_preterm": n_preterm,
-            "AUC": auc,
-            "AUC_ci_low": auc_ci[0],
-            "AUC_ci_high": auc_ci[1],
-            "SensAtSpec": sens_at_85_spec,
-            "SensAtSpec_ci_low": sens_ci[0],
-            "SensAtSpec_ci_high": sens_ci[1]}
 
 
-def bias_analysis(preds_path, save_path, variable_df, variable_cfg):    
+
+def bias_analysis(variable_df, model_path, bias_cfg):    
     bias_wb = Workbook()
     bias_wb.remove(bias_wb.active)
     
-    for path in sorted(Path(preds_path).iterdir()):
+    significance_pairs = [("P (sens)", "Sensitivity"), ("P (spec)", "Specificity")]
+    
+    for path in sorted((Path(model_path) / 'predictions/').iterdir()):
         if path.name.endswith(".parquet"):
             GA = path.stem.split("_")[-1]
             predictions = pl.read_parquet(path)
@@ -129,97 +54,128 @@ def bias_analysis(preds_path, save_path, variable_df, variable_cfg):
             df = predictions.join(variable_df, how='left', on='CPR_CHILD')
             results = {}
             orders = {}
-            for var in tqdm(variable_cfg.bias_variables, desc=f"Processing Variables, GA {GA}"):
+            for var in tqdm(bias_cfg.bias_variables, desc=f"Processing Variables, GA {GA}"):
                 if isinstance(var.variable, (list, ListConfig)):
                     df = df.with_columns(pl.coalesce([pl.col(var.variable[0]), pl.col(var.variable[1])])
                                          .alias(var.variable[0]))
                     var.variable = var.variable[0]
-        
+
                 results[var.name] = {}
-        
+                
                 for pop, pop_df in [("All Births", df), ("Non-treated", df.filter(~pl.col("treatment")))]:
-        
-                    var_df = pop_df.select(['CPR_CHILD', 'preds', 'preds_binary', 'label', 'threshold', var.variable])
-        
-                    var_df = handle_nulls(var_df, var)
-                    var_df, order = categorize_variable(var_df, var)
-
+                                        
                     results[var.name][pop] = {}
-                    results[var.name][pop]["Overall"] = calculate_metrics(var_df)
+                    
+                    var_df = pop_df.select(['CPR_CHILD', 'preds', 'preds_binary', 'preds_calibrated',
+                                            'label', 'threshold', var.variable])
+                    var_df = var_df.filter(pl.col(var.variable).is_not_null())
 
-                    for category_df in var_df.partition_by(var.variable, maintain_order=True):
-                        category = category_df[var.variable][0]
-                        results[var.name][pop][category] = calculate_metrics(category_df, var_df)
+                    var_df, order = categorize_variable(var_df, var)
                     orders[var.name] = ['Overall'] + order
-            bias_wb = bias_to_excel(bias_wb, results, orders, GA)
-    bias_wb.save(Path(save_path) / "bias_analysis.xlsx")
+
+                    report, overall_metrics = get_bias_metrics(var_df)     
+
+                    results[var.name][pop]['Overall'] = report
+                    
+                    for subgroup_df in var_df.partition_by(var.variable, maintain_order=True):
+                        subgroup = subgroup_df[var.variable][0]
+                        report, _ = get_bias_metrics(subgroup_df, overall_metrics)
+                        p_sens = permutation_test(subgroup_df, pop_df, recall_score, preds_column='preds_binary')
+                        p_spec = permutation_test(subgroup_df, pop_df, specificity, preds_column='preds_binary')
+                        report['P (sens)'] = p_sens
+                        report['P (spec)'] = p_spec
+                        results[var.name][pop][subgroup] = report
+
+            bias_wb = report_to_excel(bias_wb, results, orders, GA, 'Category', significance_pairs=significance_pairs)
+    bias_wb.save(Path(model_path) / "bias_analysis.xlsx")    
+
+def get_bias_metrics(df, overall_metrics=None):
+    n = df.height
+    n_preterm = df['label'].sum()
+
+    AUC = round(calculate_metrics(df, roc_auc_score, label_col='label', preds_col='preds_calibrated')['value'], 3)
+    sens = round(calculate_metrics(df, recall_score, label_col='label', preds_col='preds_binary')['value'], 3)
+    spec = round(calculate_metrics(df, specificity, label_col='label',  preds_col='preds_binary')['value'], 3)
 
 
-def calculate_metrics(df, pop_df=None, n_permutations=10000):
-    labels = df["label"].to_numpy().astype(bool)
-    preds = df["preds"].to_numpy()
-    preds_binary = df["preds_binary"].to_numpy().astype(bool)
+    report = {'N': f"{n}",
+               'Preterm': f"{n_preterm}",
+               'AUC': f"{AUC:.3f}",
+               'Sensitivity': f"{100*sens:.1f}%",
+               'Missed / 100k': '-',
+               'P (sens)': '-',
+               'Specificity': f"{100*spec:.1f}%",
+               'Extra FP / 100k': '-',
+               'P (spec)': '-'}
 
-    n = len(labels)
-    n_preterm = labels.sum()
-    n_term = n - n_preterm
-
-    tp = np.sum(preds_binary & labels)
-    tn = np.sum(~preds_binary & ~labels)
-
-    N = f"{n}"
-    N_preterm = f"{n_preterm}" 
-    sens = f"{round(100*tp / n_preterm, 1) if n_preterm else np.nan}"
-    spec = f"{round(100*tn / n_term, 1) if n_term else np.nan}"
-    AUC = f"{round(roc_auc_score(labels, preds), 3) if n_preterm and n_term else np.nan}"
-    sens_p = '-'
-    spec_p = '-'
-    missed = '-'
-    extra = '-'
+    if overall_metrics is None:
     
-    if pop_df is not None:
-        result = calculate_difference(df, pop_df, n_permutations=n_permutations)
-        N += f" ({round(100*n/len(pop_df), 1)}%)"
-        N_preterm += f" ({round(100*n_preterm/pop_df['label'].sum(), 1)}%)"
-        sens += f" ({round(100*result['sens']['difference'], 1)}%)"
-        sens_p = f"{round(result['sens']['p_value'], 3)}"
-        spec += f" ({round(100*result['spec']['difference'], 1)}%)"
-        spec_p = f"{round(result['spec']['p_value'], 3)}"
-        AUC += f" ({round(result['AUC']['difference'], 3)})"
-        
-        # Missed preterms per 100,000 births relative to overall sensitivity
-        overall_labels = pop_df["label"].to_numpy().astype(bool)
-        overall_preds_binary = pop_df["preds_binary"].to_numpy().astype(bool)
-        
-        overall_n = len(overall_labels)
-        overall_n_preterm = overall_labels.sum()
-        overall_n_term = overall_n - overall_n_preterm
-        
-        overall_tp = np.sum(overall_preds_binary & overall_labels)
-        overall_tn = np.sum(~overall_preds_binary & ~overall_labels)
-        
-        overall_sens = overall_tp / overall_n_preterm if overall_n_preterm else np.nan
-        overall_spec = overall_tn / overall_n_term if overall_n_term else np.nan
-        
-        category_prevalence = n_preterm / n if n else np.nan
-        overall_prevalence = overall_n_preterm / overall_n if overall_n else np.nan
-        
-        if n and np.isfinite(overall_sens) and np.isfinite(overall_prevalence):
-            missed = round(100000 * category_prevalence * (overall_sens - tp / n_preterm)) if n_preterm else "-"
-        
-        if n and np.isfinite(overall_spec) and n_term:
-            extra = round(100000 * (1 - category_prevalence) * ((1 - tn / n_term) - (1 - overall_spec)))
-    results = {"N": f"{N}",
-               "Preterm": f"{N_preterm}",
-               "AUC": AUC,
-               "Sensitivity": sens,
-               "Missed / 100k": missed,
-               "P (sens)": sens_p,
-               "Specificity": spec,
-               "Extra FP / 100k": extra,
-               "P (Spec)": spec_p}
+        metrics = {'n': n,
+                   'preterm': n_preterm,
+                   'auc': AUC,
+                   'sens': sens,
+                   'spec': spec}
+
+        return report, metrics
+
+    else:
+        # Differences relative to Overall
+        report['N'] = f"{n} ({100 * n / overall_metrics['n']:.1f}%)"
+        report['Preterm'] = f"{n_preterm} ({100 * n_preterm / overall_metrics['n_preterm']:.1f}%)"
+        report['AUC'] += f" ({AUC - overall_metrics['auc']:+.3f})"
+        report['Sensitivity'] += f" ({100 * (sens - overall_metrics['sens']):+.1f}%)"
+        report['Specificity'] += f" ({100 * (spec - overall_metrics['spec']):+.1f}%)"
     
+        subgroup_fraction = n / overall_metrics['n']
+        preterm_prevalence = n_preterm / n if n else 0
+
+        missed = 100_000 * subgroup_fraction * preterm_prevalence * (overall_metrics['sens'] - sens)
+
+        extra_fp = 100_000 * subgroup_fraction * (1 - preterm_prevalence) * (overall_metrics['spec'] - spec)
+
+        report['Missed / 100k'] = f"{missed:+.1f}"
+        report['Extra FP / 100k'] = f"{extra_fp:+.1f}"
+        
+        return report, None
+
+def calculate_metrics(df, metric, label_col='label', preds_col='preds', with_CI=False, n_bootstrap=10000):
+    labels = df[label_col].to_numpy().astype(bool)
+    preds = df[preds_col].to_numpy()
+    
+    results = {"value": metric(labels, preds)}
+    
+    if with_CI:
+        rng = np.random.default_rng()
+        n = len(labels)
+        bootstrap_scores = []
+
+        for _ in range(n_bootstrap):
+            idx = rng.choice(n, size=n, replace=True)
+
+            boot_labels = labels[idx]
+            boot_preds = preds[idx]
+
+            # Skip samples where the metric cannot be calculated
+            try:
+                score = metric(boot_labels, boot_preds)
+                if np.isfinite(score):
+                    bootstrap_scores.append(score)
+            except (ValueError, ZeroDivisionError):
+                continue
+
+        if bootstrap_scores:
+            ci_low, ci_high = np.percentile(bootstrap_scores, [2.5, 97.5])
+        else:
+            ci_low, ci_high = np.nan, np.nan
+
+        results["ci_low"] = ci_low
+        results["ci_high"] = ci_high
+
     return results
+            
+def specificity(y_true, y_pred):
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
+    return tn / (tn + fp)           
 
 
 def categorize_variable(df, var):
@@ -294,78 +250,115 @@ def categorize_variable(df, var):
     
     else:
         raise Exception(f"Type {var.type} not implemented")
-        
-  
-def handle_nulls(df, var):
-    if var.nulls == "remove":
-        return df.filter(pl.col(var.variable).is_not_null())
 
-    elif var.nulls == "keep":
-        return df
 
-    else:
-        raise ValueError(f"Unknown null handling '{var.nulls}'\n"
-                         "for variable '{var.name}'")
-        
-        
-def calculate_difference(category_df, pop_df, n_permutations=10000):
+def permutation_test(subgroup_df, pop_df, metric, preds_column='preds', n_permutations=10000):
     rng = np.random.default_rng()
-    results = {}
+    
+    overall_labels = pop_df['label'].to_numpy()
+    overall_preds = pop_df[preds_column].to_numpy()
+    
+    overall_metric = metric(overall_labels, overall_preds)
+    subgroup_metric = metric(subgroup_df['label'], subgroup_df[preds_column])
+    n_subgroup = subgroup_df.height
+    
+    observed_diff = overall_metric - subgroup_metric
+    
+    diffs = np.empty(n_permutations)
+    
+    for i in range(n_permutations):
+        indices = rng.choice(pop_df.height, size=n_subgroup, replace=False)
+        permuted_metric = metric(overall_labels[indices], overall_preds[indices])
+        diffs[i] = overall_metric - permuted_metric
+    
+    p_value = (1 + np.sum(np.abs(diffs) >= abs(observed_diff))) / (n_permutations + 1)
+    
+    return p_value
+    
 
-    in_category = pop_df["CPR_CHILD"].is_in(category_df["CPR_CHILD"].implode()).to_numpy()
+def subgroup_analysis(preds_path, save_path, variable_df, variable_cfg):
+        results = {}
+        for path in sorted(Path(preds_path).iterdir()):
+            if path.name.endswith(".parquet"):
+                GA = path.stem.split("_")[-1]
+                predictions = pl.read_parquet(path)
+                df_all = predictions.join(variable_df, how='left', on='CPR_CHILD')
+                df_CL = df_all.filter(pl.col("CL_manual").is_not_null())
+                
+                for pop, pop_df in [('All patients', df_all), ('Non-treated'), df_all.filter(~pl.col("treatment"))]:
+                    report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL=None)
+                    results[GA][f"Model - {pop}"] = report
+                    
+                
+                for pop, pop_df in [('All patients', df_CL), ('Non-treated'), df_CL.filter(~pl.col("treatment"))]:
+                    report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL="CL_manual")
+                    results[GA][f"CL - {pop}"] = report
+                    
+                    report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL=None)
+                    results[GA][f"Model (CL Avaliable) - {pop}"] = report
+                
+                
+                for subgroup in variable_cfg.subgroups:
+                    var = subgroup["var"]
+                    value = subgroup["value"]
+                    name = subgroup["name"]
+                    temp_df = variable_df.filter((pl.col("GA")//7 >= int(GA)) | (pl.col(var) == value))
+                    results[GA][name] = subgroup_metrics(temp_df, GA)
 
-    # Subgroup AUC using continuous predictions
-    subgroup_labels = category_df["label"].to_numpy().astype(bool)
-    subgroup_preds = category_df["preds"].to_numpy()
-    
-    overall_labels = pop_df["label"].to_numpy().astype(bool)
-    overall_preds = pop_df["preds"].to_numpy()
-    
-    subgroup_auc = (roc_auc_score(subgroup_labels, subgroup_preds)
-                    if len(np.unique(subgroup_labels)) == 2 else np.nan)
-    
-    overall_auc = (roc_auc_score(overall_labels, overall_preds)
-                   if len(np.unique(overall_labels)) == 2 else np.nan)
-    
-    results["AUC"] = {"difference": subgroup_auc - overall_auc
-                      if np.isfinite(subgroup_auc) and np.isfinite(overall_auc)
-                      else np.nan}
+def subgroup_metrics(df, GA, n_bootstrap=10000):
+    labels = df["label"].to_numpy().astype(int)
+    preds = df["preds"].to_numpy()
+    preds_binary = df["preds_binary"].to_numpy()
 
-    for metric, label_value in [("sens", True), ("spec", False)]:
-        labels = pop_df["label"].to_numpy().astype(bool)
-        preds = pop_df["preds_binary"].to_numpy().astype(bool)
-    
-        mask = labels == label_value
-    
-        subgroup = preds[mask & in_category]
-        overall = preds[mask]
-    
-        if len(subgroup) == 0 or len(overall) == 0:
-            results[metric] = {"difference": np.nan,
-                               "p_value": np.nan}
+    n_patients = df.height
+    n_preterm = df.filter(pl.col("GA_weeks") < int(GA) * 7).height
+
+    # Point estimates
+    auc = roc_auc_score(labels, preds)
+
+    fpr, tpr, thresholds = roc_curve(labels, preds)
+    valid = np.where(1 - fpr >= 0.85)[0]
+    idx = valid[np.argmax(tpr[valid])]
+    sens_at_85_spec = tpr[idx]
+
+    # Bootstrap confidence intervals
+    rng = np.random.default_rng()
+    boot_auc = []
+    boot_sens = []
+    n = len(labels)
+
+    for _ in range(n_bootstrap):
+        idx = rng.integers(0, n, size=n)
+        y = labels[idx]
+        p = preds[idx]
+
+        # AUC requires both classes
+        if np.unique(y).size < 2:
             continue
-        
-        overall_mean = overall.mean()
-    
-        observed_diff = subgroup.mean() - overall_mean
-        if metric == "spec":
-            observed_diff = -observed_diff
-        n_subgroup = len(subgroup)
-        permuted_diffs = np.empty(n_permutations)
-    
-        for i in range(n_permutations):
-            shuffled = rng.permutation(overall)
-            permuted_diffs[i] = (shuffled[:n_subgroup].mean() - overall_mean)
-    
-        p_value = (1 + np.sum(np.abs(permuted_diffs) >= abs(observed_diff))) / (n_permutations + 1)
 
-        results[metric] = {"difference": observed_diff,
-                           "p_value": p_value}
-    
-    return results
+        boot_auc.append(roc_auc_score(y, p))
 
+        fpr_b, tpr_b, _ = roc_curve(y, p)
+        valid_b = np.where(1 - fpr_b >= 0.85)[0]
+
+        if len(valid_b):
+            best_idx = valid_b[np.argmax(tpr_b[valid_b])]
+            boot_sens.append(tpr_b[best_idx])
+
+    auc_ci = np.percentile(boot_auc, [2.5, 97.5])
+    sens_ci = np.percentile(boot_sens, [2.5, 97.5])
+
+    return {"n_patients": n_patients,
+            "n_preterm": n_preterm,
+            "AUC": auc,
+            "AUC_ci_low": auc_ci[0],
+            "AUC_ci_high": auc_ci[1],
+            "SensAtSpec": sens_at_85_spec,
+            "SensAtSpec_ci_low": sens_ci[0],
+            "SensAtSpec_ci_high": sens_ci[1]}   
    
-def bias_to_excel(wb, results, orders, GA, significance_level=0.05):   
+def report_to_excel(wb, results, orders, GA, subgroup_name, 
+                    significance_level=0.05, significance_pairs=None):
     ws = wb.create_sheet(title=f"GA {GA}")
 
     section_font = Font(size=14, bold=True, color="FFFFFF")
@@ -381,24 +374,24 @@ def bias_to_excel(wb, results, orders, GA, significance_level=0.05):
 
     red_font = Font(color="9C0006", bold=True)
     green_font = Font(color="006100", bold=True)
-    
-    thin_border_color_gray = "D9D9D9"
-    thick_border_color_gray = "595959"
-    thin_border_gray = Side(style="thin", color=thin_border_color_gray)
-    thick_border_gray = Side(style="medium", color=thick_border_color_gray)
 
-    thin_border_color_blue = "B4C7E7"
-    thick_border_color_blue = "2F5597"
-    thin_border_blue = Side(style="thin", color=thin_border_color_blue)
-    thick_border_blue = Side(style="medium", color=thick_border_color_blue)
+    thin_border_gray = Side(style="thin", color="D9D9D9")
+    thick_border_gray = Side(style="medium", color="595959")
+    thin_border_blue = Side(style="thin", color="B4C7E7")
+    thick_border_blue = Side(style="medium", color="2F5597")
 
-    
     row = 1
-    
+
     for variable_index, (variable, population_data) in enumerate(results.items()):
-        if variable_index == 0:
-            headers = ['Category'] + list(results[variable]["All Births"]['Overall'].keys())
-            columns = len(headers)
+        populations = list(population_data.keys())
+        entries = orders[variable]
+
+        headers = [subgroup_name] + list(next(iter(next(iter(population_data.values())).values())).keys())
+
+        columns = len(headers)
+        num_populations = len(populations)
+        total_columns = columns * num_populations
+
         if variable_index % 2 == 0:
             section_fill = section_fill_gray
             header_fill = header_fill_gray
@@ -411,8 +404,9 @@ def bias_to_excel(wb, results, orders, GA, significance_level=0.05):
             results_fill = results_fill_blue
             thin_side = thin_border_blue
             thick_side = thick_border_blue
-                
-        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=columns*2)
+
+        # Variable section heading
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=total_columns)
 
         cell = ws.cell(row=row, column=1, value=variable)
         cell.font = section_font
@@ -420,100 +414,125 @@ def bias_to_excel(wb, results, orders, GA, significance_level=0.05):
         cell.alignment = Alignment(horizontal="center")
 
         row += 1
-        
         section_start_row = row
-        
-        for i, population in enumerate(results[variable].keys()):
+
+        # Population headings
+        for i, population in enumerate(populations):
             start_col = i * columns + 1
             end_col = start_col + columns - 1
 
-            ws.merge_cells(start_row=row,
-                           start_column=start_col,
-                           end_row=row,
-                           end_column=end_col)
+            ws.merge_cells(start_row=row, start_column=start_col, end_row=row, end_column=end_col)
 
             cell = ws.cell(row=row, column=start_col, value=population)
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = Alignment(horizontal="center")
-        
+
         row += 1
 
-        for i in range(2):
+        # Column headers for each population
+        for i in range(num_populations):
             start_col = i * columns + 1
-        
+
             for j, header in enumerate(headers):
                 cell = ws.cell(row=row, column=start_col + j, value=header)
                 cell.font = header_font
                 cell.fill = header_fill
                 cell.alignment = Alignment(horizontal="center")
-        
-        row += 1
-        significance_threshold = significance_level / (len(results[variable]["All Births"]) - 1)
 
-        for entry in orders[variable]:        
-            for i, population in enumerate(results[variable].keys()):
+        row += 1
+
+        # Bonferroni correction across categories, excluding Overall
+        reference_entry = entries[0]
+        num_categories = len(entries) - 1
+        significance_threshold = (significance_level / num_categories if num_categories > 0 else significance_level)
+
+        # Write category results
+        for entry in entries:
+            for i, population in enumerate(populations):
                 start_col = i * columns + 1
-                data = results[variable][population][entry]
+                data = population_data[population][entry]
         
-                # Write the entry name
+                # Category name
                 cell = ws.cell(row=row, column=start_col, value=entry)
                 cell.fill = results_fill
         
-                # Write the remaining values
+                # Metric values
                 for j, header in enumerate(headers[1:], start=1):
-                    cell = ws.cell(row=row, column=start_col + j, value=data[header])
+                    cell = ws.cell(
+                        row=row,
+                        column=start_col + j,
+                        value=data[header]
+                    )
                     cell.fill = results_fill
         
-                # Color significant sensitivity/specificity differences
-                if entry != "Overall":
-                    overall = results[variable][population]["Overall"]
-        
-                    for p_key, metric in [("P (sens)", "Sensitivity"), ("P (Spec)", "Specificity")]:
-                        p_value = data[p_key]
-        
-                        if p_value == "-" or float(p_value) >= significance_threshold:
-                            continue
-        
-                        category_value = data[metric]
-                        overall_value = overall[metric]
-                        
-                        if category_value == "-" or overall_value == "-":
-                            continue
-                        
-                        category_value = float(str(category_value).split()[0])
-                        overall_value = float(str(overall_value).split()[0])
-        
-                        if category_value < overall_value:
-                            font = red_font
-                        elif category_value > overall_value:
-                            font = green_font
-                        else:
-                            continue
-        
-                        p_col = start_col + headers.index(p_key)
-                        ws.cell(row=row, column=p_col).font = font
+                # Color significant metric differences vs. reference category
+                if entry != reference_entry:
+                    reference = population_data[population][reference_entry]
+                    if significance_pairs is not None:
+                        for p_key, metric in significance_pairs:
+                            if p_key not in data or metric not in data:
+                                continue
+            
+                            p_value = data[p_key]
+            
+                            try:
+                                p_value = float(p_value)
+                            except (ValueError, TypeError):
+                                continue
+            
+                            if p_value >= significance_threshold:
+                                continue
+            
+                            category_value = data[metric]
+                            reference_value = reference[metric]
+            
+                            try:
+                                category_value = float(
+                                    str(category_value).split()[0].rstrip("%")
+                                )
+                                reference_value = float(
+                                    str(reference_value).split()[0].rstrip("%")
+                                )
+                            except (ValueError, TypeError):
+                                continue
+            
+                            if category_value < reference_value:
+                                font = red_font
+                            elif category_value > reference_value:
+                                font = green_font
+                            else:
+                                continue
+            
+                            p_col = start_col + headers.index(p_key)
+                            ws.cell(row=row, column=p_col).font = font
         
             row += 1
-            
+
         section_end_row = row - 1
-        
-        for i in range(2):
+
+        # Borders around each population's table
+        for i in range(num_populations):
             start_col = i * columns + 1
             end_col = start_col + columns - 1
-        
+
             for r in range(section_start_row, section_end_row + 1):
                 for c in range(start_col, end_col + 1):
                     cell = ws.cell(row=r, column=c)
-        
-                    cell.border = Border(left=thick_side if c == start_col else thin_side,
-                                         right=thick_side if c == end_col else thin_side,
-                                         top=thick_side if r == section_start_row else thin_side,
-                                         bottom=thick_side if r == section_end_row else thin_side)
-        
+
+                    cell.border = Border(
+                        left=thick_side if c == start_col else thin_side,
+                        right=thick_side if c == end_col else thin_side,
+                        top=thick_side if r == section_start_row else thin_side,
+                        bottom=thick_side if r == section_end_row else thin_side
+                    )
+
+    # Adjust column widths
     for column in ws.columns:
-        max_length = max(len(str(cell.value)) if cell.value is not None else 0
-        for cell in column)
+        max_length = max(
+            len(str(cell.value)) if cell.value is not None else 0
+            for cell in column
+        )
 
         column_letter = get_column_letter(column[0].column)
         ws.column_dimensions[column_letter].width = max_length + 2

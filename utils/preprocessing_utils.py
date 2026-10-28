@@ -442,7 +442,7 @@ def apply_inclusion_exclusion(df, cfg):
     return df, discards, conditioned
 
 def merge_EHR(df, cfg):
-    bias_df = pl.read_csv(cfg.bias_variables, ignore_errors=True)
+    bias_df = pl.read_csv(cfg.paths.bias_variables, ignore_errors=True)
     df = df.join(bias_df, how='left', left_on='CPR_CHILD', right_on='b_cpr')
     return df
    

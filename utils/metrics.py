@@ -182,8 +182,10 @@ class Metrics():
     
         plt.close(fig)
          
+        
     def get_best_epoch(self):
         return {str(cutoff): str(self.best_score[str(cutoff)]['epoch']).zfill(3) for cutoff in self.cutoffs}
+
 
     def log_fold(self, cutoff):
         df = pl.concat(self.dfs[str(cutoff)])
@@ -202,10 +204,13 @@ class Metrics():
                                      pl.lit(best["threshold"]).alias('threshold'),
                                      (pl.col("preds") >= best["threshold"])
                                      .cast(pl.Int8).alias("preds_binary"),
-                                     (pl.col("preds") + (0.5 - best["threshold"]))
-                                     .alias("preds_calibrated")]))
-        
+                                     (pl.when(pl.col("preds") < best["threshold"])
+                                     .then(0.5 * pl.col("preds") / best["threshold"])
+                                     .otherwise(0.5 + 0.5 * (pl.col("preds") - best["threshold"]) / (1 - best["threshold"]))
+                                     .alias("preds_normalized"))]))
+                                     
         self.test_preds[str(cutoff)].append(patient_df)
+    
     
     def reset(self):
         for cutoff in self.cutoffs:
@@ -222,6 +227,7 @@ class Metrics():
         self.epoch = 0
         self.fold += 1
         self.best_df = {}
+        
         
     def log_model(self):
         for cutoff in self.cutoffs:   
@@ -283,7 +289,7 @@ class Metrics():
                 n_preterm = int(pop_df["label"].sum())
                 n_non_preterm = len(pop_df) - n_preterm
                 
-                preds = torch.tensor(pop_df["preds_calibrated"].to_numpy(), dtype=torch.float32).to(self.device)
+                preds = torch.tensor(pop_df["preds_normalized"].to_numpy(), dtype=torch.float32).to(self.device)
                 preds_binary = torch.tensor(pop_df["preds_binary"].to_numpy(), dtype=torch.float32).to(self.device)
                 labels = torch.tensor(pop_df["label"].to_numpy(), dtype=torch.int32).to(self.device)
                 
