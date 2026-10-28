@@ -295,24 +295,22 @@ def subgroup_analysis(variable_df, model_path, variable_cfg):
                 df_all = (df_all.filter(inclusion).with_columns((pl.col("GA") // 7 < int(GA)).alias("preterm")))
                 df_CL = df_all.filter(pl.col("CL_manual").is_not_null())
                 
-                results[GA] = {}
                 
                 for pop, pop_df in [('All patients', df_all), ('Non-treated', df_all.filter(~pl.col("treatment")))]:
                     report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL=None)
-                    results[GA][f"Model - {pop}"] = report
-                    
-                
+                    results['Model'] = {pop: report}
+                                    
                 for pop, pop_df in [('All patients', df_CL), ('Non-treated', df_CL.filter(~pl.col("treatment")))]:
                     report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL="CL_manual")
-                    results[GA][f"CL - {pop}"] = report
+                    results['CL'] = {pop: report}
                     
                     report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL=None)
-                    results[GA][f"Model (CL Avaliable) - {pop}"] = report
-        
-        orders = {ga: ["All"] + [subgroup.name for subgroup in variable_cfg.subgroups] for ga in results}
+                    results['Model (CL Avaliable)'] = {pop: report}
+                    
+        orders = {model: ["All"] + [subgroup.name for subgroup in variable_cfg.subgroups] for model in results}
         wb = Workbook()
         wb.remove(wb.active)
-        wb = report_to_excel(wb , results, orders, 'Subgroup Analysis', 'Subgroup')
+        wb = report_to_excel(wb , results, orders, f"GA {GA}", 'Subgroup')
         wb.save(Path(model_path) / "subgroup_analysis.xlsx")    
                 
 
