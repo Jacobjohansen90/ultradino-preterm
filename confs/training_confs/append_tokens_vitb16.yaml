@@ -44,8 +44,10 @@ auxiliary:
 
 model:
   vit:
+    weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/oversampled_vitb16_xfold.pth #VitB
+    #weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/oversampled_vitb16_512_xfold.pth #VitB
     #weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/vitb16.pth #VitB
-    weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/oversampled_vitb16.pth 
+    #weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/oversampled_vitb16.pth 
     #weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/oversampled_vitl16.pth 
     dropout: 0.2
   

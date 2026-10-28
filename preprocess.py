@@ -85,8 +85,6 @@ for incl_excl in['test', 'train']:
     with open(cfg.paths.data_dir + f"logs/{incl_excl}_conditioned.json", "w") as file:
         json.dump(conditioned, file)
     
-    
-
     #Get cervix length for remaining images
     df_temp = get_CL(df_temp, cfg)
 

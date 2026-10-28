@@ -281,6 +281,8 @@ def permutation_test(subgroup_df, pop_df, metric, preds_column='preds', n_permut
     
 
 def subgroup_analysis(variable_df, model_path, variable_cfg):
+        wb = Workbook()
+        wb.remove(wb.active)
         results = {}
         for path in sorted((Path(model_path) / 'predictions/').iterdir()):
             if path.name.endswith(".parquet"):
@@ -312,11 +314,9 @@ def subgroup_analysis(variable_df, model_path, variable_cfg):
                     report = get_subgroup_metrics(pop_df, variable_cfg.subgroups, CL=None)
                     results['Model (CL Avaliable)'][pop] = report
                     
-        orders = {model: ["All"] + [subgroup.name for subgroup in variable_cfg.subgroups] for model in results}
-        wb = Workbook()
-        wb.remove(wb.active)
-        wb = report_to_excel(wb , results, orders, f"GA {GA}", 'Subgroup')
-        wb.save(Path(model_path) / "subgroup_analysis.xlsx")    
+                orders = {model: ["All"] + [subgroup.name for subgroup in variable_cfg.subgroups] for model in results}
+                wb = report_to_excel(wb , results, orders, f"GA {GA}", 'Subgroup')
+                wb.save(Path(model_path) / "subgroup_analysis.xlsx")    
                 
 
 def get_subgroup_metrics(df, variables, CL=None, n_bootstrap=10000):
@@ -333,7 +333,6 @@ def get_subgroup_metrics(df, variables, CL=None, n_bootstrap=10000):
             subgroup_df = df
         else:
             subgroup_df = df.filter((pl.col("label") == 0) | (pl.col(var) == value))
-    
     
         labels = subgroup_df["label"].to_numpy().astype(int)
         
