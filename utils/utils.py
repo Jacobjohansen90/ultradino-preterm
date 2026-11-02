@@ -13,8 +13,13 @@ import shutil
 def setup(cfg):
     if cfg.info.name is None:
         raise Exception("Model experiment must be named")
-    
-    path = f"/projects/users/data/UCPH/DeepFetal/projects/preterm/training_runs/Running/{cfg.info.name}/"
+
+    if len(cfg.tasks.preterm.cutoffs) == 1:
+        name = f"{cfg.info.name}_{cfg.tasks.preterm.cutoffs[0]}"
+    else:
+        name = f"{cfg.info.name}_multihead"
+    path = f"/projects/users/data/UCPH/DeepFetal/projects/preterm/training_runs/Running/{name}/"
+
     if cfg.info.name == "test":
         if os.path.exists(path):
             shutil.rmtree(path)

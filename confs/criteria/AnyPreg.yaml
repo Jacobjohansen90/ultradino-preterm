@@ -485,7 +485,7 @@ conditional_criteria:
           value: "BKHA1"
           
     #Twins etc
-  - name: Multi-births
+  - name: Multi-birth
     function: mark_df
     default: no_mark
     mark_name: multi_birth
@@ -519,5 +519,5 @@ conditional_criteria:
           match_on: MOR_CPR
           date_column: Kontakt dato
           column: Flerfold
-          operator: "=="
+          operator: ">="
           value: 1

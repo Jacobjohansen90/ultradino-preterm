@@ -7,7 +7,7 @@ data:
   batch_size: 128
   folds: 5
   workers: 32
-  ehr_data: []
+  ehr_data: [GA_at_scan]
   img_data: [physical_delta_x, physical_delta_y]
   segmentation: False
   img_size: [224, 224]
@@ -46,9 +46,7 @@ model:
   vit:
     weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/oversampled_vitb16_xfold.pth #VitB
     #weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/oversampled_vitb16_512_xfold.pth #VitB
-    #weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/vitb16.pth #VitB
-    #weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/oversampled_vitb16.pth 
-    #weights_path: /projects/users/data/UCPH/DeepFetal/projects/preterm/other_models/weights/oversampled_vitl16.pth 
+    #weights_path: 'vitb16' #VitB from scratch
     dropout: 0.2
   
   ehr:

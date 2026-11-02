@@ -235,7 +235,7 @@ population_criteria:
     - action: exclude
       filter_on: ['CPR_MOTHER', 'CPR_CHILD']
       column: BIRTHDAY
-      min_threshold: 0
+      min_threshold: 2
       max_threshold: 280
 
 
@@ -572,7 +572,7 @@ conditional_criteria:
           value: "BKHA1"
           
     #Twins etc
-  - name: Multi-births
+  - name: Multi-birth
     function: mark_df
     default: no_mark
     mark_name: multi_birth
@@ -606,5 +606,5 @@ conditional_criteria:
           match_on: MOR_CPR
           date_column: Kontakt dato
           column: Flerfold
-          operator: "=="
+          operator: ">="
           value: 1
