@@ -245,7 +245,7 @@ def get_bias_metrics(df, overall_metrics=None):
     else:
         # Differences relative to Overall
         report['N'] = f"{n} ({100 * n / overall_metrics['n']:.1f}%)"
-        report['Preterm'] = f"{n_preterm} ({100 * n_preterm / overall_metrics['n_preterm']:.1f}%)"
+        report['Preterm'] = f"{n_preterm} ({100 * n_preterm / overall_metrics['preterm']:.1f}%)"
         report['AUC'] += f" ({AUC - overall_metrics['auc']:+.3f})"
         report['Sensitivity'] += f" ({100 * (sens - overall_metrics['sens']):+.1f}%)"
         report['Specificity'] += f" ({100 * (spec - overall_metrics['spec']):+.1f}%)"
