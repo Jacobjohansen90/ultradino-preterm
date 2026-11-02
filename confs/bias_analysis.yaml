@@ -29,7 +29,7 @@ bias_variables:
     type: binary
     categories: ['yes', 'no']
   - name: Cervix length (Manual)
-    variable: cervix_length
+    variable: CL_manual
     type: interval
     categories: [25]
   - name: Study date

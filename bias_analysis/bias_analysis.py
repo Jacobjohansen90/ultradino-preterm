@@ -386,12 +386,20 @@ def permutation_test(subgroup_df, pop_df, metric, preds_column='preds', n_permut
     
     observed_diff = overall_metric - subgroup_metric
     
-    diffs = np.empty(n_permutations)
-    
-    for i in range(n_permutations):
+    diffs = []
+
+    while len(diffs) < n_permutations:
         indices = rng.choice(pop_df.height, size=n_subgroup, replace=False)
-        permuted_metric = metric(overall_labels[indices], overall_preds[indices])
-        diffs[i] = overall_metric - permuted_metric
+
+        labels = overall_labels[indices]
+
+        if len(np.unique(labels)) < 2:
+            continue
+
+        permuted_metric = metric(labels, overall_preds[indices])
+        diffs.append(overall_metric - permuted_metric)
+
+    diffs = np.array(diffs)
     
     p_value = (1 + np.sum(np.abs(diffs) >= abs(observed_diff))) / (n_permutations + 1)
     
@@ -476,6 +484,7 @@ def get_subgroup_metrics(df, variables, CL=None, n_bootstrap=10000):
    
 def report_to_excel(wb, results, orders, title, subgroup_name, 
                     significance_level=0.05, significance_pairs=None):
+    
     ws = wb.create_sheet(title=title)
 
     section_font = Font(size=14, bold=True, color="FFFFFF")
