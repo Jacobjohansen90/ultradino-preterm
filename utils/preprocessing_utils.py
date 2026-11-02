@@ -384,9 +384,10 @@ def merge_population_tables(cfg, ignore_errors=False):
         df = pl.concat([df, table])
         
     for name, t in cfg.population.types.items():
-        df = df.with_columns(pl.col(name).cast(type_map[t], strict=False))
         if t == 'date':
             df = df.with_columns(pl.col(name).str.slice(0,10).str.strptime(pl.Date, strict=False))
+        else:
+            df = df.with_columns(pl.col(name).cast(type_map[t], strict=False))
 
     return df
 

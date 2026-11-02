@@ -7,7 +7,6 @@ Created on Mon Feb 23 10:17:10 2026
 """
 
 import ultradino_finetune.models.dinov2.load as vit_load
-from ultradino_segmentation import UltraDINOSegmentationModel
 import logging
 from models.Transform import Transform, CNNTransform
 from models.Predictor import FCPredictor
@@ -18,15 +17,24 @@ import re
 logger = logging.getLogger("model_loader")
 
 def vit_from_conf(cfg):    
-    match = re.search(r'vit\w{3}', cfg.model.vit.weights_path)
-    model_type = match.group() if match else None
+    if cfg.data.img_size[0] != cfg.data.img_size[1]:
+        raise Exception(f"Models only support square images. You have {cfg.data.img_size}")
+    img_size = cfg.data.img_size[0] 
+    
+    if cfg.model.vit.weights_path.endswith('.pth'):
+        match = re.search(r'vit\w{3}', cfg.model.vit.weights_path)
+        model_type = match.group() if match else None
 
-    if model_type is not None:
-        model = vit_load.load_pretrained_ultradino(model_type, cfg.model.vit.weights_path)
-        logger.info('Loading pretrained encoder from %s', cfg.model.vit.weights_path)
+        if model_type is not None:
+            model = vit_load.load_pretrained_ultradino(model_type, cfg.model.vit.weights_path, img_size=img_size)
+            logger.info('Loading pretrained encoder from %s', cfg.model.vit.weights_path)
+        else:
+            raise Exception("Weight path must contain the model type [Vits16/Vitb16/Vitl16]\n"
+                            "E.g. 'oversampled_vitb16.pth'")
+        
     else:
-        raise Exception("Weight path must contain the model type [Vits16/Vitb16/Vitl16]")
-            
+        model = vit_load.load_from_scratch(cfg.model.vit.weights_path, img_size=img_size)
+        logger.info(f"Loading {cfg.model.vit.weights_path} encoder from scratch")
     return model
 
 
@@ -39,6 +47,7 @@ def vit_from_conf(cfg):
 #     else:
 #         raise Exception(f"Segmentation model does not support model type from weights path {cfg.weights_path}")
 #     return model
+
 
 def ehr_from_conf(cfg, **kwargs):
     #Placeholder for EHR model
@@ -103,10 +112,11 @@ def model_from_conf(cfg):
                 
         elif task == 'aux_tasks':
             for aux_cfg in cfg.tasks[task]:
-                aux_task_heads[aux_cfg['var']] = FCPredictor(vit_model.embed_dim,
-                                                             cfg.model.head.dropout,
-                                                             cfg.model.head.layer_dims)
-
+                name = aux_cfg['var'] if isinstance(aux_cfg['var'], str) else '_'.join(aux_cfg['var'])
+                aux_task_heads[name] = FCPredictor(vit_model.embed_dim,
+                                                   cfg.model.head.dropout,
+                                                   cfg.model.head.layer_dims)
+              
     model_parts['preterm_heads'] = preterm_heads
     model_parts['aux_task_heads'] = aux_task_heads
 

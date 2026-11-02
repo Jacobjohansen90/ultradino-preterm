@@ -51,6 +51,7 @@ class ModelLoss():
             
             elif task_name == 'aux_tasks':
                 for var, weight, mask_val in task_values:
+                    var = var if isinstance(var, str) else '_'.join(var)
                     labels = data['labels'][var].to(self.device)
                     logits = outputs[task_name][var]['logits']
                     mask = self.mask_values(labels, mask_val)
