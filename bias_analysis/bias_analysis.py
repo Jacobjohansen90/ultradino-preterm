@@ -42,9 +42,20 @@ def generate_insight(model_path, bias_cfg_path):
     subgroup_analysis(test_df, model_path, bias_cfg)
 
     #Generate histograms
-    
+    generate_histograms(test_df, model_path, bias_cfg)
                     
 def generate_histograms(variable_df, model_path, bias_cfg, CL_threshold=25):
+    
+    CL = pl.col(bias_cfg.CL)
+
+    groups = [("All patients", pl.lit(True)),
+              ("Preterm", pl.col("label") == 1),
+              (f"CL < {CL_threshold}", CL < CL_threshold),
+              (f"Predicted positive, CL >= {CL_threshold}",
+               (pl.col("preds_binary") == 1) & (CL >= CL_threshold)),
+              (f"Preterm, CL >= {CL_threshold}, predicted negative",
+               (pl.col("label") == 1) & (CL >= CL_threshold) & (pl.col("preds_binary") == 0))]
+
     for path in sorted((Path(model_path) / 'predictions/').iterdir()):
         if not path.name.endswith(".parquet"):
             continue
@@ -57,108 +68,97 @@ def generate_histograms(variable_df, model_path, bias_cfg, CL_threshold=25):
 
         save_path = Path(model_path) / f"histograms/GA_{GA}/"
         save_path.mkdir(parents=True, exist_ok=True)
+        
+        populations = [("All Births", df), ("Non-treated", df.filter(pl.col("treatment") == False))]
+        for population_name, population_df in populations:
+            for var in bias_cfg.bias_variables:
+                if var.type in ['interval', 'centiles', 'year_interval']:
+                    # Handle variables with alternative column names
+                    variable = var.variable[0] if isinstance(var.variable, (list, ListConfig)) else var.variable
+                    
+                    if isinstance(var.variable, (list, ListConfig)):
+                        population_df = population_df.with_columns(pl.coalesce([pl.col(v) for v in var.variable]).alias(variable))
+        
+                    if var.type == 'year_interval':
+                        population_df = population_df.with_columns(pl.col(variable).dt.year().alias(variable))
+        
 
-        for var in bias_cfg.bias_variables:
-            if var.type in ['interval', 'centiles', 'year_interval']:
-                # Handle variables with alternative column names
-                variable = var.variable[0] if isinstance(var.variable, (list, ListConfig)) else var.variable
-                
-                if isinstance(var.variable, (list, ListConfig)):
-                    df = df.with_columns(pl.coalesce([pl.col(v) for v in var.variable]).alias(variable))
-    
-                if var.type == 'year_interval':
-                    df = df.with_columns(pl.col(variable).dt.year().alias(variable))
-    
-                CL = pl.col(bias_cfg.CL)
-    
-                groups = [("All patients", pl.lit(True)),
-                          ("Preterm", pl.col("label") == 1),
-                          (f"CL < {CL_threshold}", CL < CL_threshold),
-                          (f"Predicted positive, CL >= {CL_threshold}",
-                           (pl.col("preds_binary") == 1) & (CL >= CL_threshold)),
-                          (f"Preterm, CL >= {CL_threshold}, predicted negative",
-                           (pl.col("label") == 1) & (CL >= CL_threshold) & (pl.col("preds_binary") == 0))]
-    
-                # Extract distributions
-                distributions = {}
-                for name, condition in groups:
-                    values = (df.filter(condition).select(pl.col(variable).drop_nulls())
-                              .to_series().to_numpy())
-    
-                    values = values[np.isfinite(values)]
-    
-                    if len(values) > 1:
-                        distributions[name] = values
-    
-                if not distributions:
-                    continue
-    
-                # Common x-axis
-                all_values = np.concatenate(list(distributions.values()))
-                x = np.linspace(all_values.min(), all_values.max(), 400)
-    
-                # Plot KDEs
-                fig, ax = plt.subplots(figsize=(9, 5))
-    
-                for name, values in distributions.items():
-                    try:
-                        kde = gaussian_kde(values)
-                        ax.plot(x, kde(x), label=f"{name} (n={len(values):,})")
-                    except np.linalg.LinAlgError:
+        
+                    # Extract distributions
+                    distributions = {}
+                    for name, condition in groups:
+                        values = (population_df.filter(condition).select(pl.col(variable).drop_nulls())
+                                  .to_series().to_numpy())
+        
+                        values = values[np.isfinite(values)]
+        
+                        if len(values) > 1:
+                            distributions[name] = values
+        
+                    if not distributions:
                         continue
+        
+                    # Common x-axis
+                    all_values = np.concatenate(list(distributions.values()))
+                    x = np.linspace(all_values.min(), all_values.max(), 400)
+        
+                    # Plot KDEs
+                    fig, ax = plt.subplots(figsize=(9, 5))
+        
+                    for name, values in distributions.items():
+                        try:
+                            kde = gaussian_kde(values)
+                            ax.plot(x, kde(x), label=f"{name} (n={len(values):,})")
+                        except np.linalg.LinAlgError:
+                            continue
+        
+                    #Category boundaries
+                    if var.type == 'centiles':
+                        categories = list(var.categories)
     
-                #Category boundaries
-                if var.type == 'centiles':
-                    categories = list(var.categories)
-
-                    boundaries = df.select([pl.col(variable).quantile(p / 100).alias(f"p{p}") for p in categories]).row(0)
-
-                    for boundary in boundaries:
-                        ax.axvline(boundary, color='gray', linestyle='--', alpha=0.5)
-                else:
-                    for category in var.categories:
-                        ax.axvline(category, color='gray', linestyle='--', alpha=0.5)
+                        boundaries = population_df.select([pl.col(variable).quantile(p / 100).alias(f"p{p}") for p in categories]).row(0)
     
-                ax.set_xlabel(variable)
-                ax.set_ylabel("Density")
-                ax.set_title(f"{var.name} Distribution – GA {GA}")
-                ax.legend()                
-
-                fig.tight_layout()
-                fig.savefig(save_path / f"{var.name}.png", dpi=300)
-                plt.close(fig)    
-            elif var.type == 'binary':
-                fig, ax = plt.subplots(figsize=(9, 5))
-            
-                for name, condition in groups:
-                    subset = df.filter(condition)
-                    values = subset[variable].drop_nulls()
-            
-                    proportions = [
-                        (values == False).mean(),
-                        (values == True).mean()
-                    ]
-            
-                    ax.plot(
-                        [0, 1],
-                        proportions,
-                        marker='o',
-                        linewidth=2,
-                        label=f"{name} (n={len(values):,})"
-                    )
-            
-                ax.set_xticks([0, 1])
-                ax.set_xticklabels(['False', 'True'])
-                ax.set_ylabel("Proportion")
-                ax.set_xlabel(var.name)
-                ax.set_title(f"{var.name} Distribution – GA {GA}")
-                ax.set_ylim(0, 1)
-                ax.legend()
-                ax.grid(alpha=0.2)
-            
-                fig.tight_layout()
-                fig.savefig(save_path / f"{var.name}.png", dpi=300)
-                plt.close(fig)
+                        for boundary in boundaries:
+                            ax.axvline(boundary, color='gray', linestyle='--', alpha=0.5)
+                    else:
+                        for category in var.categories:
+                            ax.axvline(category, color='gray', linestyle='--', alpha=0.5)
+        
+                    ax.set_xlabel(variable)
+                    ax.set_ylabel("Density")
+                    ax.set_title(f"{var.name} Distribution – GA {GA}")
+                    ax.legend()                
+    
+                    fig.tight_layout()
+                    fig.savefig(save_path / f"{var.name} {population_name}.png", dpi=300)
+                    plt.close(fig)    
+                elif var.type == 'binary':
+                    variable = var.variable
+                
+                    fig, ax = plt.subplots(figsize=(9, 5))
+                
+                    x = np.arange(2)
+                    width = 0.15
+                
+                    for i, (name, condition) in enumerate(groups):
+                        values = population_df.filter(condition)[variable].drop_nulls()
+                
+                        proportions = [(values == False).mean(), (values == True).mean()]
+                
+                        ax.bar(x + (i - 2) * width, proportions, width, label=f"{name} (n={len(values):,})")
+                
+                    ax.set_xticks(x)
+                    ax.set_xticklabels(var.categories)
+                    ax.set_ylabel("Proportion")
+                    ax.set_xlabel(var.name)
+                    ax.set_title(f"{var.name} Distribution – GA {GA}")
+                    ax.set_ylim(0, 1)
+                    ax.legend()
+                    ax.grid(axis='y', alpha=0.2)
+                
+                    fig.tight_layout()
+                    fig.savefig(save_path / f"{var.name} {population_name}.png", dpi=300)
+                    plt.close(fig)
                 
 def bias_analysis(variable_df, model_path, bias_cfg):    
     bias_wb = Workbook()
