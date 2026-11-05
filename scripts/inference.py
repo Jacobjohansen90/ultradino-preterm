@@ -60,7 +60,7 @@ def prepare_data(row, cfg, input_path):
                             A.Normalize(mean=norm_mean, std=norm_std),
                             A.ToTensorV2()])  
     
-    img_path = row['no_ocr_file_path']
+    img_path = Path(row['no_ocr_file_path'])
     if not img_path.is_absolute():
         img_path = input_path / img_path
 
