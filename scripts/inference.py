@@ -49,7 +49,7 @@ def inference(model_path, input_path, cutoff=37, metric='SensAtSpec'):
                 results[row['no_ocr_file_path']][f"{fold}_cutoff"] = threshold
                 results[row['no_ocr_file_path']][f"{fold}_binary_pred"] = int(pred[0] >= threshold)
     results_df = pl.DataFrame([{"img_path": img_path, **fold_results} for img_path, fold_results in results.items()])
-    
+    print(results)
     results_df.write_csv(input_path / "results.csv")
     
 def prepare_data(row, cfg, input_path):
