@@ -87,7 +87,7 @@ def prepare_data(row, cfg, input_path):
         
     img_data = torch.tensor(img_data).unsqueeze(0)
     
-    segmentation = torch.tensor([], dtype=torch.bool)
+    segmentation = torch.tensor([], dtype=torch.bool).unsqueeze(0)
     
     data = {'img': img,
             'img_data': img_data,
