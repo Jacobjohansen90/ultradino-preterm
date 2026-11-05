@@ -72,17 +72,14 @@ def generate_histograms(variable_df, model_path, bias_cfg, CL_threshold=25):
         populations = [("All Births", df), ("Non-treated", df.filter(pl.col("treatment") == False))]
         for population_name, population_df in populations:
             for var in bias_cfg.bias_variables:
-                if var.type in ['interval', 'centiles', 'year_interval']:
-                    # Handle variables with alternative column names
-                    variable = var.variable[0] if isinstance(var.variable, (list, ListConfig)) else var.variable
-                    
-                    if isinstance(var.variable, (list, ListConfig)):
-                        population_df = population_df.with_columns(pl.coalesce([pl.col(v) for v in var.variable]).alias(variable))
-        
+                #Handle multi-var inputs                    
+                if isinstance(var.variable, (list, ListConfig)):
+                    variable = var.variable[0]
+                    population_df = population_df.with_columns(pl.coalesce([pl.col(v) for v in var.variable]).alias(variable))
+
+                if var.type in ['interval', 'centiles', 'year_interval']:        
                     if var.type == 'year_interval':
                         population_df = population_df.with_columns(pl.col(variable).dt.year().alias(variable))
-        
-
         
                     # Extract distributions
                     distributions = {}
@@ -132,9 +129,8 @@ def generate_histograms(variable_df, model_path, bias_cfg, CL_threshold=25):
                     fig.tight_layout()
                     fig.savefig(save_path / f"{var.name} {population_name}.png", dpi=300)
                     plt.close(fig)    
-                elif var.type == 'binary':
-                    variable = var.variable
                 
+                elif var.type == 'binary':                
                     fig, ax = plt.subplots(figsize=(9, 5))
                 
                     x = np.arange(2)
@@ -160,6 +156,45 @@ def generate_histograms(variable_df, model_path, bias_cfg, CL_threshold=25):
                     fig.savefig(save_path / f"{var.name} {population_name}.png", dpi=300)
                     plt.close(fig)
                 
+                elif var.type == 'frequency_threshold':
+                
+                    # Find most frequent categories in the full population
+                    counts = population_df[variable].drop_nulls().value_counts()
+                
+                    categories = (counts.with_columns((pl.col("count") / pl.col("count").sum() * 100).alias("percent"))
+                                  .filter(pl.col("percent") >= var.cutoff_percent)
+                                  .sort("count", descending=True)
+                                  .head(var.max_categories)[variable].to_list())
+                
+                    # Add all remaining categories to Other
+                    fig, ax = plt.subplots(figsize=(10, 5))
+                
+                    x = np.arange(len(categories) + 1)
+                    width = 0.15
+                
+                    for i, (name, condition) in enumerate(groups):
+                        values = population_df.filter(condition)[variable].drop_nulls()
+                
+                        proportions = [(values == category).sum() / len(values) for category in categories]
+                        other = (~values.is_in(categories)).sum() / len(values)
+                        proportions.append(other)
+                
+                        ax.bar(x + (i - 2) * width, proportions, width, label=f"{name} (n={len(values):,})")
+                
+                    ax.set_xticks(x)
+                    ax.set_xticklabels([str(c) for c in categories] + ["Other"], rotation=45, ha='right')
+                    ax.set_ylabel("Proportion")
+                    ax.set_xlabel(var.name)
+                    ax.set_title(f"{var.name} Distribution – GA {GA}")
+                    ax.set_ylim(0, 1)
+                    ax.legend()
+                    ax.grid(axis='y', alpha=0.2)
+                
+                    fig.tight_layout()
+                    fig.savefig(save_path / f"{var.name} {population_name}.png", dpi=300)
+                    plt.close(fig)
+                    
+                    
 def bias_analysis(variable_df, model_path, bias_cfg):    
     bias_wb = Workbook()
     bias_wb.remove(bias_wb.active)
@@ -370,6 +405,20 @@ def categorize_variable(df, var):
     
         return df.with_columns(expr.alias(var.variable)), order
     
+    elif var.type == "frequency_threshold":
+        counts = df.group_by(var.variable).len(name="count")
+    
+        total = counts["count"].sum()
+    
+        categories = (counts.filter(pl.col("count") / total * 100 >= var.cutoff_percent)
+                      .sort("count", descending=True).head(var.max_categories)[var.variable].to_list())
+    
+        order = [str(category) for category in categories] + ["Other"]
+    
+        expr = (pl.when(pl.col(var.variable).is_in(categories))
+                .then(pl.col(var.variable).cast(pl.String))
+                .otherwise(pl.lit("Other")))
+
     else:
         raise Exception(f"Type {var.type} not implemented")
 

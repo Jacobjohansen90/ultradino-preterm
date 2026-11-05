@@ -13,6 +13,7 @@ from models.Predictor import FCPredictor
 from models.BirthModel import BirthModel
 import torch.nn as nn
 import re
+import torch
 
 logger = logging.getLogger("model_loader")
 
@@ -63,12 +64,14 @@ def ehr_from_conf(cfg, **kwargs):
     
     return model
 
+
 def set_dropout(model, p=0.1):
     for m in model.modules():
         if isinstance(m, nn.Dropout):
             m.p = p
 
-def model_from_conf(cfg):
+
+def model_from_conf(cfg, weights_path=None):
     """Create GA model from configuration"""
     
     device = cfg.device.type
@@ -120,10 +123,14 @@ def model_from_conf(cfg):
     model_parts['preterm_heads'] = preterm_heads
     model_parts['aux_task_heads'] = aux_task_heads
 
-    
     model = BirthModel(model_parts, aux_method=cfg.auxiliary.method)
+
+    if weights_path is not None:
+        weights=torch.load(weights_path, weights_only=True)
+        model.load_state_dict(weights)
     
     return model.to(device)
+
 
 def update_freezing(model, epoch, cfg):
     if epoch == 0:

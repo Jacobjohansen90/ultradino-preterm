@@ -36,6 +36,11 @@ bias_variables:
     variable: study_date
     type: year_interval
     categories: [2014, 2019]
+  - name: Scanners
+    variable: manufacturer_model_name
+    type: frequency_threshold
+    cutoff_percent: 1
+    max_categories: 5
   - name: GA at scan
     variable: GA_at_scan
     type: interval
