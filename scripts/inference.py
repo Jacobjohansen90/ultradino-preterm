@@ -66,7 +66,8 @@ def prepare_data(row, cfg, input_path):
 
     img = Image.open(img_path)
     img = np.asarray(img)
-    h,w = img.shape
+    h = img.shape[0]
+    w = img.shape[1]
 
     img = transforms(image=img)['image']
 
