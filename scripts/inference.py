@@ -38,10 +38,10 @@ def inference(model_path, input_path, cutoff=37, metric='SensAtSpec'):
         with torch.no_grad():
             for row in df.iter_rows(named=True):
                 data = prepare_data(row, cfg, input_path)
-                output = model(data['img'].to(cfg.device.type), 
-                               data['img_data'].to(cfg.device.type), 
-                               data['ehr_data'].to(cfg.device.type),
-                               data['segmentation'].to(cfg.device.type))
+                output, _ = model(data['img'].to(cfg.device.type), 
+                                  data['img_data'].to(cfg.device.type), 
+                                  data['ehr_data'].to(cfg.device.type),
+                                  data['segmentation'].to(cfg.device.type))
                 
                 pred = output['preterm'][str(cutoff)]['preds'].flatten().cpu().numpy()
                 
