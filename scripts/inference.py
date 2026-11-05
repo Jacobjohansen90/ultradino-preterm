@@ -73,7 +73,7 @@ def prepare_data(row, cfg, input_path):
 
     ehr_data = []
     for var in cfg.data.ehr_data:
-        ehr_data.append(row[var])
+        ehr_data.append(float(row[var]))
     ehr_data = torch.tensor(ehr_data).unsqueeze(0)
     
     img_data = []
@@ -83,7 +83,7 @@ def prepare_data(row, cfg, input_path):
             data_temp = (w/cfg.data.img_size[0])*data_temp
         elif var == 'physical_delta_y':
             data_temp = (h/cfg.data.img_size[1])*data_temp
-        img_data.append(data_temp)
+        img_data.append(float(data_temp))
         
     img_data = torch.tensor(img_data).unsqueeze(0)
     
