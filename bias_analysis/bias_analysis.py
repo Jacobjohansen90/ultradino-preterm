@@ -17,6 +17,8 @@ from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
+import re
+import shutil
 
 def generate_insight(model_path, bias_cfg_path):
     #Setup
@@ -43,7 +45,52 @@ def generate_insight(model_path, bias_cfg_path):
 
     #Generate histograms
     generate_histograms(test_df, model_path, bias_cfg)
-                    
+    
+    #Copy images
+    sample_wrong_images(model_path)
+
+def sample_wrong_images(model_path, n_children=50):
+    pred_path = Path(model_path) / "predictions" / "validation"
+    #Get GAs
+    GAs = sorted({int(match.group(1)) for path in pred_path.glob("image_preds_*_fold_*.parquet")
+                  if (match := re.match(r"image_preds_(\d+)_fold_\d+\.parquet", path.name))})
+    
+    for GA in GAs:
+        save_path = Path(model_path) / f"img_sample/GA_{GA}"
+        save_path.mkdir(parents=True, exist_ok=True)
+
+        img_dfs = [pl.read_parquet(path) for path in sorted(pred_path.glob(f"image_preds_{GA}*")) if path.is_file()]
+        pred_dfs = [pl.read_parquet(path) for path in sorted(pred_path.glob(f"predictions_{GA}*")) if path.is_file()]
+        
+        img_df = pl.concat(img_dfs, how="vertical")
+        pred_df = pl.concat(pred_dfs, how="vertical")
+        pred_df = pred_df.with_columns((pl.col("preds") >= pl.col("threshold")).alias("preds_binary"))
+
+
+            
+        #Sample children from each category
+        tp = pred_df.filter((pl.col("label") == True) & (pl.col("preds_binary") == True)).sample(n=n_children)["CPR_CHILD"]
+        fn = pred_df.filter((pl.col("label") == True) & (pl.col("preds_binary") == False)).sample(n=n_children)["CPR_CHILD"]
+        fp = pred_df.filter((pl.col("label") == False) & (pl.col("preds_binary") == True)).sample(n=n_children)["CPR_CHILD"]
+        tn = pred_df.filter((pl.col("label") == False) & (pl.col("preds_binary") == False)).sample(n=n_children)["CPR_CHILD"]
+            
+        #Get 
+        for df, name in [(tp, "TP"), (fn, "FN"), (fp, "FP"), (tn, "TN")]:
+            for child in df:
+                child_path = save_path / name / str(child)
+                child_path.mkdir(parents=True, exist_ok=True)
+
+                # Copy images
+                img_rows = img_df.filter(pl.col("CPR_CHILD") == child).select(["img_path", "preds"]).iter_rows(named=True)
+
+                for row in img_rows:
+                    img_path = Path(row["img_path"])
+                    pred = row["preds"]
+
+                    new_name = f"{pred:.6f}.png"
+                    shutil.copy2(img_path, child_path / new_name)
+                        
+                 
 def generate_histograms(variable_df, model_path, bias_cfg, CL_threshold=25):
     
     CL = pl.col(bias_cfg.CL)
