@@ -257,6 +257,7 @@ def bias_analysis(variable_df, model_path, bias_cfg):
             results = {}
             orders = {}
             for var in tqdm(bias_cfg.bias_variables, desc=f"Processing Variables, GA {GA}"):
+                print(var)
                 if isinstance(var.variable, (list, ListConfig)):
                     df = df.with_columns(pl.coalesce([pl.col(var.variable[0]), pl.col(var.variable[1])])
                                          .alias(var.variable[0]))
