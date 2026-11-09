@@ -20,6 +20,7 @@ bias_variables:
     variable: [maternal_BMI, lab_bmi]
     type: interval
     categories: [18.5, 25, 30, 35]
+    range: [14, 70]
   - name: Age
     variable: maternal_age
     type: interval
@@ -32,6 +33,7 @@ bias_variables:
     variable: CL_manual
     type: interval
     categories: [25]
+    range: [0, 80]
   - name: Study date
     variable: study_date
     type: year_interval

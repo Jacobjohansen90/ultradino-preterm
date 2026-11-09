@@ -37,6 +37,20 @@ def generate_insight(model_path, bias_cfg_path):
     test_df = test_df.group_by("CPR_CHILD").agg([pl.all().exclude(["CPR_CHILD", "physical_delta"]).first(),
                                                  pl.col("physical_delta").mean()])
     
+    for var in bias_cfg.bias_variables:
+        if "range" in var:
+            min_val, max_val = var.range
+            variables = var.variable if isinstance(var.variable, (list, ListConfig)) else [var.variable]
+    
+            test_df = test_df.with_columns([
+                pl.when(pl.col(v).is_between(min_val, max_val))
+                .then(pl.col(v))
+                .otherwise(None)
+                .alias(v)
+                for v in variables
+            ])
+        
+    
     #Run bias analysis
     # bias_analysis(test_df, model_path, bias_cfg, n_digits=3)
     
@@ -44,7 +58,7 @@ def generate_insight(model_path, bias_cfg_path):
     # subgroup_analysis(test_df, model_path, bias_cfg)
 
     #Generate histograms
-    # generate_histograms(test_df, model_path, bias_cfg)
+    generate_histograms(test_df, model_path, bias_cfg)
     
     #Copy images
     sample_images(model_path)
