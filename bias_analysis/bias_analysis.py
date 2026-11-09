@@ -82,13 +82,14 @@ def sample_images(model_path, n_children=50):
 
                 # Copy images
                 img_rows = img_df.filter(pl.col("CPR_CHILD") == child).select(["img_path", "preds"]).iter_rows(named=True)
-                print(list(img_rows))
                 for row in img_rows:
-                    img_path = Path(row["img_path"])
-                    pred = row["preds"]
+                    img_path, ext = row["img_path"].split('.png')
+                    if ext in ['_1', '']:
+                        img_path = Path(img_path + '.png')
+                        pred = row["preds"]
 
-                    new_name = f"{pred:.6f}.png"
-                    shutil.copy2(img_path, child_path / new_name)
+                        new_name = f"{pred:.6f}.png"
+                        shutil.copy2(img_path, child_path / new_name)
                         
                  
 def generate_histograms(variable_df, model_path, bias_cfg, CL_threshold=25):
