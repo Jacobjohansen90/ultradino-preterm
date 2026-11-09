@@ -38,13 +38,13 @@ def generate_insight(model_path, bias_cfg_path):
                                                  pl.col("physical_delta").mean()])
     
     #Run bias analysis
-    bias_analysis(test_df, model_path, bias_cfg, n_digits=3)
+    # bias_analysis(test_df, model_path, bias_cfg, n_digits=3)
     
     #Run sub group analysis
-    subgroup_analysis(test_df, model_path, bias_cfg)
+    # subgroup_analysis(test_df, model_path, bias_cfg)
 
     #Generate histograms
-    generate_histograms(test_df, model_path, bias_cfg)
+    # generate_histograms(test_df, model_path, bias_cfg)
     
     #Copy images
     sample_images(model_path)
@@ -82,7 +82,7 @@ def sample_images(model_path, n_children=50):
 
                 # Copy images
                 img_rows = img_df.filter(pl.col("CPR_CHILD") == child).select(["img_path", "preds"]).iter_rows(named=True)
-
+                print(img_rows)
                 for row in img_rows:
                     img_path = Path(row["img_path"])
                     pred = row["preds"]
