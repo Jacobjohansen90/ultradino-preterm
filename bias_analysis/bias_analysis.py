@@ -82,7 +82,7 @@ def sample_images(model_path, n_children=50):
 
                 # Copy images
                 img_rows = img_df.filter(pl.col("CPR_CHILD") == child).select(["img_path", "preds"]).iter_rows(named=True)
-                print(img_rows)
+                print(list(img_rows))
                 for row in img_rows:
                     img_path = Path(row["img_path"])
                     pred = row["preds"]
