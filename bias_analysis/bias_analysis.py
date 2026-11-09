@@ -240,7 +240,8 @@ def generate_histograms(variable_df, model_path, bias_cfg, CL_threshold=25):
                     ax.grid(axis='y', alpha=0.2)
                 
                     fig.tight_layout()
-                    fig.savefig(save_path / f"{var.name} {population_name}.png", dpi=300)
+                    filename = f"{var.name} {population_name}".replace("/", "_")
+                    fig.savefig(save_path / f"{filename}.png", dpi=300)                   
                     plt.close(fig)
                     
                     
