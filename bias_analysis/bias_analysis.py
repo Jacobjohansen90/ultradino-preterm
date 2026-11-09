@@ -434,6 +434,7 @@ def categorize_variable(df, var):
         return df.with_columns(expr.alias(var.variable)), order
     
     elif var.type == "year_interval":
+        print(df)
         categories = list(var.categories)
     
         order = ([f"<{categories[0]}"]
@@ -449,6 +450,9 @@ def categorize_variable(df, var):
             expr = expr.when(year < upper).then(pl.lit(label))
     
         expr = expr.otherwise(pl.lit(order[-1]))
+        
+        print(df)
+        print(order)
     
         return df.with_columns(expr.alias(var.variable)), order
     

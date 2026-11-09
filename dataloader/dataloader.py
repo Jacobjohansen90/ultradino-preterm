@@ -14,6 +14,7 @@ import albumentations as A
 import polars as pl
 from torch.utils.data import DataLoader
 
+
 FUS13M_MEAN = 0.1842924807
 FUS13M_STD = 0.2187705424
         
@@ -72,14 +73,17 @@ class PreTermDataset(Dataset):
         #Prepare EHR data
         ehr_data = []
         for key in self.ehr_vars:
-            if key == 'Treatment':
-                ehr_data.append(float(data.get('progesterone') or data.get('cerclage')))
+            if isinstance(key, str):                
+                if key == 'Treatment':
+                    ehr_data.append(float(data.get('progesterone') or data.get('cerclage')))
+                else:
+                    ehr_data.append(float(data.get(key) or 0.0))
             else:
-                ehr_data.append(float(data.get(key) or 0.0))
-        ehr_data = torch.tensor(ehr_data)
-        ehr_data = ehr_data.unsqueeze(0)
-                
+                values = [float(data[k]) for k in key if data.get(k) is not None]
+                ehr_data.append(sum(values) / len(values) if values else 0.0)
 
+        ehr_data = torch.tensor(ehr_data).unsqueeze(0)
+                
         #Prepare labels
         labels = {}
 
