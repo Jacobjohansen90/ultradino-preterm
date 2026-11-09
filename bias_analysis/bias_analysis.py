@@ -52,10 +52,10 @@ def generate_insight(model_path, bias_cfg_path):
         
     
     #Run bias analysis
-    # bias_analysis(test_df, model_path, bias_cfg, n_digits=3)
+    bias_analysis(test_df, model_path, bias_cfg, n_digits=3)
     
     #Run sub group analysis
-    # subgroup_analysis(test_df, model_path, bias_cfg)
+    subgroup_analysis(test_df, model_path, bias_cfg)
 
     #Generate histograms
     generate_histograms(test_df, model_path, bias_cfg)
