@@ -257,7 +257,6 @@ def bias_analysis(variable_df, model_path, bias_cfg):
             results = {}
             orders = {}
             for var in tqdm(bias_cfg.bias_variables, desc=f"Processing Variables, GA {GA}"):
-                print(var)
                 if isinstance(var.variable, (list, ListConfig)):
                     df = df.with_columns(pl.coalesce([pl.col(var.variable[0]), pl.col(var.variable[1])])
                                          .alias(var.variable[0]))
@@ -435,7 +434,6 @@ def categorize_variable(df, var):
         return df.with_columns(expr.alias(var.variable)), order
     
     elif var.type == "year_interval":
-        print(df)
         categories = list(var.categories)
     
         order = ([f"<{categories[0]}"]
@@ -452,9 +450,6 @@ def categorize_variable(df, var):
     
         expr = expr.otherwise(pl.lit(order[-1]))
         
-        print(df)
-        print(order)
-    
         return df.with_columns(expr.alias(var.variable)), order
     
     elif var.type == "frequency_threshold":
@@ -470,6 +465,8 @@ def categorize_variable(df, var):
         expr = (pl.when(pl.col(var.variable).is_in(categories))
                 .then(pl.col(var.variable).cast(pl.String))
                 .otherwise(pl.lit("Other")))
+
+        return df.with_columns(expr.alias(var.variable)), order
 
     else:
         raise Exception(f"Type {var.type} not implemented")
