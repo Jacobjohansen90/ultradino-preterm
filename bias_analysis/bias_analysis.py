@@ -76,8 +76,14 @@ def sample_images(model_path, n_children=50):
             
         #Get 
         for df, name in [(tp, "TP"), (fn, "FN"), (fp, "FP"), (tn, "TN")]:
+            folder = save_path / name
+            #Clear out old samples
+            if folder.exists():
+                shutil.rmtree(folder)
+                folder.mkdir(parents=True, exist_ok=True)
+                
             for child in df:
-                child_path = save_path / name / str(child)
+                child_path = save_path / name / str(child)                
                 child_path.mkdir(parents=True, exist_ok=True)
 
                 # Copy images
