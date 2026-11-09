@@ -38,7 +38,7 @@ def generate_insight(model_path, bias_cfg_path):
                                                  pl.col("physical_delta").mean()])
     
     #Run bias analysis
-    bias_analysis(test_df, model_path, bias_cfg)
+    bias_analysis(test_df, model_path, bias_cfg, n_digits=3)
     
     #Run sub group analysis
     subgroup_analysis(test_df, model_path, bias_cfg)
@@ -47,15 +47,15 @@ def generate_insight(model_path, bias_cfg_path):
     generate_histograms(test_df, model_path, bias_cfg)
     
     #Copy images
-    sample_wrong_images(model_path)
+    sample_images(model_path)
 
-def sample_wrong_images(model_path, n_children=50):
+def sample_images(model_path, n_children=50):
     pred_path = Path(model_path) / "predictions" / "validation"
     #Get GAs
     GAs = sorted({int(match.group(1)) for path in pred_path.glob("image_preds_*_fold_*.parquet")
                   if (match := re.match(r"image_preds_(\d+)_fold_\d+\.parquet", path.name))})
     
-    for GA in GAs:
+    for GA in tqdm(GAs, desc="Sampling Images"):
         save_path = Path(model_path) / f"img_sample/GA_{GA}"
         save_path.mkdir(parents=True, exist_ok=True)
 
@@ -117,13 +117,15 @@ def generate_histograms(variable_df, model_path, bias_cfg, CL_threshold=25):
         save_path.mkdir(parents=True, exist_ok=True)
         
         populations = [("All Births", df), ("Non-treated", df.filter(pl.col("treatment") == False))]
-        for population_name, population_df in populations:
-            for var in bias_cfg.bias_variables:
+        for var in tqdm(bias_cfg.bias_variables, desc="Generating Histograms"):
+            for population_name, population_df in populations:
                 #Handle multi-var inputs                    
                 if isinstance(var.variable, (list, ListConfig)):
                     variable = var.variable[0]
                     population_df = population_df.with_columns(pl.coalesce([pl.col(v) for v in var.variable]).alias(variable))
-
+                else:
+                    variable = var.variable
+                    
                 if var.type in ['interval', 'centiles', 'year_interval']:        
                     if var.type == 'year_interval':
                         population_df = population_df.with_columns(pl.col(variable).dt.year().alias(variable))
@@ -242,7 +244,7 @@ def generate_histograms(variable_df, model_path, bias_cfg, CL_threshold=25):
                     plt.close(fig)
                     
                     
-def bias_analysis(variable_df, model_path, bias_cfg):    
+def bias_analysis(variable_df, model_path, bias_cfg, n_digits=3):    
     bias_wb = Workbook()
     bias_wb.remove(bias_wb.active)
     
@@ -256,7 +258,7 @@ def bias_analysis(variable_df, model_path, bias_cfg):
             df = predictions.join(variable_df, how='left', on='CPR_CHILD')
             results = {}
             orders = {}
-            for var in tqdm(bias_cfg.bias_variables, desc=f"Processing Variables, GA {GA}"):
+            for var in tqdm(bias_cfg.bias_variables, desc="Running Bias Analysis"):
                 if isinstance(var.variable, (list, ListConfig)):
                     df = df.with_columns(pl.coalesce([pl.col(var.variable[0]), pl.col(var.variable[1])])
                                          .alias(var.variable[0]))
@@ -282,8 +284,8 @@ def bias_analysis(variable_df, model_path, bias_cfg):
                     for subgroup_df in var_df.partition_by(var.variable, maintain_order=True):
                         subgroup = subgroup_df[var.variable][0]
                         report, _ = get_bias_metrics(subgroup_df, overall_metrics)
-                        p_sens = permutation_test(subgroup_df, pop_df, recall_score, preds_column='preds_binary')
-                        p_spec = permutation_test(subgroup_df, pop_df, specificity, preds_column='preds_binary')
+                        p_sens = permutation_test(subgroup_df, pop_df, recall_score, preds_column='preds_binary', n_digits=n_digits)
+                        p_spec = permutation_test(subgroup_df, pop_df, specificity, preds_column='preds_binary', n_digits=n_digits)
                         report['P (sens)'] = p_sens
                         report['P (spec)'] = p_spec
                         results[var.name][pop][subgroup] = report
@@ -472,7 +474,7 @@ def categorize_variable(df, var):
         raise Exception(f"Type {var.type} not implemented")
 
 
-def permutation_test(subgroup_df, pop_df, metric, preds_column='preds', n_permutations=10000):
+def permutation_test(subgroup_df, pop_df, metric, preds_column='preds', n_permutations=10000, n_digits=3):
     rng = np.random.default_rng()
     
     overall_labels = pop_df['label'].to_numpy()
@@ -499,7 +501,7 @@ def permutation_test(subgroup_df, pop_df, metric, preds_column='preds', n_permut
 
     diffs = np.array(diffs)
     
-    p_value = (1 + np.sum(np.abs(diffs) >= abs(observed_diff))) / (n_permutations + 1)
+    p_value = round((1 + np.sum(np.abs(diffs) >= abs(observed_diff))) / (n_permutations + 1), n_digits)
     
     return p_value
     
@@ -548,7 +550,7 @@ def get_subgroup_metrics(df, variables, CL=None, n_bootstrap=10000):
     subgroups = [{"name": "All", "var": None, "value": None},
                  *[dict(var) for var in variables]]
     
-    for subgroup in subgroups:
+    for subgroup in tqdm(subgroups, desc="Generating Subgroup Analysis"):
         name = subgroup["name"]
         var = subgroup["var"]
         value = subgroup["value"]
