@@ -47,7 +47,7 @@ class PreTermDataset(Dataset):
                                          A.GridDistortion(num_steps=5, distort_limit=(-0.3, 0.3), p=0.5),
                                          A.HorizontalFlip(p=0.5),
                                          A.VerticalFlip(p=0.5),
-                                         A.Resize(height=self.img_size[0], width=self.img_size[1]),
+                                         A.Resize(height=self.img_size[0], width=self.img_size[1]), #move this up
                                          A.ToGray(p=1.0, num_output_channels=1),
                                          A.Normalize(mean=self.norm_mean, std=self.norm_std),
                                          A.ToTensorV2()])
@@ -318,16 +318,20 @@ class DataSplits:
         if self.oversample_ratio != 0:
             positives = train_df.filter(pl.col("GA") // 7 < self.highest_GA)
             negatives = train_df.filter(pl.col("GA") // 7 >= self.highest_GA)
-            
+
             if len(negatives) > len(positives):
-                n_target = int(len(negatives) * self.oversample_ratio)
-                positives = positives.sample(n=n_target,
-                                             with_replacement=True)
+                if self.oversample_ratio == 'sqrt':
+                    n_target = int(np.sqrt(len(negatives)*len(positives)))
+                else:
+                    n_target = int(len(negatives) * self.oversample_ratio)
+                positives = positives.sample(n=n_target, with_replacement=True)
                 
             elif len(positives) > len(negatives):
-                n_target = int(len(positives) * self.oversample_ratio)
-                negatives = negatives.sample(n=n_target,
-                                             with_replacement=True)
+                if self.oversample_ratio == 'sqrt':
+                    n_target = int(np.sqrt(len(negatives)*len(positives)))
+                else:
+                    n_target = int(len(positives) * self.oversample_ratio)
+                negatives = negatives.sample(n=n_target, with_replacement=True)
                 
             train_df = pl.concat([negatives, positives]) 
         
