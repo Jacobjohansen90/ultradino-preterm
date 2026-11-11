@@ -34,10 +34,11 @@ class PreTermDataset(Dataset):
         self.get_segs = 'segmentation' in cfg.tasks.keys() or cfg.data.segmentation
         self.cutoffs = cfg.tasks.preterm.cutoffs
         self.remove = cfg.data.remove
-        
-        self.aux_vars = []
-        for task in cfg.tasks.aux_tasks:
-            self.aux_vars.append(task.var)
+
+        self.aux_vars = []      
+        if "aux_tasks" in cfg.tasks:
+            for task in cfg.tasks.aux_tasks:
+                self.aux_vars.append(task.var)
 
     def setup_transforms(self):
         if self.train:

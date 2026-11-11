@@ -175,11 +175,8 @@ class Metrics():
         ax.set_ylabel("Value")
         ax.set_ylim(0, 1.05)
         ax.legend(loc="best", fontsize=8)
-    
         plt.tight_layout()
-    
         fig.savefig(self.plot_path / f"Fold {self.fold} - GA {cutoff} - {agg.capitalize()}.png", dpi=300)
-    
         plt.close(fig)
          
         
@@ -210,7 +207,7 @@ class Metrics():
                                      .alias("preds_normalized"))]))
                                      
         self.test_preds[str(cutoff)].append(patient_df)
-    
+        self.test_preds[str(cutoff)].write_parquet(self.pred_path / f"predictions_{cutoff}.parquet")
     
     def reset(self):
         for cutoff in self.cutoffs:
@@ -227,7 +224,21 @@ class Metrics():
         self.epoch = 0
         self.fold += 1
         self.best_df = {}
+    
+    def get_val_preds_and_labels(self, cutoff, population):
+        temp_dfs = []
+
+        for path in (self.pred_path / "validation").glob(f"prediction_{cutoff}*"):
+            temp_df = pl.read_parquet(path)
+            temp_df = temp_df.with_columns((pl.col("preds") + pl.col("threshold") - 0.50).alias("preds"))
+            if population == 'Non-treated':
+                temp_df = temp_df.filter(~pl.col("treatment"))
+            temp_dfs.append(temp_df)
+        df = pl.concat(temp_dfs)
+        preds = torch.tensor(df["preds"].to_numpy(), dtype=torch.float32).to(self.device)
+        labels = torch.tensor(df["label"].to_numpy(),dtype=torch.int32).to(self.device)
         
+        return preds, labels
         
     def log_model(self):
         for cutoff in self.cutoffs:   
@@ -304,12 +315,18 @@ class Metrics():
                     metric_preds = preds_binary if is_binary_metric else preds
                     metric.reset()
                     output = metric(metric_preds, labels)
+
+
+                    metric.reset()
+                    val_preds, val_labels = self.get_val_preds_and_labels(cutoff, pop)
+                    val_output = metric(val_preds, val_labels)
     
                     if isinstance(output, tuple):
                         results[pop][name]['mean'] = output[0].item()
+                        results[pop][name]['val'] = val_output[0].item()
                     else:
                         results[pop][name]['mean'] = output.item()
-    
+                        results[pop][name]['val'] = val_output.item()
                     # Bootstrap 95% CI
                     boot_values = []
                 
@@ -331,9 +348,10 @@ class Metrics():
                     results[pop][name]['upper'] = np.percentile(boot_values, 97.5)
                 
                                 
-                agg_summary = (df.select(["fold", "agg"]).unique().group_by("agg").agg(pl.len().alias("n_folds")).sort("agg"))
-
-                agg_summary = ", ".join(f"{row['agg']} ({row['n_folds']} fold{'s' if row['n_folds'] != 1 else ''})"
+                agg_summary = (df.select(["fold", "agg", "tta"]).unique().group_by(["agg", "tta"])
+                               .agg(pl.len().alias("n_folds")).sort(["agg", "tta"]))
+                
+                agg_summary = ", ".join(f"{row['agg']} {row['tta']} ({row['n_folds']} fold{'s' if row['n_folds'] != 1 else ''})"
                                         for row in agg_summary.iter_rows(named=True))
             
                 report.append(f"-- {pop} --\n"
@@ -346,7 +364,9 @@ class Metrics():
                               f"\tMetrics:\n")
             
                 for name, result in results[pop].items():
-                    report.append(f"\t{name}: {result['mean']:.4f} (95% CI: {result['lower']:.4f}–{result['upper']:.4f})\n")
+                    report.append(f"\t{name}: {result['mean']:.4f} "
+                                  f"(95% CI: {result['lower']:.4f}–{result['upper']:.4f}) "
+                                  f"(Validation: {result['val']:.4f})\n")
                 report.append('\n\n')
     
             report = "".join(report)
