@@ -207,7 +207,7 @@ class Metrics():
                                      .alias("preds_normalized"))]))
                                      
         self.test_preds[str(cutoff)].append(patient_df)
-        self.test_preds[str(cutoff)].write_parquet(self.pred_path / f"predictions_{cutoff}.parquet")
+        pl.concat(self.test_preds[str(cutoff)]).write_parquet(self.pred_path / f"predictions_{cutoff}.parquet")
     
     def reset(self):
         for cutoff in self.cutoffs:
