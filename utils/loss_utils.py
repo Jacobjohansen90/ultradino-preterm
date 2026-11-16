@@ -22,12 +22,13 @@ class ModelLoss():
             
             elif task_name == 'preterm':
                 cutoffs = task_cfg.get("cutoffs", [None])
-                weights = task_cfg.get("weights", 1)
+                cutoff_weights = task_cfg.get("cutoff_weights", 1)
 
-                if isinstance(weights, (int, float)):
-                    weights = [weights] * len(cutoffs)
+                if isinstance(cutoff_weights, (int, float)):
+                    cutoff_weights = [cutoff_weights] * len(cutoffs)
     
-                tasks[task_name] = [[cutoff, weight, task_cfg.label_smoothing_value] for cutoff, weight in zip(cutoffs, weights)]
+                tasks[task_name] = [[cutoff, cutoff_weights, task_cfg.label_smoothing_value, task_cfg.distance_weight] 
+                                    for cutoff, weight in zip(cutoffs, cutoff_weights)]
         
         self.tasks = tasks
         self.loss = self.loss = {task_name: {'loss': [], 'count': []} for task_name in self.tasks}
@@ -36,12 +37,13 @@ class ModelLoss():
         loss = 0
         for task_name, task_values in self.tasks.items():
             if task_name == 'preterm':
-                for cutoff, weight, ls_val in task_values:
+                for cutoff, cutoff_weight, ls_val, distance_weight in task_values:
                     labels = self.label_smoothing(data, cutoff, ls_val).to(self.device)
                     logits = outputs[task_name][str(cutoff)]['logits']
                     mask = data['masks'][str(cutoff)].to(self.device)
                     if mask.sum() > 0:
-                        temp_loss = self.loss_fns[task_name](logits, labels)[mask].mean()*weight
+                        weights = self.distance_weighting(data, cutoff, alpha=distance_weight)
+                        temp_loss = (self.loss_fns[task_name](logits, labels)*weights)[mask].mean()*cutoff_weight
                         loss += temp_loss
                         self.loss[task_name]['loss'].append(temp_loss.item())
                         self.loss[task_name]['count'].append(mask.sum().item())
@@ -90,6 +92,11 @@ class ModelLoss():
             return torch.ones_like(labels, dtype=torch.bool)
         else:
             return labels != mask_value
+    
+    def distance_weighting(self, data, cutoff, alpha=0.5):
+        distance = torch.abs(data['labels']['GA_weeks'] - cutoff)
+        weights = 1 + alpha * (distance / 6).clamp(max=1)
+        return weights
     
     def update_weight(self):
         self.loss_fns['preterm'].pos_weight.mul_(self.pos_weight_multiplier)
