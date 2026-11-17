@@ -27,8 +27,8 @@ class ModelLoss():
                 if isinstance(cutoff_weights, (int, float)):
                     cutoff_weights = [cutoff_weights] * len(cutoffs)
     
-                tasks[task_name] = [[cutoff, cutoff_weights, task_cfg.label_smoothing_value, task_cfg.distance_weight] 
-                                    for cutoff, weight in zip(cutoffs, cutoff_weights)]
+                tasks[task_name] = [[cutoff, cutoff_weight, task_cfg.label_smoothing_value, task_cfg.distance_weight] 
+                                    for cutoff, cutoff_weight in zip(cutoffs, cutoff_weights)]
         
         self.tasks = tasks
         self.loss = self.loss = {task_name: {'loss': [], 'count': []} for task_name in self.tasks}
