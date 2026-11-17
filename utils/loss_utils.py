@@ -80,11 +80,17 @@ class ModelLoss():
 
         return loss_dict
 
-    def label_smoothing(self, data, cutoff, label_smoothing_value):    
-        if label_smoothing_value > 0:
-            labels = torch.sigmoid((cutoff-data['labels']['GA_weeks'])/label_smoothing_value)
-        else:
-            labels = (data['labels']['GA_weeks'] < cutoff).float()
+    def label_smoothing(self, data, cutoff, smoothing=2, window=2):
+        ga = data['labels']['GA_weeks']
+    
+        labels = (ga < cutoff).float()
+    
+        mask = (ga >= cutoff - window) & (ga <= cutoff + window)
+    
+        soft_labels = torch.sigmoid((cutoff - ga) / smoothing)
+    
+        labels[mask] = soft_labels[mask]
+
         return labels
     
     def mask_values(self, labels, mask_value):
