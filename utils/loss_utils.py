@@ -42,7 +42,7 @@ class ModelLoss():
                     logits = outputs[task_name][str(cutoff)]['logits']
                     mask = data['masks'][str(cutoff)].to(self.device)
                     if mask.sum() > 0:
-                        weights = self.distance_weighting(data, cutoff, alpha=distance_weight)
+                        weights = self.distance_weighting(data, cutoff, alpha=distance_weight).to(self.device)
                         temp_loss = (self.loss_fns[task_name](logits, labels)*weights)[mask].mean()*cutoff_weight
                         loss += temp_loss
                         self.loss[task_name]['loss'].append(temp_loss.item())
@@ -82,13 +82,9 @@ class ModelLoss():
 
     def label_smoothing(self, data, cutoff, smoothing=2, window=2):
         ga = data['labels']['GA_weeks']
-    
         labels = (ga < cutoff).float()
-    
         mask = (ga >= cutoff - window) & (ga <= cutoff + window)
-    
         soft_labels = torch.sigmoid((cutoff - ga) / smoothing)
-    
         labels[mask] = soft_labels[mask]
 
         return labels
