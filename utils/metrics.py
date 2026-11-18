@@ -233,13 +233,6 @@ class Metrics():
             temp_df = temp_df.with_columns((pl.col("preds") - pl.col("threshold") + 0.50).alias("preds"))
             if population == 'Non-treated':
                 temp_df = temp_df.filter(~pl.col("treatment"))
-            print(f"\nValidation — {cutoff} — {population}")
-            print(f"Rows: {len(temp_df)}")
-            print(f"Labels:\n{temp_df['label'].value_counts()}")
-            print(f"Threshold range: {temp_df['threshold'].min()} – {temp_df['threshold'].max()}")
-            print(f"Predictions range: {temp_df['preds'].min()} – {temp_df['preds'].max()}")
-            print(f"Predicted positive: {(temp_df['preds'] >= 0.5).sum()}")
-            print(f"Predicted negative: {(temp_df['preds'] < 0.5).sum()}")
             temp_dfs.append(temp_df)
         df = pl.concat(temp_dfs)
         preds = torch.tensor(df["preds"].to_numpy(), dtype=torch.float32).to(self.device)
@@ -330,7 +323,8 @@ class Metrics():
                     metric.reset()
                     val_preds, val_labels = self.get_val_preds_and_labels(cutoff, pop)
                     val_output = metric(val_preds, val_labels)
-    
+                    print(name)
+                    print(val_output)
                     if isinstance(output, tuple):
                         results[pop][name]['mean'] = output[0].item()
                         results[pop][name]['val'] = val_output[0].item()
