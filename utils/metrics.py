@@ -230,7 +230,7 @@ class Metrics():
 
         for path in (self.pred_path / "validation").glob(f"prediction_{cutoff}*"):
             temp_df = pl.read_parquet(path)
-            temp_df = temp_df.with_columns((pl.col("preds") + pl.col("threshold") - 0.50).alias("preds"))
+            temp_df = temp_df.with_columns((pl.col("preds") - pl.col("threshold") + 0.50).alias("preds"))
             if population == 'Non-treated':
                 temp_df = temp_df.filter(~pl.col("treatment"))
             temp_dfs.append(temp_df)
@@ -241,9 +241,12 @@ class Metrics():
         return preds, labels
         
     def log_model(self):
-        for cutoff in self.cutoffs:   
-            df = pl.concat(self.test_preds[str(cutoff)])
-            df.write_parquet(self.pred_path / f"predictions_{cutoff}.parquet")
+        for cutoff in self.cutoffs:
+            if len(self.test_preds[str(cutoff)]) != 0:
+                df = pl.concat(self.test_preds[str(cutoff)])
+                df.write_parquet(self.pred_path / f"predictions_{cutoff}.parquet")
+            else:
+                df = pl.read_parquet(self.pred_path / f"predictions_{cutoff}.parquet")
             report = []
             for pop, pop_df in [("All Births", df), ("Non-treated", df.filter(~pl.col("treatment")))]:
                 #Get fold variability
