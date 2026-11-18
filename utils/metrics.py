@@ -325,7 +325,7 @@ class Metrics():
                     val_output = metric(val_preds, val_labels)
                     print(name)
                     print(val_preds)
-                    print(val_labels)
+                    print(val_labels.sum())
                     print(val_output)
                     if isinstance(output, tuple):
                         results[pop][name]['mean'] = output[0].item()
