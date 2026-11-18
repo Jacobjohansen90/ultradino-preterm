@@ -250,7 +250,7 @@ class Metrics():
             report = []
             for pop, pop_df in [("All Births", df), ("Non-treated", df.filter(~pl.col("treatment")))]:
                 #Get fold variability
-                for fold in range(self.fold):
+                for fold in range(df['fold'].max()):
                     fold_df = pop_df.filter(pl.col("fold") == fold)
                     
                     preds = torch.tensor(fold_df["preds"].to_numpy(), dtype=torch.float32).to(self.device)
