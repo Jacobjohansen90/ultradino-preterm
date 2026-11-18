@@ -7,6 +7,11 @@ Created on Mon Oct 26 11:35:15 2026
 """
 
 from bias_analysis import generate_insight
+import os
+path = '/users/data/UCPH/DeepFetal/projects/preterm/training_runs/Evaluated/'
 
-generate_insight('/users/data/UCPH/DeepFetal/projects/preterm/training_runs/Running/', 
-                 '/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/bias_analysis.yaml')
+folders = os.listdir(path)
+
+for folder in folders:
+    generate_insight(path + folder, 
+                     '/users/data/UCPH/DeepFetal/projects/preterm/ultradino-preterm/confs/bias_analysis.yaml')
