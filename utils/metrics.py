@@ -237,7 +237,7 @@ class Metrics():
         df = pl.concat(temp_dfs)
         preds = torch.tensor(df["preds"].to_numpy(), dtype=torch.float32).to(self.device)
         labels = torch.tensor(df["label"].to_numpy(),dtype=torch.int32).to(self.device)
-        
+        preds = preds.clamp(0, 1)
         return preds, labels
         
     def log_model(self):
@@ -309,7 +309,8 @@ class Metrics():
                 
                 metrics = self.get_metrics()
                 rng = np.random.default_rng()
-                
+                val_preds, val_labels = self.get_val_preds_and_labels(cutoff, pop)
+
                 for name, metric in metrics.items():
                     results[pop][name] = {}
                     # Use binary predictions for sensitivity and specificity
@@ -319,14 +320,9 @@ class Metrics():
                     metric.reset()
                     output = metric(metric_preds, labels)
 
-
                     metric.reset()
-                    val_preds, val_labels = self.get_val_preds_and_labels(cutoff, pop)
                     val_output = metric(val_preds, val_labels)
-                    print(name)
-                    print(val_preds)
-                    print(val_labels.sum())
-                    print(val_output)
+
                     if isinstance(output, tuple):
                         results[pop][name]['mean'] = output[0].item()
                         results[pop][name]['val'] = val_output[0].item()
