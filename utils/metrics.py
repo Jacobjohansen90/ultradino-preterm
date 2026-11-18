@@ -228,7 +228,7 @@ class Metrics():
     def get_val_preds_and_labels(self, cutoff, population):
         temp_dfs = []
 
-        for path in (self.pred_path / "validation").glob(f"prediction_{cutoff}*"):
+        for path in (self.pred_path / "validation").glob(f"predictions_{cutoff}*"):
             temp_df = pl.read_parquet(path)
             temp_df = temp_df.with_columns((pl.col("preds") - pl.col("threshold") + 0.50).alias("preds"))
             if population == 'Non-treated':
