@@ -233,6 +233,13 @@ class Metrics():
             temp_df = temp_df.with_columns((pl.col("preds") - pl.col("threshold") + 0.50).alias("preds"))
             if population == 'Non-treated':
                 temp_df = temp_df.filter(~pl.col("treatment"))
+            print(f"\nValidation — {cutoff} — {population}")
+            print(f"Rows: {len(temp_df)}")
+            print(f"Labels:\n{temp_df['label'].value_counts()}")
+            print(f"Threshold range: {temp_df['threshold'].min()} – {temp_df['threshold'].max()}")
+            print(f"Predictions range: {temp_df['preds'].min()} – {temp_df['preds'].max()}")
+            print(f"Predicted positive: {(temp_df['preds'] >= 0.5).sum()}")
+            print(f"Predicted negative: {(temp_df['preds'] < 0.5).sum()}")
             temp_dfs.append(temp_df)
         df = pl.concat(temp_dfs)
         preds = torch.tensor(df["preds"].to_numpy(), dtype=torch.float32).to(self.device)
@@ -385,3 +392,22 @@ class Metrics():
                    'AUC': tm.AUROC(task='binary').to(self.device)}
         
         return metrics
+    
+    def restart(self):
+        max_folds = []
+    
+        for cutoff in self.cutoffs:
+            path = self.pred_path / f"predictions_{cutoff}.parquet"
+
+            if not path.exists():
+                return
+
+            df = pl.read_parquet(path)
+            if df.is_empty():
+                return
+
+            max_folds.append(df["fold"].max())
+    
+        self.fold = min(max_folds) + 1
+        
+        
